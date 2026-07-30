@@ -155,7 +155,7 @@ export function articleSchema(input: ArticleSchemaInput): JsonLdObject {
     publisher: { '@id': absoluteUrl('/#organization') },
     datePublished: toIso(input.publishedAt),
     dateModified: toIso(input.updatedAt),
-    mainEntityOfPage: absoluteUrl(`/journal/${input.slug}`),
+    mainEntityOfPage: absoluteUrl(`/guides/${input.slug}`),
   };
 }
 

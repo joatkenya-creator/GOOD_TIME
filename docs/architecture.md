@@ -67,7 +67,7 @@ never rewrite what a customer's receipt says they bought.
 100k products by price must not aggregate over variants per request; the write
 cost is trivial by comparison.
 
-**Materialised category paths.** `Category.path` (`/wellness/massage`) turns
+**Materialised category paths.** `Category.path` (`/vibrators/wands`) turns
 breadcrumb and subtree queries into one indexed lookup instead of a recursive CTE.
 
 **Explicit joins where metadata matters.** `UserRole` records who granted a role

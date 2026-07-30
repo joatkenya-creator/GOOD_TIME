@@ -1,16 +1,22 @@
 # Design system
 
-**Brand personality:** elegant, modern, premium, trustworthy, clean,
-sophisticated, minimal.
+**Brand personality:** elegant, modern, premium, confident, minimal,
+professional, welcoming, sophisticated.
 
-This is an intimate wellness boutique for adults. The design has to read as
-_considered_ rather than _coy_ or _clinical_ — closer to a fine fragrance
-counter than to a novelty shop. In practice that means restraint: one accent
-colour used sparingly, generous whitespace, a serif display face for warmth, and
-no shouting.
+This is a sex toy retailer for adults in the US. The design has to read as
+_considered_ rather than coy or seedy — closer to a fine fragrance counter than a
+novelty shop. In practice that means restraint: one accent colour used sparingly,
+generous whitespace, a serif display face for warmth, and no shouting.
+
+The same discipline applies to language. Copy uses plain product nouns and real
+specifications — material, decibel level, insertable length, charge time — never
+euphemism or innuendo. In this category credibility _is_ the premium signal:
+what converts a cautious first-time buyer is a spec sheet they can check and a
+packaging promise they can verify, not adjectives.
 
 Tokens live in [`src/styles/tokens.css`](../src/styles/tokens.css) and are the
-only place brand values are defined.
+only place brand values are defined. Component index:
+[components.md](components.md).
 
 ---
 
@@ -35,30 +41,38 @@ token declared there becomes both a custom property and a utility class:
 
 ### Brand ramp
 
-Pink, derived from the primary `#E91E63`.
-
-| Token       | Hex       | Use                                          |
-| ----------- | --------- | -------------------------------------------- |
-| `brand-50`  | `#fdf2f6` | Tinted backgrounds, subtle badges            |
-| `brand-100` | `#fce7ef` | Hover on tinted surfaces                     |
-| `brand-500` | `#e91e63` | **Primary action.** The brand.               |
-| `brand-600` | `#d01655` | Primary hover                                |
-| `brand-700` | `#af0f46` | Text on light tint (passes AA on `brand-50`) |
-| `brand-900` | `#7a1236` | Selection text                               |
+| Token             | Hex       | Role                                          |
+| ----------------- | --------- | --------------------------------------------- |
+| `brand-50`        | `#FDF2F7` | Tinted section backgrounds                    |
+| `brand-100`       | `#FCE4EC` | **Brand light pink.** Badges, focus rings     |
+| `brand-200`–`400` |           | Illustration and gradient steps               |
+| `brand-500`       | `#E91E63` | **Brand primary.** CTA buttons, active states |
+| `brand-600`       | `#D81B60` | **Primary hover**                             |
+| `brand-700`       | `#C2185B` | Pink text on white (see contrast note)        |
+| `brand-800`–`950` |           | Deep accents, selection text                  |
 
 ### Neutral ramp
 
-Anchored on the brief's dark grey `#333333` and light grey `#F5F5F5`.
-
-| Token     | Hex       | Use                              |
+| Token     | Hex       | Role                             |
 | --------- | --------- | -------------------------------- |
-| `ink-50`  | `#f5f5f5` | Muted surface                    |
-| `ink-200` | `#d6d6d6` | Borders                          |
-| `ink-300` | `#b8b8b8` | Strong borders                   |
-| `ink-400` | `#8f8f8f` | Placeholder text                 |
-| `ink-500` | `#6b6b6b` | Secondary text                   |
-| `ink-700` | `#333333` | **Body text.** Inverse surfaces. |
-| `ink-900` | `#171717` | Modal backdrop                   |
+| `ink-50`  | `#F5F5F5` | **Light grey** — muted surface   |
+| `ink-200` | `#E5E5E5` | **Default border**               |
+| `ink-300` | `#CCCCCC` | Strong border                    |
+| `ink-400` | `#999999` | Placeholder text                 |
+| `ink-500` | `#666666` | **Medium grey** — secondary text |
+| `ink-700` | `#333333` | **Dark grey** — body text        |
+| `ink-900` | `#1A1A1A` | Inverse surface, modal backdrop  |
+
+### Feedback
+
+| Token         | Hex       |
+| ------------- | --------- |
+| `success-500` | `#4CAF50` |
+| `warning-500` | `#FF9800` |
+| `danger-500`  | `#F44336` |
+| `info-500`    | `#2563EB` |
+
+Each has a `-50` tint and a `-700` text tone so the pairing is always AA.
 
 ### Semantic aliases
 
@@ -68,6 +82,7 @@ Components reference these, never the raw ramp. A rebrand touches one block.
 | ----------------------- | ----------- |
 | `background`, `surface` | `white`     |
 | `surface-muted`         | `ink-50`    |
+| `surface-inverse`       | `ink-900`   |
 | `foreground`            | `ink-700`   |
 | `foreground-muted`      | `ink-500`   |
 | `foreground-subtle`     | `ink-400`   |
@@ -76,14 +91,33 @@ Components reference these, never the raw ramp. A rebrand touches one block.
 | `accent`                | `brand-500` |
 | `accent-hover`          | `brand-600` |
 | `accent-soft`           | `brand-50`  |
+| `accent-muted`          | `brand-100` |
+| `accent-text`           | `brand-700` |
 | `ring`                  | `brand-500` |
 
 **The rule:** `bg-accent`, not `bg-brand-500`, in application code.
 
-### Feedback
+### Contrast: why `accent-text` exists
 
-`success`, `warning`, `danger`, `info`, each with a `-50` tint, a `-500` base
-and a `-700` text tone. Used by `Alert` and `Badge`.
+`#E91E63` measures **4.34:1** against white — just under the 4.5:1 that WCAG AA
+requires for normal-size text. So:
+
+- **Surfaces** (buttons, badges, fills) use `accent` (`#E91E63`) as specified.
+  White text on it is fine at the 18.66px+ semibold sizes used for large CTAs.
+- **Text on white** (links, eyebrows, inline accents) uses `accent-text`
+  (`#C2185B`, **5.85:1**), which passes AA at every size.
+
+If you want strict AA on _every_ pink surface including small buttons, change one
+line in `tokens.css`:
+
+```css
+--color-accent: var(--color-brand-600); /* #D81B60 — 4.91:1 with white */
+```
+
+Verified pairings: `foreground` on white 12.6:1 · `foreground-muted` on white
+5.74:1 · `accent-text` on white 5.85:1 · white on `ink-900` 16.1:1.
+`foreground-subtle` (2.8:1) is for placeholders and decorative text only — never
+for content.
 
 ---
 
@@ -99,69 +133,66 @@ Two faces, loaded through `next/font` (self-hosted, zero layout shift):
 `h1`, `h2` and `h3` pick up the display face automatically from the base layer.
 Use `font-display` explicitly when a `<p>` needs the same treatment.
 
-### Fluid display sizes
+### Fluid display scale
 
-Clamped so a large heading stays large on desktop and readable on a 360px phone,
-with no breakpoint jumps:
+`clamp()` rather than breakpoint jumps, so headings stay proportional from a
+360px phone to an ultra-wide monitor with no snapping.
 
 | Token              | Range           |
 | ------------------ | --------------- |
-| `text-display-2xl` | 2.75 → 5rem     |
+| `text-display-2xl` | 2.75 → 5.25rem  |
 | `text-display-xl`  | 2.25 → 3.75rem  |
 | `text-display-lg`  | 1.875 → 2.75rem |
 | `text-display-md`  | 1.5 → 2rem      |
+| `text-display-sm`  | 1.25 → 1.5rem   |
 
-`text-eyebrow` is the small, letter-spaced, uppercase label that sits above a
-heading. It is a token rather than a utility stack so it stays identical
-everywhere.
+### Body scale
+
+`text-body-lg` (18px), `text-body` (16px), `text-body-sm` (14px) — all at 1.6–1.7
+line height, because this is a reading experience.
+
+`text-eyebrow` is the small letter-spaced uppercase label above headings. It is a
+token rather than a utility stack so it stays identical everywhere.
 
 ---
 
 ## Shape, elevation, motion
 
-**Radii** — `xs` 4px through `2xl` 28px. Buttons and inputs use `lg` (14px):
-soft, not pill-shaped.
+**Radii** — `xs` 4px through `3xl` 40px. Buttons and inputs use `lg` (14px):
+soft, not pill-shaped. Cards use `xl`/`2xl`; full-bleed panels use `3xl`.
 
-**Shadows** — tinted with the ink colour and kept low-opacity. `shadow-brand` is
-the pink glow reserved for a primary button on hover. Nothing gets a hard drop
-shadow.
+**Shadows** — tinted with the ink colour, low opacity. `shadow-brand` is the pink
+glow reserved for a primary button on hover. Nothing gets a hard drop shadow.
 
 **Motion** — one easing curve (`--ease-brand`, `cubic-bezier(0.32, 0.72, 0, 1)`)
 and three durations (150 / 250 / 400ms). Consistency here is what reads as craft.
-`prefers-reduced-motion` is honoured globally in `globals.css`, so it applies to
-Framer Motion too.
+`prefers-reduced-motion` is honoured globally in `globals.css`, and every Framer
+component additionally checks `useReducedMotion()` so JS-driven animation stops
+too.
+
+**The animation budget:** entrance reveals fire once (`viewport={{ once: true }}`),
+hover effects are transform and colour only, and nothing loops. Re-animating on
+every scroll-by is the fastest way to make a premium site feel like a demo.
 
 ---
 
-## Components
+## Layout
 
-All exported from `@/components/ui`.
+| Token                 | Value   | Use                                      |
+| --------------------- | ------- | ---------------------------------------- |
+| `--container-shell`   | 90rem   | Site shell — header, most sections       |
+| `--container-content` | 44rem   | Editorial measure — articles, auth forms |
+| `--container-wide`    | 104rem  | Ultra-wide breakout                      |
+| `--spacing-gutter`    | 1.25rem | Mobile side padding                      |
+| `--spacing-section`   | 5rem    | Vertical rhythm between sections         |
 
-| Component    | Notes                                                                                                |
-| ------------ | ---------------------------------------------------------------------------------------------------- |
-| `Button`     | 7 variants × 4 sizes. `asChild` for link-buttons. Built-in loading state.                            |
-| `Input`      | Optional leading/trailing icons. Derives its invalid style from `aria-invalid`.                      |
-| `Textarea`   | Shares `fieldVariants` with `Input`.                                                                 |
-| `Select`     | Native `<select>` with a custom chevron.                                                             |
-| `Checkbox`   | Native, brand-tinted via `accent-color`.                                                             |
-| `Badge`      | 8 variants. Quiet by default — a grid of shouting badges reads as a discount site.                   |
-| `Card`       | Plus `CardHeader/Title/Description/Content/Footer`.                                                  |
-| `Alert`      | `role="alert"` on `danger`, `role="status"` otherwise.                                               |
-| `Modal`      | Native `<dialog>`: focus trap, inert background, Escape, top-layer stacking — all from the platform. |
-| `Skeleton`   | Plus `SkeletonText` with a ragged last line.                                                         |
-| `Spinner`    | CSS-only.                                                                                            |
-| `EmptyState` | Requires an `action`. An empty state without a way out is a dead end.                                |
-| `Slot`       | The `asChild` primitive. 12 lines instead of a Radix dependency.                                     |
+Breakpoints are Tailwind's defaults; `BREAKPOINTS` in
+[`use-media-query.ts`](../src/hooks/use-media-query.ts) mirrors them so JS and CSS
+agree on where "desktop" starts.
 
-### Why native elements
-
-`<dialog>` gives focus trapping, an inert background, Escape handling and
-top-layer stacking that no `z-index` can break. Reproducing that with a portal, a
-focus-trap library and a scroll-lock hook is ~200 lines and three dependencies.
-Same reasoning for `<select>` and `accent-color`.
-
-The moment a design genuinely needs a custom listbox — colour swatches in a
-dropdown, search-in-list — add the library. Not before.
+Utilities in `globals.css`: `.snap-rail` (carousel), `.full-bleed` (escape a
+container without the `100vw` scrollbar bug), `.animate-shimmer` (skeletons),
+`.skip-link`.
 
 ---
 
@@ -170,24 +201,26 @@ dropdown, search-in-list — add the library. Not before.
 Non-negotiable, and already wired:
 
 - Visible focus ring on `:focus-visible` only, using the brand colour.
-- Skip link in the root layout.
+- Skip link in the root layout, targeting the `#main` the storefront layout owns.
+- One `<main>` and one `<h1>` per page.
 - `FormField` wires `<label for>`, `aria-invalid`, `aria-describedby` (hint _and_
   error) and `role="alert"` — the four things hand-rolled fields always miss.
 - Icons are `aria-hidden`; icon-only buttons carry an `aria-label`.
 - `maximumScale: 5` — pinch-to-zoom is an accessibility requirement, not a bug.
 - Skeletons are `aria-hidden`; the enclosing region carries `aria-busy`.
-- `prefers-reduced-motion` disables animation globally.
-
-Text colour pairings in the tables above meet WCAG AA at body size. Verify any
-new pairing before shipping it.
+- Carousels are focusable `region`s so keyboard users can pan them.
+- Every "opens in a new tab" link says so in an `sr-only` span.
+- `prefers-reduced-motion` disables animation globally and per-component.
 
 ---
 
 ## Adding a component
 
 1. Does an existing one cover it with a new variant? Add the variant.
-2. Is it generic, or commerce-specific? `ui/` versus `product/`, `cart/`.
-3. Use `cva` for variants; never accept a raw `style` prop.
-4. Accept and merge `className` through `cn()` so callers can adjust spacing.
-5. Reference semantic tokens, never raw ramp values or hex codes.
-6. Export it from `components/ui/index.ts`.
+2. Is it generic, or commerce-specific? `ui/` versus `product/`.
+3. Can a native element do it? Check before reaching for state.
+4. Use `cva` for variants; never accept a raw `style` prop.
+5. Accept and merge `className` through `cn()`.
+6. Reference semantic tokens, never raw ramp values or hex codes.
+7. Export it from `components/ui/index.ts` and list it in
+   [components.md](components.md).

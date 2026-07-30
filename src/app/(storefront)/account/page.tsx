@@ -30,9 +30,11 @@ export const metadata: Metadata = buildMetadata({
 export default async function AccountPage() {
   const user = await requireUser(ROUTES.account.root);
 
+  // No <main> here: the storefront layout owns it, along with the #main
+  // skip-link target. Two <main> elements on one page is an a11y failure.
   return (
-    <Container as="main" width="content" className="py-16" id="main">
-      <p className="text-eyebrow text-accent uppercase">Account</p>
+    <Container width="content" className="py-16">
+      <p className="text-eyebrow text-accent-text uppercase">Account</p>
       <h1 className="mt-3 text-display-lg text-foreground">
         {user.name ? `Hello, ${user.name}` : 'Hello'}
       </h1>

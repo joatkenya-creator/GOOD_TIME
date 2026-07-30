@@ -8,7 +8,8 @@ export const ROUTES = {
   search: '/search',
   collections: '/collections',
   brands: '/brands',
-  blog: '/journal',
+  /** Content hub. Buying guides are how this category earns organic search. */
+  blog: '/guides',
   cart: '/cart',
   checkout: '/checkout',
 
@@ -16,7 +17,7 @@ export const ROUTES = {
   category: (slug: string) => `/shop/${slug}`,
   collection: (slug: string) => `/collections/${slug}`,
   brand: (slug: string) => `/brands/${slug}`,
-  post: (slug: string) => `/journal/${slug}`,
+  post: (slug: string) => `/guides/${slug}`,
   page: (slug: string) => `/pages/${slug}`,
 
   auth: {

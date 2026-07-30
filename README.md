@@ -1,11 +1,27 @@
 # GOOD TIME
 
-A production-grade ecommerce platform for the US market, built on Next.js 16 and
-PostgreSQL.
+A production-grade ecommerce platform for a US adult-products retailer — sex toys
+with published material and performance specs — built on Next.js 16 and PostgreSQL.
 
-**Phase 1 — architecture and foundation.** The scaffolding, data model, design
-system, auth, security and SEO machinery are in place. Customer-facing pages
-(home, shop, product, cart, checkout) are deliberately **not** built yet.
+Every listing is 18+ and age-restricted by default (`Product.isAdultOnly`), and
+discretion is a product requirement rather than a nice-to-have: plain packaging,
+neutral billing descriptor, and no product names in email subject lines.
+
+An 18+ age gate covers the whole site — see
+[`src/lib/age-gate.ts`](src/lib/age-gate.ts) for why it is client-side (so the
+catalogue stays indexable and the homepage stays statically rendered). It is a
+good-faith age _statement_, not identity verification; where a state mandates the
+latter, it belongs at checkout against an identity provider and recorded on the
+order.
+
+**Phase 1 — architecture and foundation.** Scaffolding, data model, auth,
+security and SEO machinery.
+
+**Phase 2 — visual identity and homepage.** Design tokens, a 30+ component
+library, header with mega menu, footer, and a twelve-section homepage running on
+placeholder content.
+
+Shop, product, cart and checkout pages are deliberately **not** built yet.
 
 ---
 
@@ -28,18 +44,22 @@ npm run db:seed
 npm run dev
 ```
 
-The app boots at http://localhost:3000. There is no homepage in phase 1 — `/`
-renders the 404 page by design. Start at:
+The app boots at http://localhost:3000.
 
 | Path               | What it is                  |
 | ------------------ | --------------------------- |
+| `/`                | Homepage — twelve sections  |
+| `/account`         | Signed-in session readout   |
 | `/sign-in`         | Sign-in form                |
 | `/register`        | Account creation            |
 | `/forgot-password` | Password reset request      |
 | `/api/health`      | Liveness + database check   |
 | `/robots.txt`      | Generated robots directives |
 | `/sitemap.xml`     | Generated sitemap           |
-| `/feed.xml`        | Journal RSS feed            |
+| `/feed.xml`        | Buying-guides RSS feed      |
+
+Navigation links point at shop, category and collection routes that arrive in a
+later phase; those currently render the 404 page.
 
 Full setup guide: [docs/installation.md](docs/installation.md).
 
@@ -87,14 +107,15 @@ Full setup guide: [docs/installation.md](docs/installation.md).
 
 ## Documentation
 
-| Document                                             | Covers                                   |
-| ---------------------------------------------------- | ---------------------------------------- |
-| [docs/installation.md](docs/installation.md)         | Setup, database options, common problems |
-| [docs/architecture.md](docs/architecture.md)         | Layering, data flow, scaling decisions   |
-| [docs/folder-structure.md](docs/folder-structure.md) | What belongs where, and why              |
-| [docs/environment.md](docs/environment.md)           | Every environment variable               |
-| [docs/design-system.md](docs/design-system.md)       | Tokens, components, brand rules          |
-| [src/app/api/README.md](src/app/api/README.md)       | API conventions and route map            |
+| Document                                             | Covers                                    |
+| ---------------------------------------------------- | ----------------------------------------- |
+| [docs/installation.md](docs/installation.md)         | Setup, database options, common problems  |
+| [docs/architecture.md](docs/architecture.md)         | Layering, data flow, scaling decisions    |
+| [docs/folder-structure.md](docs/folder-structure.md) | What belongs where, and why               |
+| [docs/environment.md](docs/environment.md)           | Every environment variable                |
+| [docs/design-system.md](docs/design-system.md)       | Tokens, typography, contrast, brand rules |
+| [docs/components.md](docs/components.md)             | Component index and conventions           |
+| [src/app/api/README.md](src/app/api/README.md)       | API conventions and route map             |
 
 ---
 

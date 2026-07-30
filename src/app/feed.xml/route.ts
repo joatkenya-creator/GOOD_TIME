@@ -4,7 +4,7 @@ import { escapeHtml } from '@/lib/security/sanitize';
 import { absoluteUrl } from '@/lib/seo/url';
 
 /**
- * RSS 2.0 feed for the journal.
+ * RSS 2.0 feed for the buying guides.
  *
  * Hand-rolled because the output is thirty lines of XML — an RSS builder
  * dependency would be more code to configure than to write.
@@ -39,8 +39,8 @@ export async function GET(): Promise<Response> {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>${escapeHtml(siteConfig.name)} — Journal</title>
-    <link>${absoluteUrl('/journal')}</link>
+    <title>${escapeHtml(siteConfig.name)} — Guides</title>
+    <link>${absoluteUrl('/guides')}</link>
     <description>${escapeHtml(siteConfig.description)}</description>
     <language>${siteConfig.locale}</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>

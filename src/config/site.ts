@@ -7,9 +7,9 @@ import { publicEnv } from '@/lib/env.public';
 export const siteConfig = {
   name: 'GOOD TIME',
   legalName: 'Good Time Commerce, Inc.',
-  tagline: 'Intimate wellness, thoughtfully made.',
+  tagline: 'Body-safe toys, built to last.',
   description:
-    'A modern intimate wellness boutique — discreetly packaged, body-safe, and curated for grown-ups who care about quality.',
+    'A premium sex toy shop for adults in the US. Body-safe silicone, glass and steel, rechargeable motors, honest specs and plain packaging — no jelly, no mystery materials, no euphemisms.',
   url: publicEnv.NEXT_PUBLIC_SITE_URL,
   locale: 'en-US',
   currency: 'USD',
@@ -31,7 +31,12 @@ export const siteConfig = {
   /** Twitter/X handle used for `twitter:site`. Leave empty to omit the tag. */
   twitterHandle: '',
 
-  /** Storefront is 18+. Drives the age gate and `isAdultOnly` defaults. */
+  /**
+   * Storefront is 18+. Drives the age gate and the `Product.isAdultOnly` default.
+   *
+   * This is a legal adult-products retailer: every listing is age-restricted, and
+   * the age statement must appear in the footer and at checkout.
+   */
   minimumAge: 18,
 } as const;
 

@@ -16,7 +16,7 @@
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     /* Offset for the sticky header when jumping to an anchor. */
-    scroll-padding-top: 5rem;
+    scroll-padding-top: 7rem;
   }
 
   body {
@@ -32,6 +32,7 @@
   h2,
   h3 {
     font-family: var(--font-display);
+    font-weight: 500;
     text-wrap: balance;
   }
 
@@ -71,6 +72,18 @@
 
 @layer components {
   /*
+   * Age gate: hidden before first paint for anyone who already confirmed.
+   *
+   * The inline script in the document head stamps `data-age-ok="1"` on <html>
+   * when the cookie is present, which lands before the browser paints. Without
+   * this rule a returning visitor would see the gate flash on every navigation
+   * while React hydrates and removes it.
+   */
+  html[data-age-ok='1'] dialog[data-age-gate] {
+    display: none;
+  }
+
+  /*
    * Skip link — required for keyboard accessibility on every page, so it lives
    * here rather than being re-declared by each layout.
    */
@@ -105,5 +118,38 @@
     transform: translateX(-100%);
     background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
     animation: gt-shimmer 1.6s infinite;
+  }
+
+  /*
+   * Horizontal snap rail used by the product and review carousels. The
+   * scrollbar is hidden because the rail always ships with real arrow buttons
+   * and remains keyboard-scrollable.
+   */
+  .snap-rail {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .snap-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .snap-rail > * {
+    scroll-snap-align: start;
+    flex: none;
+  }
+
+  /*
+   * Full-bleed escape from a constrained container, without the
+   * `100vw` horizontal-scrollbar bug.
+   */
+  .full-bleed {
+    width: 100vw;
+    margin-left: 50%;
+    translate: -50% 0;
   }
 }

@@ -1,0 +1,61 @@
+'use client';
+
+import { motion, useReducedMotion } from 'framer-motion';
+
+export interface RevealProps {
+  children: React.ReactNode;
+  /** Stagger position within a group, in seconds per index. */
+  delay?: number;
+  direction?: 'up' | 'down' | 'left' | 'right' | 'none';
+  className?: string;
+  as?: 'div' | 'section' | 'li' | 'article';
+}
+
+const OFFSETS = {
+  up: { y: 24, x: 0 },
+  down: { y: -24, x: 0 },
+  left: { y: 0, x: 24 },
+  right: { y: 0, x: -24 },
+  none: { y: 0, x: 0 },
+} as const;
+
+/**
+ * Scroll reveal.
+ *
+ * A client boundary that wraps server-rendered children — the content inside is
+ * still rendered on the server and streamed as HTML, so this costs a wrapper's
+ * worth of JavaScript rather than pulling a whole section onto the client.
+ *
+ * `once: true` means content animates in a single time; re-animating on every
+ * scroll-by is the fastest way to make a premium site feel like a demo.
+ *
+ * Honours `prefers-reduced-motion` by rendering the final state immediately.
+ */
+export function Reveal({
+  children,
+  delay = 0,
+  direction = 'up',
+  className,
+  as = 'div',
+}: RevealProps) {
+  const reduceMotion = useReducedMotion();
+  const offset = OFFSETS[direction];
+  const Component = motion[as];
+
+  if (reduceMotion) {
+    const Static = as;
+    return <Static className={className}>{children}</Static>;
+  }
+
+  return (
+    <Component
+      className={className}
+      initial={{ opacity: 0, ...offset }}
+      whileInView={{ opacity: 1, y: 0, x: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.55, delay, ease: [0.32, 0.72, 0, 1] }}
+    >
+      {children}
+    </Component>
+  );
+}
