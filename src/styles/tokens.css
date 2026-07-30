@@ -1,0 +1,140 @@
+/*
+ * GOOD TIME — design tokens
+ *
+ * Tailwind v4 is configured CSS-first: everything declared inside `@theme`
+ * becomes both a CSS custom property and a utility class (`--color-brand-500`
+ * gives you `bg-brand-500`, `text-brand-500`, `border-brand-500`, ...).
+ *
+ * Brand personality: elegant, modern, premium, trustworthy, clean, minimal.
+ * Rules of thumb encoded below:
+ *   - one accent colour, used sparingly, always for action;
+ *   - generous whitespace via a 4px spacing scale;
+ *   - soft radii and low-contrast shadows — nothing shouts;
+ *   - a serif display face for headings against a neutral grotesque for body.
+ */
+
+@theme {
+  /* --- Brand ------------------------------------------------------------ */
+  /* Pink ramp derived from the brand primary #E91E63. */
+  --color-brand-50: #fdf2f6;
+  --color-brand-100: #fce7ef;
+  --color-brand-200: #fbcfe0;
+  --color-brand-300: #f8a8c6;
+  --color-brand-400: #f472a3;
+  --color-brand-500: #e91e63;
+  --color-brand-600: #d01655;
+  --color-brand-700: #af0f46;
+  --color-brand-800: #91103d;
+  --color-brand-900: #7a1236;
+  --color-brand-950: #46041a;
+
+  /* --- Neutrals --------------------------------------------------------- */
+  /* Anchored on the brief: dark grey #333333, light grey #F5F5F5, white. */
+  --color-ink-50: #f5f5f5;
+  --color-ink-100: #ebebeb;
+  --color-ink-200: #d6d6d6;
+  --color-ink-300: #b8b8b8;
+  --color-ink-400: #8f8f8f;
+  --color-ink-500: #6b6b6b;
+  --color-ink-600: #4d4d4d;
+  --color-ink-700: #333333;
+  --color-ink-800: #242424;
+  --color-ink-900: #171717;
+  --color-ink-950: #0d0d0d;
+
+  /* --- Feedback --------------------------------------------------------- */
+  --color-success-50: #ecfdf3;
+  --color-success-500: #12a150;
+  --color-success-700: #0b6b35;
+  --color-warning-50: #fffaeb;
+  --color-warning-500: #d98600;
+  --color-warning-700: #8f5700;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #dc2626;
+  --color-danger-700: #991b1b;
+  --color-info-50: #eff6ff;
+  --color-info-500: #2563eb;
+  --color-info-700: #1d4ed8;
+
+  /* --- Typography ------------------------------------------------------- */
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: var(--font-heading), ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+
+  /* Fluid display sizes: large headings that stay readable on a 360px phone. */
+  --text-display-2xl: clamp(2.75rem, 1.6rem + 4.6vw, 5rem);
+  --text-display-2xl--line-height: 1.02;
+  --text-display-2xl--letter-spacing: -0.035em;
+  --text-display-xl: clamp(2.25rem, 1.5rem + 3.2vw, 3.75rem);
+  --text-display-xl--line-height: 1.06;
+  --text-display-xl--letter-spacing: -0.03em;
+  --text-display-lg: clamp(1.875rem, 1.4rem + 2vw, 2.75rem);
+  --text-display-lg--line-height: 1.12;
+  --text-display-lg--letter-spacing: -0.025em;
+  --text-display-md: clamp(1.5rem, 1.25rem + 1.1vw, 2rem);
+  --text-display-md--line-height: 1.2;
+  --text-display-md--letter-spacing: -0.02em;
+
+  /* Eyebrow / label treatment used above headings and on badges. */
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.14em;
+  --text-eyebrow--font-weight: 600;
+
+  /* --- Radii ------------------------------------------------------------ */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+
+  /* --- Elevation -------------------------------------------------------- */
+  /* Subtle by design: tinted, low-opacity, never a hard drop shadow. */
+  --shadow-xs: 0 1px 2px 0 rgb(23 23 23 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(23 23 23 / 0.06), 0 1px 2px -1px rgb(23 23 23 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(23 23 23 / 0.08), 0 2px 6px -2px rgb(23 23 23 / 0.04);
+  --shadow-lg: 0 12px 28px -6px rgb(23 23 23 / 0.12), 0 4px 10px -4px rgb(23 23 23 / 0.05);
+  --shadow-xl: 0 24px 56px -12px rgb(23 23 23 / 0.16);
+  --shadow-brand: 0 8px 24px -8px rgb(233 30 99 / 0.45);
+
+  /* --- Motion ----------------------------------------------------------- */
+  /* One easing curve and three durations. Consistency reads as craft. */
+  --ease-brand: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+
+  /* --- Layout ----------------------------------------------------------- */
+  --container-content: 44rem; /* comfortable measure for editorial text */
+  --container-shell: 90rem; /* max width of the site shell */
+  --spacing-gutter: 1.25rem;
+  --spacing-section: 4.5rem;
+
+  /* --- Z-index ---------------------------------------------------------- */
+  --z-header: 40;
+  --z-drawer: 50;
+  --z-modal: 60;
+  --z-toast: 70;
+}
+
+/*
+ * Semantic aliases. Components reference these, never the raw ramp, so a rebrand
+ * is a change to this block alone.
+ */
+@theme inline {
+  --color-background: var(--color-white);
+  --color-surface: var(--color-white);
+  --color-surface-muted: var(--color-ink-50);
+  --color-surface-inverse: var(--color-ink-700);
+  --color-foreground: var(--color-ink-700);
+  --color-foreground-muted: var(--color-ink-500);
+  --color-foreground-subtle: var(--color-ink-400);
+  --color-foreground-inverse: var(--color-white);
+  --color-border: var(--color-ink-200);
+  --color-border-strong: var(--color-ink-300);
+  --color-accent: var(--color-brand-500);
+  --color-accent-hover: var(--color-brand-600);
+  --color-accent-soft: var(--color-brand-50);
+  --color-ring: var(--color-brand-500);
+}

@@ -1,0 +1,74 @@
+import NextAuth from 'next-auth';
+import { NextResponse } from 'next/server';
+
+import { ADMIN_ROLES } from '@/constants/permissions';
+import {
+  ADMIN_PREFIXES,
+  GUEST_ONLY_PREFIXES,
+  PROTECTED_PREFIXES,
+  ROUTES,
+} from '@/constants/routes';
+import { authConfig } from '@/lib/auth/config';
+
+/**
+ * Edge proxy — the first authorisation gate. (Next 16 renamed this convention
+ * from `middleware`; the contract is unchanged.)
+ *
+ * This runs before any React code, so an unauthenticated request to `/admin`
+ * never reaches a server component. It reads the session JWT only: the edge
+ * runtime has no database, and a per-request query here would add latency to
+ * every navigation on the site.
+ *
+ * Treat it as a fast filter, not the last line of defence. Pages and route
+ * handlers re-check with `requireAdmin` / `assertPermission`, which read the
+ * authoritative claim set.
+ */
+const { auth: withAuth } = NextAuth(authConfig);
+
+function matchesPrefix(pathname: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+export default withAuth((request) => {
+  const { pathname, search } = request.nextUrl;
+  const session = request.auth;
+  const isAuthenticated = Boolean(session?.user);
+
+  // Signed-in visitors have no business on the sign-in or register pages.
+  if (isAuthenticated && matchesPrefix(pathname, GUEST_ONLY_PREFIXES)) {
+    return NextResponse.redirect(new URL(ROUTES.account.root, request.url));
+  }
+
+  if (matchesPrefix(pathname, ADMIN_PREFIXES)) {
+    if (!isAuthenticated) return redirectToSignIn(request.url, pathname + search);
+
+    const roles = session?.user?.roles ?? [];
+    if (!roles.some((role) => ADMIN_ROLES.includes(role))) {
+      // 404 rather than 403: do not confirm that the admin surface exists.
+      return NextResponse.rewrite(new URL('/not-found', request.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (matchesPrefix(pathname, PROTECTED_PREFIXES) && !isAuthenticated) {
+    return redirectToSignIn(request.url, pathname + search);
+  }
+
+  return NextResponse.next();
+});
+
+function redirectToSignIn(base: string, callbackUrl: string): NextResponse {
+  const url = new URL(ROUTES.auth.signIn, base);
+  url.searchParams.set('callbackUrl', callbackUrl);
+  return NextResponse.redirect(url);
+}
+
+export const config = {
+  /**
+   * Skip static assets and image optimisation entirely — running this on every
+   * `.woff2` request is pure latency.
+   */
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|avif|ico|woff2?)$).*)',
+  ],
+};
