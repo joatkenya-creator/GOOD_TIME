@@ -18,10 +18,14 @@ order.
 security and SEO machinery.
 
 **Phase 2 — visual identity and homepage.** Design tokens, a 30+ component
-library, header with mega menu, footer, and a twelve-section homepage running on
-placeholder content.
+library, header with mega menu, footer, and a twelve-section homepage.
 
-Shop, product, cart and checkout pages are deliberately **not** built yet.
+**Phase 3 — catalogue.** Product listing, category pages, product detail, faceted
+filtering, Postgres full-text search, reviews, wishlist, compare and recently
+viewed. See [docs/catalog.md](docs/catalog.md).
+
+Cart, checkout, the account area and the admin dashboard are deliberately **not**
+built yet.
 
 ---
 
@@ -53,6 +57,12 @@ The app boots at http://localhost:3000.
 | `/sign-in`         | Sign-in form                |
 | `/register`        | Account creation            |
 | `/forgot-password` | Password reset request      |
+| `/shop`            | Product listing, filtered   |
+| `/shop/vibrators`  | Category page               |
+| `/search?q=…`      | Search results              |
+| `/compare`         | Product comparison          |
+| `/search?q=…`      | Search results              |
+| `/compare`         | Product comparison          |
 | `/api/health`      | Liveness + database check   |
 | `/robots.txt`      | Generated robots directives |
 | `/sitemap.xml`     | Generated sitemap           |
@@ -88,20 +98,23 @@ Full setup guide: [docs/installation.md](docs/installation.md).
 
 ## Scripts
 
-| Command               | Does                                              |
-| --------------------- | ------------------------------------------------- |
-| `npm run dev`         | Development server                                |
-| `npm run build`       | `prisma generate` then a production build         |
-| `npm start`           | Serve the production build                        |
-| `npm run lint`        | ESLint                                            |
-| `npm run format`      | Prettier, write                                   |
-| `npm run typecheck`   | `tsc --noEmit`                                    |
-| `npm test`            | Vitest                                            |
-| `npm run db:migrate`  | Create and apply a migration (development)        |
-| `npm run db:deploy`   | Apply pending migrations (production)             |
-| `npm run db:seed`     | Seed roles, permissions and settings — idempotent |
-| `npm run db:studio`   | Prisma Studio                                     |
-| `npm run grant-admin` | `-- you@example.com SUPER_ADMIN`                  |
+| Command                   | Does                                              |
+| ------------------------- | ------------------------------------------------- |
+| `npm run dev`             | Development server                                |
+| `npm run build`           | `prisma generate` then a production build         |
+| `npm start`               | Serve the production build                        |
+| `npm run lint`            | ESLint                                            |
+| `npm run format`          | Prettier, write                                   |
+| `npm run typecheck`       | `tsc --noEmit`                                    |
+| `npm test`                | Vitest                                            |
+| `npm run db:migrate`      | Create and apply a migration (development)        |
+| `npm run db:deploy`       | Apply pending migrations (production)             |
+| `npm run db:seed`         | Seed roles, permissions and settings — idempotent |
+| `npm run db:studio`       | Prisma Studio                                     |
+| `npm run db:seed:catalog` | Demo products — development only                  |
+| `npm run db:verify`       | Tables, functional indexes, check constraints     |
+| `npm run smoke:catalog`   | 27 catalogue checks against the database          |
+| `npm run grant-admin`     | `-- you@example.com SUPER_ADMIN`                  |
 
 ---
 
@@ -115,6 +128,7 @@ Full setup guide: [docs/installation.md](docs/installation.md).
 | [docs/environment.md](docs/environment.md)           | Every environment variable                |
 | [docs/design-system.md](docs/design-system.md)       | Tokens, typography, contrast, brand rules |
 | [docs/components.md](docs/components.md)             | Component index and conventions           |
+| [docs/catalog.md](docs/catalog.md)                   | Data model, query strategy, search, SEO   |
 | [src/app/api/README.md](src/app/api/README.md)       | API conventions and route map             |
 
 ---

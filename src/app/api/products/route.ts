@@ -1,24 +1,44 @@
 import { productFilterSchema } from '@/features/catalog/schemas';
-import { errors, readQuery, withRoute } from '@/lib/api/handler';
+import { readQuery, withRoute } from '@/lib/api/handler';
+import { jsonOk } from '@/lib/api/response';
+import { cacheControl } from '@/lib/cache/cached';
+import { getFacetCounts, listProducts } from '@/services/product.service';
 
 /**
- * `GET /api/products` — filtered, cursor-paginated catalogue listing.
+ * `GET /api/products` — filtered, paginated catalogue listing.
  *
- * Contract is fixed in phase 1; the query lands with the catalogue in phase 2.
+ * Mirrors the storefront listing exactly: same schema, same service, so the API
+ * and the rendered page can never disagree about what a filter means.
  *
- * Implementation notes for whoever picks this up:
- *   - filter on `Product.status = ACTIVE AND deletedAt IS NULL`, which the
- *     `[status, deletedAt, publishedAt]` index covers;
- *   - sort by the denormalised `minPriceCents` / `ratingAverage` columns rather
- *     than aggregating over variants and reviews per request;
- *   - use `cursorQuerySchema`, not offsets — see docs/architecture.md.
+ * `facets=true` additionally returns the counts for the current result set, which
+ * is what a client-side filter UI needs to render availability.
  */
 export const GET = withRoute(
   async ({ request }) => {
     const filter = readQuery(request, productFilterSchema);
-    void filter;
+    const wantsFacets = request.nextUrl.searchParams.get('facets') === 'true';
 
-    throw errors.notImplemented('Product listing');
+    const [result, facets] = await Promise.all([
+      listProducts(filter),
+      wantsFacets ? getFacetCounts(filter) : Promise.resolve(null),
+    ]);
+
+    return jsonOk(result.items, {
+      meta: {
+        pagination: {
+          page: result.page,
+          pageSize: result.pageSize,
+          total: result.total,
+          totalPages: result.totalPages,
+          hasNext: result.page < result.totalPages,
+          hasPrevious: result.page > 1,
+        },
+        nextCursor: result.nextCursor,
+        ...(facets ? { facets } : {}),
+      },
+      // Public catalogue data: safe to cache at the CDN for every visitor.
+      headers: { 'Cache-Control': cacheControl.catalogue },
+    });
   },
   { rateLimit: { bucket: 'catalogue', limit: 240, windowSeconds: 60 } },
 );

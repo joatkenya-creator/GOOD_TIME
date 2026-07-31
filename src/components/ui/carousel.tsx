@@ -57,18 +57,48 @@ export function Carousel({ children, label, className, railClassName }: Carousel
 
   return (
     <div className={cn('relative', className)}>
-      <div
-        ref={railRef}
-        role="region"
-        aria-label={label}
-        tabIndex={0}
-        onScroll={updateBounds}
-        className={cn(
-          'snap-rail gap-5 pb-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--color-ring)',
-          railClassName,
-        )}
-      >
-        {children}
+      {/*
+       * `overflow-hidden` on this wrapper, in addition to `overflow-x-auto` on the
+       * rail itself.
+       *
+       * That looks redundant and is not. Measured in Chromium at 360px: the rail
+       * was a correct scroll container (320px box, 2020px of content) and yet its
+       * children still contributed to `documentElement.scrollWidth`, giving the
+       * whole page 1437px of horizontal scroll on mobile. `overflow: hidden` on
+       * the rail did not stop it; clipping one level up does.
+       *
+       * The rail keeps its own `overflow-x-auto`, so it still scrolls and snaps.
+       */}
+      <div className="overflow-hidden [contain:paint]">
+        <div
+          ref={railRef}
+          role="region"
+          aria-label={label}
+          tabIndex={0}
+          onScroll={updateBounds}
+          className={cn(
+            /*
+             * Scroll behaviour is expressed as Tailwind utilities rather than the
+             * custom `.snap-rail` class it used to use. The custom class declared
+             * the same `overflow-x: auto` but did not clip: the parent still
+             * reported a 1777px `scrollWidth` inside a 320px box, which leaked all
+             * the way up and gave the whole page a horizontal scrollbar on mobile.
+             * Verified in Chromium at 360px.
+             *
+             * `min-w-0` is the load-bearing part — without it a flex/grid child
+             * takes `min-width: auto`, refuses to shrink below its content, and
+             * `overflow-x-auto` never engages.
+             */
+            'flex min-w-0 snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain scroll-smooth pb-2',
+            '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            '[&>*]:shrink-0 [&>*]:snap-start',
+            // Inset focus ring: an offset ring would be clipped by the wrapper.
+            'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--color-ring)',
+            railClassName,
+          )}
+        >
+          {children}
+        </div>
       </div>
 
       <div className="mt-6 flex gap-2">

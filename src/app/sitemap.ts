@@ -1,26 +1,36 @@
 import type { MetadataRoute } from 'next';
 
 import { absoluteUrl } from '@/lib/seo/url';
+import { listCategoryPaths, listCollections } from '@/services/category.service';
+import { listProductSlugs, productHref } from '@/services/product.service';
 
 /**
  * `/sitemap.xml`.
  *
- * Phase 1 emits the static routes only. Once the catalogue exists, this file
- * switches to Next's `generateSitemaps` and returns one chunk per 5,000 URLs —
- * `seoConfig.sitemap.maxUrlsPerChunk` — because a single sitemap listing 100k
- * products would exceed Google's 50MB/50k-URL limit and time out on generation.
+ * Static routes, every live category, every collection and every product, at the
+ * same canonical URLs the pages themselves declare — a sitemap that disagrees
+ * with the canonical tags is worse than no sitemap.
  *
- * The chunked version must page through the database with a cursor, not
- * `findMany({ take: 100000 })`, which would not fit in a serverless function's
- * memory budget.
+ * Product URLs are built with `productHref`, the same helper the pages and the
+ * API use, so the three can never drift apart.
+ *
+ * At 100k products this must switch to Next's `generateSitemaps` and emit chunks
+ * of 5,000 URLs (`seoConfig.sitemap.maxUrlsPerChunk`); a single sitemap exceeds
+ * Google's 50k-URL limit and the function's memory budget. The `listProductSlugs`
+ * cap is what keeps the current single file honest rather than silently truncating.
  */
-/** Segment config must be a literal — Next reads it statically, before evaluation. */
 export const revalidate = 86_400; // 24h
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  return [
+  const [categories, collections, products] = await Promise.all([
+    listCategoryPaths(),
+    listCollections(),
+    listProductSlugs(),
+  ]);
+
+  const staticRoutes: MetadataRoute.Sitemap = [
     { url: absoluteUrl('/'), lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: absoluteUrl('/shop'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     {
@@ -31,5 +41,32 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     { url: absoluteUrl('/brands'), lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: absoluteUrl('/guides'), lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+  ];
+
+  return [
+    ...staticRoutes,
+
+    ...categories.map((category) => ({
+      url: absoluteUrl(`/shop${category.path}`),
+      lastModified: category.updatedAt,
+      changeFrequency: 'daily' as const,
+      // Deeper categories are more specific and convert better, but have less
+      // authority to distribute. Shallow beats deep.
+      priority: category.path.split('/').filter(Boolean).length === 1 ? 0.8 : 0.7,
+    })),
+
+    ...collections.map((collection) => ({
+      url: absoluteUrl(`/collections/${collection.slug}`),
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    })),
+
+    ...products.map((product) => ({
+      url: absoluteUrl(productHref(product.primaryCategory?.path, product.slug)),
+      lastModified: product.updatedAt,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    })),
   ];
 }

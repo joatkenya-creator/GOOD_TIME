@@ -24,7 +24,7 @@ interface HeaderEntry {
  *     nothing listens on, and every one of them fails with "Failed to fetch".
  *   - websockets: `connect-src` must allow `ws:` or Fast Refresh cannot connect.
  */
-function contentSecurityPolicy(isDevelopment: boolean): string {
+function contentSecurityPolicy(isDevelopment: boolean, upgradeInsecure: boolean): string {
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
     'script-src': [
@@ -61,7 +61,7 @@ function contentSecurityPolicy(isDevelopment: boolean): string {
     'form-action': ["'self'"],
     'base-uri': ["'self'"],
     'object-src': ["'none'"],
-    ...(isDevelopment ? {} : { 'upgrade-insecure-requests': [] }),
+    ...(upgradeInsecure ? { 'upgrade-insecure-requests': [] } : {}),
   };
 
   return Object.entries(directives)
@@ -74,11 +74,23 @@ export function securityHeaders(): HeaderEntry[] {
   // and must not pull in the app's module graph.
   const isDevelopment = process.env.NODE_ENV !== 'production';
 
+  /**
+   * HSTS and `upgrade-insecure-requests` are gated on the site actually being
+   * served over HTTPS, not merely on `NODE_ENV`.
+   *
+   * `next start` is production mode over plain `http://localhost`, and both
+   * directives break it: WebKit honours `upgrade-insecure-requests` on localhost
+   * (Chromium exempts it), rewrites every asset URL to `https://`, and loads
+   * nothing — the page renders with no CSS or JS at all. Verified in WebKit:
+   * every request failed with `SSL connect error`.
+   */
+  const isHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? '').startsWith('https://');
+
   return [
-    { key: 'Content-Security-Policy', value: contentSecurityPolicy(isDevelopment) },
+    { key: 'Content-Security-Policy', value: contentSecurityPolicy(isDevelopment, isHttps) },
     // HSTS is meaningless over http and would pin localhost to https for months
-    // if a browser ever did honour it. Production only.
-    ...(isDevelopment
+    // if a browser ever did honour it. HTTPS deployments only.
+    ...(!isHttps
       ? []
       : [
           {

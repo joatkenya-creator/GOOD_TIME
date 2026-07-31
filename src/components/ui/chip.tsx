@@ -43,11 +43,12 @@ export function Chip({
     return (
       <span className={base} {...props}>
         {label}
+        {/* 24x24 pressable area per WCAG 2.5.8; the icon itself stays small. */}
         <button
           type="button"
           onClick={onRemove}
           aria-label={`Remove ${label} filter`}
-          className="-mr-1 rounded-full p-0.5 text-foreground-subtle transition-colors hover:bg-ink-100 hover:text-foreground"
+          className="-mr-2 flex size-6 shrink-0 items-center justify-center rounded-full text-foreground-subtle transition-colors hover:bg-ink-100 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--color-ring)"
         >
           <X className="size-3.5" aria-hidden="true" />
         </button>

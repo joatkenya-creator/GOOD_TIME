@@ -26,7 +26,15 @@ const config = [
   },
 
   {
-    // Import boundary: client-side code must never reach for server-only modules.
+    /**
+     * Import boundary: client-side code must never *run* server-only modules.
+     *
+     * `allowTypeImports` is deliberate. A `import type { Foo }` is erased at
+     * compile time and pulls nothing into the bundle, so a server component
+     * sharing its return type with a presentational component is correct and
+     * desirable — it is what keeps the two in sync. Only value imports would
+     * drag Prisma into the browser.
+     */
     files: [
       'src/components/**/*.{ts,tsx}',
       'src/hooks/**/*.{ts,tsx}',
@@ -39,7 +47,9 @@ const config = [
           patterns: [
             {
               group: ['@/server/*', '@/services/*', '@/lib/prisma'],
-              message: 'Server-only module. Reach it through a server action or route handler.',
+              allowTypeImports: true,
+              message:
+                'Server-only module. Import only its types, or reach it through a server action or route handler.',
             },
           ],
         },
@@ -48,8 +58,12 @@ const config = [
   },
 
   {
-    files: ['prisma/**/*.ts', 'scripts/**/*.ts', '*.config.{ts,mjs}'],
-    rules: { 'no-console': 'off' },
+    files: ['prisma/**/*.ts', 'scripts/**/*.{ts,cjs,mjs}', '*.config.{ts,mjs}'],
+    rules: {
+      'no-console': 'off',
+      // Maintenance scripts run under plain Node, outside the bundler.
+      '@typescript-eslint/no-require-imports': 'off',
+    },
   },
 ];
 

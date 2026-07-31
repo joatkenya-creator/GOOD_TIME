@@ -121,27 +121,12 @@
   }
 
   /*
-   * Horizontal snap rail used by the product and review carousels. The
-   * scrollbar is hidden because the rail always ships with real arrow buttons
-   * and remains keyboard-scrollable.
+   * The horizontal snap rail used to live here as a `.snap-rail` class. It was
+   * removed: declared inside `@layer utilities` its `overflow-x: auto` did not
+   * actually clip, and the carousel's content leaked out to give the whole page a
+   * horizontal scrollbar on mobile. `Carousel` now composes the same behaviour
+   * from Tailwind utilities, which do clip. See src/components/ui/carousel.tsx.
    */
-  .snap-rail {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-    overscroll-behavior-x: contain;
-  }
-
-  .snap-rail::-webkit-scrollbar {
-    display: none;
-  }
-
-  .snap-rail > * {
-    scroll-snap-align: start;
-    flex: none;
-  }
 
   /*
    * Full-bleed escape from a constrained container, without the

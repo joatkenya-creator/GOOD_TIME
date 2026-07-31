@@ -148,6 +148,23 @@ enum ImportJobStatus {
   CANCELLED
 }
 
+/// How two products relate. One table, one enum — not four near-identical tables.
+enum ProductRelationType {
+  RELATED
+  FREQUENTLY_BOUGHT_TOGETHER
+  UPSELL
+  CROSS_SELL
+}
+
+/// Datatype of an attribute value, which decides how it is rendered and filtered.
+enum AttributeType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  /// One of a fixed set — the only type that becomes a filter facet.
+  ENUM
+}
+
 // ---------------------------------------------------------------------------
 // Identity, access control and Auth.js adapter tables
 // ---------------------------------------------------------------------------
@@ -169,19 +186,21 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  accounts       Account[]
-  sessions       Session[]
-  roles          UserRole[]
-  addresses      Address[]
-  orders         Order[]
-  carts          Cart[]
-  reviews        Review[]
-  wishlists      Wishlist[]
-  notifications  Notification[]
-  auditLogs      AuditLog[]
-  passwordResets PasswordResetToken[]
+  accounts          Account[]
+  sessions          Session[]
+  roles             UserRole[]
+  addresses         Address[]
+  orders            Order[]
+  carts             Cart[]
+  reviews           Review[]
+  reviewVotes       ReviewVote[]
+  wishlists         Wishlist[]
+  recentlyViewed    RecentlyViewed[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  passwordResets    PasswordResetToken[]
   couponRedemptions CouponRedemption[]
-  rolesAssigned  UserRole[]           @relation("RoleAssignedBy")
+  rolesAssigned     UserRole[]           @relation("RoleAssignedBy")
 
   @@index([status, createdAt])
   @@index([deletedAt])
@@ -396,11 +415,17 @@ model Category {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  parent   Category?         @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children Category[]        @relation("CategoryTree")
-  image    Media?            @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  seo      SeoMetadata?      @relation(fields: [seoId], references: [id], onDelete: SetNull)
-  products ProductCategory[]
+  /// Hero copy for the category landing page. Longer than `description`, which is
+  /// reused as the meta description.
+  heroHeadline String?
+  heroBody     String?   @db.Text
+
+  parent          Category?         @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children        Category[]        @relation("CategoryTree")
+  image           Media?            @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  seo             SeoMetadata?      @relation(fields: [seoId], references: [id], onDelete: SetNull)
+  products        ProductCategory[]
+  primaryProducts Product[]         @relation("PrimaryCategory")
 
   @@index([parentId, position])
   @@index([path])
@@ -457,52 +482,104 @@ model Collection {
 }
 
 model Product {
-  id          String        @id @default(cuid())
-  slug        String        @unique
-  name        String
-  subtitle    String?
-  description String?       @db.Text
-  status      ProductStatus @default(DRAFT)
-  brandId     String?
-  seoId       String?       @unique
+  id               String        @id @default(cuid())
+  slug             String        @unique
+  name             String
+  subtitle         String?
+  /// One or two sentences for cards and meta descriptions.
+  shortDescription String?
+  description      String?       @db.Text
+  status           ProductStatus @default(DRAFT)
+  brandId          String?
+  seoId            String?       @unique
 
-  /// Denormalised price range in cents, maintained from the variant set. Sorting and
-  /// filtering 100k products by price must never require a join or aggregate.
-  minPriceCents Int @default(0)
-  maxPriceCents Int @default(0)
+  /// Product-level identifiers. Per-variant SKUs live on `Variant`; this is the
+  /// parent/style code a supplier or accountant refers to.
+  sku     String? @unique
+  barcode String?
+
+  /// Denormalised price range in *effective* cents (sale price where one is set),
+  /// maintained from the variant set. Sorting and filtering 100k products by price
+  /// must never require a join or an aggregate.
+  minPriceCents Int    @default(0)
+  maxPriceCents Int    @default(0)
   currency      String @default("USD")
 
   /// Denormalised review rollup — same reasoning as the price range.
   ratingAverage Float @default(0)
   ratingCount   Int   @default(0)
 
-  isFeatured   Boolean  @default(false)
-  isAdultOnly  Boolean  @default(true) // US-regulated category: age gate by default
-  tags         String[] @default([])
-  attributes   Json? // free-form spec sheet (material, dimensions, ...)
-  publishedAt  DateTime?
+  /// Denormalised merchandising counters. `soldCount` drives the best-seller sort
+  /// without aggregating over order items on every request.
+  viewCount Int @default(0)
+  soldCount Int @default(0)
+
+  isFeatured  Boolean @default(false)
+  isNewArrival Boolean @default(false)
+  /// True when any variant has an active sale price. Maintained with the price range.
+  isOnSale    Boolean @default(false)
+  isAdultOnly Boolean @default(true) // regulated category: age-gated by default
+
+  /// Bullet list for the product page. Prose lives in `description`.
+  features String[] @default([])
+  /// Free-form spec sheet for values that are displayed but never filtered on.
+  attributes Json?
+
+  /**
+   * Flattened facet tokens — `["color:rose", "material:silicone", "tag:waterproof"]`.
+   *
+   * This is the one denormalisation that makes multi-facet filtering viable at
+   * scale. Filtering by colour through `VariantSelection -> Variant -> Product`
+   * needs three joins per facet; a single GIN-indexed array answers any
+   * combination with one index scan. Rebuilt from the source relations by
+   * `rebuildProductFacets`.
+   */
+  facets String[] @default([])
+
+  /// Canonical category, used to build the product's one true URL. Denormalised so
+  /// generating a link never needs to sort the category join table.
+  primaryCategoryId String?
+
+  /// Per-product overrides. Null falls back to the store-wide policy in `Setting`.
+  shippingNote     String?
+  returnPolicyNote String?
+
+  publishedAt DateTime?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  brand       Brand?              @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  seo         SeoMetadata?        @relation(fields: [seoId], references: [id], onDelete: SetNull)
-  categories  ProductCategory[]
-  collections ProductCollection[]
-  media       ProductMedia[]
-  options     VariantOption[]
-  variants    Variant[]
-  reviews     Review[]
-  wishlistItems WishlistItem[]
+  brand           Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  seo             SeoMetadata?         @relation(fields: [seoId], references: [id], onDelete: SetNull)
+  primaryCategory Category?            @relation("PrimaryCategory", fields: [primaryCategoryId], references: [id], onDelete: SetNull)
+  categories      ProductCategory[]
+  collections     ProductCollection[]
+  media           ProductMedia[]
+  options         VariantOption[]
+  variants        Variant[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+  tags            Tag[]
+  productAttributes ProductAttribute[]
+  relationsFrom   ProductRelation[]    @relation("RelationSource")
+  relationsTo     ProductRelation[]    @relation("RelationTarget")
+  recentlyViewed  RecentlyViewed[]
+  searchDocument  ProductSearchDocument?
 
   // Storefront listing: "active, not deleted, newest first".
   @@index([status, deletedAt, publishedAt])
   // Price and rating facets on a filtered listing.
   @@index([status, minPriceCents])
   @@index([status, ratingAverage])
+  @@index([status, soldCount])
   @@index([brandId, status])
   @@index([isFeatured, status])
+  @@index([isOnSale, status])
+  @@index([isNewArrival, status])
+  @@index([primaryCategoryId])
+  // Multi-facet filtering. GIN is what makes `facets hasSome [...]` an index scan.
+  @@index([facets], type: Gin)
   @@map("products")
 }
 
@@ -573,32 +650,53 @@ model VariantOptionValue {
 }
 
 model Variant {
-  id         String @id @default(cuid())
-  productId  String
-  sku        String @unique
-  barcode    String?
-  name       String // "Rose / Large"
-  priceCents Int
-  /// Was-price for strike-through display. Null when not on promotion.
+  id        String  @id @default(cuid())
+  productId String
+  sku       String  @unique
+  barcode   String?
+  name      String // "Rose / Large"
+
+  /**
+   * Three price fields, because a storefront needs to answer three questions:
+   *
+   *   `priceCents`          the everyday list price
+   *   `salePriceCents`      an active promotional price, or null
+   *   `compareAtPriceCents` MSRP / anchor for a "compare at" strike-through
+   *
+   * The *effective* price is `salePriceCents ?? priceCents`. Never re-derive that
+   * inline — use `effectivePriceCents()` so the rule stays in one place.
+   */
+  priceCents          Int
+  salePriceCents      Int?
   compareAtPriceCents Int?
-  costCents  Int?
-  weightGrams Int?
-  position   Int     @default(0)
-  isActive   Boolean @default(true)
+  costCents           Int?
+
+  /// Physical dimensions in whole millimetres and grams: integers, never floats.
+  weightGrams         Int?
+  lengthMm            Int?
+  widthMm             Int?
+  heightMm            Int?
+  /// Category-specific and genuinely load-bearing for this shop's buyers.
+  insertableLengthMm  Int?
+  diameterMm          Int?
+
+  position Int     @default(0)
+  isActive Boolean @default(true)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  product    Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
-  selections VariantSelection[]
-  inventory  Inventory?
-  cartItems  CartItem[]
-  orderItems OrderItem[]
+  product       Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  selections    VariantSelection[]
+  inventory     Inventory?
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
   wishlistItems WishlistItem[]
 
   @@index([productId, position])
   @@index([isActive, priceCents])
+  @@index([isActive, salePriceCents])
   @@map("variants")
 }
 
@@ -878,14 +976,58 @@ model Review {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  product Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  images  ReviewImage[]
+  votes   ReviewVote[]
 
   // One review per customer per product.
   @@unique([productId, userId])
   @@index([productId, status, createdAt])
+  // "Most helpful" and "highest rated" sorts on a product's review list.
+  @@index([productId, status, helpfulCount])
+  @@index([productId, status, rating])
   @@index([status, createdAt])
   @@map("reviews")
+}
+
+/// Customer-submitted photos. Moderated with the parent review, never separately.
+model ReviewImage {
+  id        String   @id @default(cuid())
+  reviewId  String
+  url       String
+  publicId  String?
+  alt       String?
+  width     Int?
+  height    Int?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, position])
+  @@map("review_images")
+}
+
+/**
+ * "Was this helpful?" votes.
+ *
+ * A row per voter rather than a bare counter, because an incrementable integer can
+ * be clicked a thousand times by one person. `Review.helpfulCount` is the
+ * denormalised rollup for sorting; this table is the truth.
+ */
+model ReviewVote {
+  reviewId  String
+  userId    String
+  isHelpful Boolean
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, userId])
+  @@index([userId])
+  @@map("review_votes")
 }
 
 model Wishlist {
@@ -951,13 +1093,19 @@ model Post {
   @@map("posts")
 }
 
+/// Shared vocabulary for both editorial posts and products, so "waterproof" means
+/// the same thing in a guide and on a listing filter.
 model Tag {
-  id   String @id @default(cuid())
-  slug String @unique
+  id   String  @id @default(cuid())
+  slug String  @unique
   name String
+  /// Surfaced as a filter chip on the listing page when true.
+  isFilterable Boolean @default(false)
 
-  posts Post[]
+  posts    Post[]
+  products Product[]
 
+  @@index([isFilterable])
   @@map("tags")
 }
 
@@ -1032,6 +1180,148 @@ model AuditLog {
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue: attributes, relations, discovery
+// ---------------------------------------------------------------------------
+
+/**
+ * Attribute vocabulary.
+ *
+ * Defined as data rather than as columns, so merchandising can add "Battery life"
+ * without a migration. `isFilterable` decides whether values become facet tokens
+ * on `Product.facets`; everything else is display-only.
+ */
+model AttributeDefinition {
+  id           String        @id @default(cuid())
+  key          String        @unique // "material", "waterproof", "noise-level"
+  label        String // "Material"
+  type         AttributeType @default(TEXT)
+  unit         String? // "dB", "mm", "hours"
+  /// Fixed option list for ENUM attributes.
+  options      String[]      @default([])
+  isFilterable Boolean       @default(false)
+  /// Shown in the product page specification table.
+  isSpec       Boolean       @default(true)
+  position     Int           @default(0)
+  group        String        @default("general") // spec-table section heading
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  values ProductAttribute[]
+
+  @@index([isFilterable])
+  @@index([group, position])
+  @@map("attribute_definitions")
+}
+
+model ProductAttribute {
+  productId    String
+  definitionId String
+  /// Stored as text and cast on read; `AttributeDefinition.type` says how.
+  value        String
+
+  product    Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  definition AttributeDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@id([productId, definitionId])
+  // Serves "every product whose material is silicone" before facets are rebuilt.
+  @@index([definitionId, value])
+  @@map("product_attributes")
+}
+
+/**
+ * Product-to-product links: related items, frequently-bought-together, upsells.
+ *
+ * Directional and explicitly positioned, because merchandising order is a
+ * commercial decision. `position` is honoured on read; ties fall back to the
+ * target's sales rank.
+ */
+model ProductRelation {
+  id        String              @id @default(cuid())
+  productId String
+  relatedId String
+  type      ProductRelationType @default(RELATED)
+  position  Int                 @default(0)
+  /// Set by a recommender rather than a human. Null means hand-curated.
+  score     Float?
+  createdAt DateTime            @default(now())
+
+  product Product @relation("RelationSource", fields: [productId], references: [id], onDelete: Cascade)
+  related Product @relation("RelationTarget", fields: [relatedId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, relatedId, type])
+  @@index([productId, type, position])
+  @@map("product_relations")
+}
+
+/**
+ * Recently viewed, for signed-in customers.
+ *
+ * Guests are tracked in `localStorage` — see `useRecentlyViewed`. Persisting here
+ * as well is what makes the list survive a device change, and later feeds
+ * recommendations. Capped per user by `trimRecentlyViewed`.
+ */
+model RecentlyViewed {
+  userId    String
+  productId String
+  viewedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
+  @@index([userId, viewedAt])
+  @@map("recently_viewed")
+}
+
+/**
+ * Search index.
+ *
+ * A denormalised text document per product, so full-text search never joins across
+ * brand, category and variant tables. The actual index is a Postgres GIN index over
+ * `to_tsvector('english', content)` plus a `pg_trgm` index for fuzzy matching —
+ * both added by raw SQL in the migration, because Prisma cannot express a
+ * functional index. Look in the `phase3_catalog` migration SQL.
+ *
+ * The title is repeated into `content` when the document is built, which gives
+ * title matches a higher natural rank without needing `setweight` at query time.
+ */
+model ProductSearchDocument {
+  productId    String   @id
+  title        String
+  brandName    String?
+  categoryPath String?
+  keywords     String[] @default([])
+  /// Everything searchable, concatenated. Rebuilt by `rebuildSearchDocument`.
+  content      String   @db.Text
+  updatedAt    DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_search_documents")
+}
+
+/**
+ * Search telemetry: powers "popular" and "trending" suggestions, and shows which
+ * queries return nothing so the catalogue team can fix the gap.
+ */
+model SearchQuery {
+  id          String   @id @default(cuid())
+  /// Normalised (trimmed, lower-cased) so counts aggregate correctly.
+  term        String
+  resultCount Int      @default(0)
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  @@index([term, createdAt])
+  // "Trending in the last 24 hours".
+  @@index([createdAt])
+  // "Queries that returned nothing", for merchandising.
+  @@index([resultCount, createdAt])
+  @@map("search_queries")
 }
 
 /// Bookkeeping for the future catalogue import pipeline. The adapters themselves are

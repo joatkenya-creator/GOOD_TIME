@@ -3,7 +3,10 @@ import { ChevronDown } from 'lucide-react';
 import { fieldVariants } from '@/components/ui/input';
 import { cn } from '@/utils/cn';
 
-export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
+export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
+  /** Matches `Input`'s sizing so a select and a text field line up in a row. */
+  inputSize?: 'sm' | 'md' | 'lg';
+}
 
 /**
  * Native `<select>`.
@@ -15,6 +18,7 @@ export type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
 export function Select({
   className,
   children,
+  inputSize = 'md',
   'aria-invalid': ariaInvalid,
   ...props
 }: SelectProps) {
@@ -22,7 +26,7 @@ export function Select({
     <div className="relative">
       <select
         className={cn(
-          fieldVariants({ tone: ariaInvalid ? 'invalid' : 'default' }),
+          fieldVariants({ tone: ariaInvalid ? 'invalid' : 'default', inputSize }),
           'cursor-pointer appearance-none pr-11',
           className,
         )}

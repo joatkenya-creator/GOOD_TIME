@@ -33,9 +33,26 @@ export function Counter({
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
   const reduceMotion = useReducedMotion();
-  const [animated, setAnimated] = useState(0);
+
+  /**
+   * Starts at the final value, not zero.
+   *
+   * The initial state is what the server renders, and a trust statistic that
+   * reads "0+ orders shipped" until JavaScript hydrates is worse than showing no
+   * statistic at all — it actively says the opposite of what it means. Verified
+   * in Chromium: the hero stat row rendered "0+" and "3%".
+   */
+  const [animated, setAnimated] = useState(to);
+
+  /** Null until the first effect: records whether this was visible on arrival. */
+  const wasVisibleOnMount = useRef<boolean | null>(null);
 
   useEffect(() => {
+    if (wasVisibleOnMount.current === null) wasVisibleOnMount.current = inView;
+
+    // Already on screen when the page loaded — it is not a scroll reveal, so
+    // show the number rather than counting up from zero under the visitor.
+    if (wasVisibleOnMount.current) return;
     if (!inView || reduceMotion) return;
 
     // `onUpdate` is a callback from framer's animation loop, not a synchronous

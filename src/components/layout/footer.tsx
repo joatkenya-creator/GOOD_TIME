@@ -74,12 +74,18 @@ export function Footer() {
             {footerNav.map((group) => (
               <div key={group.title}>
                 <h2 className="text-eyebrow text-foreground uppercase">{group.title}</h2>
-                <ul className="mt-4 space-y-2.5">
+                {/*
+                 * `min-h-6` on each link, with the gap absorbed into the link
+                 * box rather than sitting between two 17px targets. Footer links
+                 * are standalone controls, so WCAG 2.5.8's inline-text exemption
+                 * does not cover them.
+                 */}
+                <ul className="mt-3 space-y-0.5">
                   {group.items.map((item) => (
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className="text-body-sm text-foreground-muted transition-colors duration-(--duration-fast) hover:text-accent-text"
+                        className="inline-flex min-h-6 items-center rounded-sm py-1 text-body-sm text-foreground-muted transition-colors duration-(--duration-fast) hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
                       >
                         {item.label}
                       </Link>
@@ -111,7 +117,7 @@ export function Footer() {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-body-sm text-foreground-muted capitalize transition-colors hover:text-accent-text"
+                  className="inline-flex min-h-6 items-center rounded-sm text-body-sm text-foreground-muted capitalize transition-colors hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
                 >
                   {platform}
                   <span className="sr-only"> (opens in a new tab)</span>

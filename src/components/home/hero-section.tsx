@@ -34,25 +34,25 @@ export function HeroSection() {
 
       <Container className="grid items-center gap-12 lg:grid-cols-[11fr_9fr] lg:gap-16">
         <div className="max-w-2xl">
-          <Reveal>
+          <Reveal immediate>
             <Badge variant="accent" uppercase>
               {hero.eyebrow}
             </Badge>
           </Reveal>
 
-          <Reveal delay={0.08}>
+          <Reveal immediate>
             <h1 id="hero-title" className="mt-6 text-display-2xl text-foreground">
               {hero.title}
             </h1>
           </Reveal>
 
-          <Reveal delay={0.16}>
+          <Reveal immediate>
             <p className="mt-6 max-w-xl text-body-lg leading-relaxed text-foreground-muted">
               {hero.description}
             </p>
           </Reveal>
 
-          <Reveal delay={0.24}>
+          <Reveal immediate>
             <div className="mt-9 flex flex-wrap gap-3">
               <Button size="lg" asChild>
                 <Link href={hero.primaryCta.href}>
@@ -67,7 +67,7 @@ export function HeroSection() {
             </div>
           </Reveal>
 
-          <Reveal delay={0.32}>
+          <Reveal immediate>
             <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-border pt-8">
               {hero.stats.map((stat) => (
                 <div key={stat.label}>
@@ -90,7 +90,7 @@ export function HeroSection() {
           </Reveal>
         </div>
 
-        <Reveal direction="left" delay={0.12}>
+        <Reveal immediate>
           <div className="relative">
             <MediaPlaceholder
               seed={hero.imageSeed}

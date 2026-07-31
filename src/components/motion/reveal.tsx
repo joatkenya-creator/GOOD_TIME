@@ -9,6 +9,19 @@ export interface RevealProps {
   direction?: 'up' | 'down' | 'left' | 'right' | 'none';
   className?: string;
   as?: 'div' | 'section' | 'li' | 'article';
+  /**
+   * Renders the content immediately, with no entrance animation.
+   *
+   * **Required for anything above the fold.** A scroll reveal starts at
+   * `opacity: 0`, and that inline style is present in the server-rendered HTML —
+   * so the element is invisible until JavaScript hydrates. On the hero that
+   * means the `<h1>`, the description and the primary call to action paint blank
+   * on first render, which wrecks Largest Contentful Paint and leaves the page
+   * empty entirely if the bundle fails to load.
+   *
+   * Verified in Chromium at 1440px: the hero was blank above the fold.
+   */
+  immediate?: boolean;
 }
 
 const OFFSETS = {
@@ -37,12 +50,15 @@ export function Reveal({
   direction = 'up',
   className,
   as = 'div',
+  immediate = false,
 }: RevealProps) {
   const reduceMotion = useReducedMotion();
   const offset = OFFSETS[direction];
   const Component = motion[as];
 
-  if (reduceMotion) {
+  // Above the fold, or the visitor asked for less motion: render the final state
+  // as plain markup so it is visible in the server HTML.
+  if (reduceMotion || immediate) {
     const Static = as;
     return <Static className={className}>{children}</Static>;
   }

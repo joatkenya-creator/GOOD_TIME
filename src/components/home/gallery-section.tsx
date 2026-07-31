@@ -31,7 +31,7 @@ export function GallerySection() {
             href={siteConfig.social.instagram}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 text-body-sm font-medium text-foreground hover:text-accent-text"
+            className="mt-4 inline-flex min-h-6 items-center gap-2 rounded-sm text-body-sm font-medium text-foreground hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
           >
             <Camera aria-hidden="true" className="size-4" />
             Follow along

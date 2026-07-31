@@ -31,13 +31,18 @@ export function Breadcrumbs({ trail, className }: BreadcrumbsProps) {
               ) : null}
 
               {isLast ? (
-                <span aria-current="page" className="font-medium text-foreground">
+                <span
+                  aria-current="page"
+                  className="inline-flex min-h-6 items-center font-medium text-foreground"
+                >
                   {entry.name}
                 </span>
               ) : (
+                // `min-h-6` gives each crumb a 24px tap target without changing
+                // the visual rhythm — they are standalone links, not inline text.
                 <Link
                   href={entry.path}
-                  className="transition-colors duration-(--duration-fast) hover:text-accent"
+                  className="inline-flex min-h-6 items-center rounded-sm transition-colors duration-(--duration-fast) hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
                 >
                   {entry.name}
                 </Link>

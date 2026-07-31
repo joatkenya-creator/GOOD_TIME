@@ -29,7 +29,7 @@ export function CategoriesSection() {
 
           <Link
             href={ROUTES.shop}
-            className="group inline-flex items-center gap-1.5 text-body-sm font-medium text-foreground hover:text-accent-text"
+            className="group inline-flex min-h-6 items-center gap-1.5 rounded-sm text-body-sm font-medium text-foreground hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
           >
             All categories
             <ArrowRight

@@ -54,6 +54,7 @@ describe('securityHeaders', () => {
   describe('in development', () => {
     beforeEach(() => {
       vi.stubEnv('NODE_ENV', 'development');
+      vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'http://localhost:3000');
     });
 
     it('omits upgrade-insecure-requests', () => {
@@ -70,9 +71,35 @@ describe('securityHeaders', () => {
     });
   });
 
+  /**
+   * `next start` is production mode over plain http. Emitting the HTTPS-only
+   * directives there makes WebKit upgrade every asset URL to https, fail every
+   * request, and render the page with no CSS at all — verified in WebKit.
+   */
+  describe('in a production build served over http', () => {
+    beforeEach(() => {
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'http://localhost:3100');
+    });
+
+    it('omits upgrade-insecure-requests', () => {
+      expect(headerValue('Content-Security-Policy')).not.toContain('upgrade-insecure-requests');
+    });
+
+    it('omits HSTS', () => {
+      expect(headerValue('Strict-Transport-Security')).toBeUndefined();
+    });
+
+    it('still hardens everything that does not depend on the scheme', () => {
+      expect(headerValue('Content-Security-Policy')).toContain("frame-ancestors 'none'");
+      expect(headerValue('X-Content-Type-Options')).toBe('nosniff');
+    });
+  });
+
   describe('in production', () => {
     beforeEach(() => {
       vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://goodtime.example');
     });
 
     it('upgrades insecure requests', () => {
