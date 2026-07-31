@@ -34,6 +34,11 @@ const config = [
      * sharing its return type with a presentational component is correct and
      * desirable — it is what keeps the two in sync. Only value imports would
      * drag Prisma into the browser.
+     *
+     * `@/server/actions/*` is exempt. A `'use server'` module imported by a
+     * client component is compiled to a fetch call, not bundled — that is the
+     * sanctioned way for client code to reach the server, and banning it would
+     * leave no way to mutate anything from a form.
      */
     files: [
       'src/components/**/*.{ts,tsx}',
@@ -46,7 +51,13 @@ const config = [
         {
           patterns: [
             {
-              group: ['@/server/*', '@/services/*', '@/lib/prisma'],
+              group: [
+                '@/server/*',
+                '!@/server/actions',
+                '!@/server/actions/*',
+                '@/services/*',
+                '@/lib/prisma',
+              ],
               allowTypeImports: true,
               message:
                 'Server-only module. Import only its types, or reach it through a server action or route handler.',

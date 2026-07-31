@@ -10,6 +10,7 @@ import { env, integrations } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword } from '@/server/auth/password';
+import { mergeGuestCart } from '@/services/cart.service';
 
 /** Re-read role grants from the database at most once an hour per session. */
 const CLAIMS_TTL_SECONDS = 60 * 60;
@@ -149,6 +150,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       await prisma.userRole.create({ data: { userId: user.id, roleId: customerRole.id } });
+    },
+
+    /**
+     * Folds a guest cart into the account cart.
+     *
+     * Here rather than in the sign-in page, so it happens on every path in —
+     * credentials, OAuth, and the magic link we may add later. A merge that only
+     * one route performs is a merge that silently stops working when someone adds
+     * the second route.
+     *
+     * Never allowed to block the sign-in: a failed merge costs a cart, a thrown
+     * error costs the session.
+     */
+    async signIn({ user }) {
+      if (!user.id) return;
+
+      try {
+        await mergeGuestCart(user.id);
+      } catch (error) {
+        logger.error('cart.merge_failed', error, { userId: user.id });
+      }
     },
   },
 });

@@ -45,6 +45,8 @@ function contentSecurityPolicy(isDevelopment: boolean, upgradeInsecure: boolean)
       'https://res.cloudinary.com',
       'https://www.google-analytics.com',
       'https://c.clarity.ms',
+      // Payment Element renders card-brand and wallet marks from Stripe's CDN.
+      'https://*.stripe.com',
     ],
     'font-src': ["'self'", 'data:'],
     'connect-src': [
@@ -55,8 +57,19 @@ function contentSecurityPolicy(isDevelopment: boolean, upgradeInsecure: boolean)
       'https://analytics.google.com',
       'https://*.clarity.ms',
       'https://api.stripe.com',
+      // Stripe.js posts fraud signals here. Without it the Payment Element still
+      // renders, but Radar loses the device fingerprint it scores on — a silent
+      // downgrade that only shows up as a worse fraud rate months later.
+      'https://m.stripe.network',
+      'https://maps.googleapis.com',
     ],
-    'frame-src': ["'self'", 'https://js.stripe.com', 'https://hooks.stripe.com'],
+    'frame-src': [
+      "'self'",
+      'https://js.stripe.com',
+      'https://hooks.stripe.com',
+      // The hidden iframe Stripe uses for fraud detection and for 3DS challenges.
+      'https://m.stripe.network',
+    ],
     'frame-ancestors': ["'none'"],
     'form-action': ["'self'"],
     'base-uri': ["'self'"],

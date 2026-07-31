@@ -15,6 +15,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // See tests/server-only-stub.ts — jsdom resolves the real package to a
+      // build that throws on import, which would make every service untestable.
+      'server-only': fileURLToPath(new URL('./tests/server-only-stub.ts', import.meta.url)),
     },
   },
 });

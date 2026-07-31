@@ -1,43 +1,61 @@
 import { z } from 'zod';
 
+import { cartItemSchema } from '@/features/checkout/schemas';
 import { errors, readJson, withRoute } from '@/lib/api/handler';
+import { jsonOk } from '@/lib/api/response';
+import { getSessionUser } from '@/server/auth/session';
+import { addToCart, getCartView, removeFromCart, updateQuantity } from '@/services/cart.service';
 
 /**
  * `/api/cart` — read and mutate the current cart.
  *
- * Identity is either the session user or the `gt.cart` cookie for guests; the two
- * are merged on sign-in. Responses must never be cached (`cacheControl.private`).
+ * The storefront uses server actions (`src/server/actions/cart.ts`); this exists
+ * for the future mobile client, which cannot call one. Both go through the same
+ * service, so the rules have one implementation rather than two that drift.
  *
- * Implementation notes: every mutation re-reads the variant price rather than
+ * Identity is either the session user or the `gt.cart` cookie for guests; the two
+ * are merged on sign-in. Every mutation re-reads the variant price rather than
  * trusting the client, and checks `Inventory.quantity - reserved` before
  * accepting the line.
  */
-const cartItemSchema = z.object({
-  variantId: z.cuid(),
-  quantity: z.number().int().min(1).max(99),
-});
+
+async function userId(): Promise<string | null> {
+  return (await getSessionUser())?.id ?? null;
+}
 
 export const GET = withRoute(async () => {
-  throw errors.notImplemented('Cart');
+  return jsonOk(await getCartView(await userId()));
 });
 
 export const POST = withRoute(async ({ request }) => {
   const item = await readJson(request, cartItemSchema);
-  void item;
+  const id = await userId();
+  const result = await addToCart(item.variantId, item.quantity, id);
 
-  throw errors.notImplemented('Cart');
+  return jsonOk({ ...result, cart: await getCartView(id) }, { status: 201 });
 });
 
 export const PATCH = withRoute(async ({ request }) => {
-  const item = await readJson(
+  const body = await readJson(
     request,
-    cartItemSchema.extend({ quantity: z.number().int().min(0) }),
+    z.object({ itemId: z.cuid(), quantity: z.number().int().min(0).max(99) }),
   );
-  void item;
 
-  throw errors.notImplemented('Cart');
+  const id = await userId();
+  await updateQuantity(body.itemId, body.quantity, id);
+
+  return jsonOk(await getCartView(id));
 });
 
-export const DELETE = withRoute(async () => {
-  throw errors.notImplemented('Cart');
+export const DELETE = withRoute(async ({ request }) => {
+  const itemId = new URL(request.url).searchParams.get('itemId');
+  if (!itemId) throw errors.badRequest('An itemId is required.');
+
+  const id = await userId();
+  const removed = await removeFromCart(itemId, id);
+
+  return jsonOk({ removed, cart: await getCartView(id) });
 });
+
+/** A cart is per-visitor and changes constantly; caching one would leak it. */
+export const dynamic = 'force-dynamic';

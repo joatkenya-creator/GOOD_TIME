@@ -42,9 +42,18 @@ for `DIRECT_DATABASE_URL`. Migrations need a direct connection: a transaction
 pooler cannot run the session-level statements the schema engine issues.
 
 ```
-DATABASE_URL=postgresql://…@…-pooler.…/db?sslmode=require
-DIRECT_DATABASE_URL=postgresql://…@….…/db?sslmode=require
+DATABASE_URL=postgresql://…@…-pooler.…/db?sslmode=verify-full
+DIRECT_DATABASE_URL=postgresql://…@….…/db?sslmode=verify-full
 ```
+
+**Use `verify-full`, not the `sslmode=require` these providers hand you.**
+`node-postgres` currently treats `require`, `prefer` and `verify-ca` as aliases
+for `verify-full` and warns that it will stop doing so: in `pg@9` they adopt
+libpq semantics, where `require` encrypts the connection but verifies neither the
+certificate chain nor the hostname. That is a silent downgrade to a connection
+that can be intercepted. Naming `verify-full` explicitly keeps today's behaviour
+after that upgrade — and silences the warning, which otherwise surfaces in the
+Next.js dev overlay against whichever page happens to open the first connection.
 
 ## 3. Configure the environment
 
@@ -147,7 +156,14 @@ the variable and what is wrong with it. Compare against `.env.example`.
 **`Roles are not seeded`** on registration — run `npm run db:seed`.
 
 **`PrismaClientInitializationError`** — `DATABASE_URL` is unreachable. Check the
-database is running and, for hosted providers, that `?sslmode=require` is present.
+database is running and, for hosted providers, that `?sslmode=verify-full` is
+present.
+
+**`SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca'…`** — a
+connection string still says `sslmode=require`. Change it to `verify-full` as
+above. If your provider uses a private CA that Node does not trust, `verify-full`
+will fail to connect; `?uselibpqcompat=true&sslmode=require` is the documented
+fallback, at the cost of no certificate or hostname verification.
 
 **Migrations hang or fail on a hosted database** — you are pointing at the
 pooled endpoint. Set `DIRECT_DATABASE_URL`.

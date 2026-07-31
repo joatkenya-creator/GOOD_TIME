@@ -1,20 +1,21 @@
 'use client';
 
 import { Check, Heart, Link2, Minus, Plus, Scale } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Price } from '@/components/ui/price';
 import { useToast } from '@/components/ui/toast';
-import { Tooltip } from '@/components/ui/tooltip';
 import {
   STOCK_LABELS,
   availableQuantity,
   resolvePrice,
   stockStatus,
 } from '@/features/catalog/pricing';
+import { setCartCount } from '@/hooks/use-cart-count';
 import { useCompare, useWishlist } from '@/hooks/use-product-lists';
+import { addToCartAction } from '@/server/actions/cart';
 import { cn } from '@/utils/cn';
 
 interface OptionValue {
@@ -58,9 +59,9 @@ export interface ProductPurchasePanelProps {
  * the customer has actually chosen — showing a "from" price next to an
  * out-of-stock variant is how support tickets start.
  *
- * Add-to-cart is deliberately absent: cart logic belongs to the next phase. The
- * button is present but disabled and labelled, rather than missing, so the layout
- * is final.
+ * Add-to-cart posts the *variant* id, never the product id — the price, the
+ * stock and the SKU all belong to the variant, and adding "the product" is
+ * ambiguous the moment there is more than one size.
  */
 export function ProductPurchasePanel({
   productId,
@@ -77,6 +78,7 @@ export function ProductPurchasePanel({
     () => sellable[0]?.valueIds ?? [],
   );
   const [quantity, setQuantity] = useState(1);
+  const [adding, startAdding] = useTransition();
 
   const wishlist = useWishlist();
   const compare = useCompare();
@@ -104,6 +106,21 @@ export function ProductPurchasePanel({
   const stockLabel = STOCK_LABELS[stock];
   const purchasable = stock !== 'OUT_OF_STOCK';
   const maxQuantity = Math.max(1, Math.min(available || 1, 10));
+
+  function addToBag() {
+    if (!selected) return;
+
+    startAdding(async () => {
+      const result = await addToCartAction(selected.id, quantity);
+      if (result.count !== undefined) setCartCount(result.count);
+
+      toast({
+        variant: result.ok ? 'success' : 'error',
+        title: result.message,
+        description: result.ok ? `${productName} — ${selected.name}` : undefined,
+      });
+    });
+  }
 
   /** Swaps one axis of the selection, keeping the others. */
   function selectValue(optionValues: OptionValue[], valueId: string) {
@@ -274,11 +291,15 @@ export function ProductPurchasePanel({
           </QuantityButton>
         </div>
 
-        <Tooltip label="Cart functionality arrives in the next phase">
-          <Button size="lg" disabled className="flex-1">
-            {purchasable ? 'Add to bag' : 'Out of stock'}
-          </Button>
-        </Tooltip>
+        <Button
+          size="lg"
+          className="flex-1"
+          disabled={!purchasable}
+          isLoading={adding}
+          onClick={addToBag}
+        >
+          {purchasable ? 'Add to bag' : 'Out of stock'}
+        </Button>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">

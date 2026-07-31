@@ -1,6 +1,7 @@
-import { Heart, ShoppingBag, User } from 'lucide-react';
+import { Heart, User } from 'lucide-react';
 import Link from 'next/link';
 
+import { MiniCart } from '@/components/cart/mini-cart';
 import { AnnouncementBar } from '@/components/navigation/announcement-bar';
 import { MegaMenu } from '@/components/navigation/mega-menu';
 import { MobileNav } from '@/components/navigation/mobile-nav';
@@ -18,8 +19,13 @@ import { cn } from '@/utils/cn';
  *
  * `sticky` rather than `fixed`, so the page never needs a compensating top
  * padding that drifts out of sync with the header's real height.
+ *
+ * `cartCount` is read in the layout and passed in rather than fetched here, so
+ * this stays a presentational component and the bag badge is still correct in the
+ * first paint — a count that pops in after hydration reads as a bug and moves the
+ * layout.
  */
-export function Header() {
+export function Header({ cartCount = 0 }: { cartCount?: number }) {
   return (
     <header className="sticky top-0 z-(--z-header) bg-surface/85 backdrop-blur-md">
       <AnnouncementBar />
@@ -49,9 +55,7 @@ export function Header() {
               <User aria-hidden="true" className="size-5" />
             </UtilityLink>
 
-            <UtilityLink href={ROUTES.cart} label="Cart" badge={0}>
-              <ShoppingBag aria-hidden="true" className="size-5" />
-            </UtilityLink>
+            <MiniCart initialCount={cartCount} />
           </div>
         </Container>
       </div>

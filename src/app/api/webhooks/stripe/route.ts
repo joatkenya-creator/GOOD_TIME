@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { withRoute } from '@/lib/api/handler';
 import { verifyStripeWebhook } from '@/lib/integrations/stripe';
 import { logger } from '@/lib/logger';
+import { handleStripeEvent } from '@/services/payment.service';
 
 /**
  * `POST /api/webhooks/stripe`.
@@ -11,29 +12,18 @@ import { logger } from '@/lib/logger';
  * the signature check replaces it and is the only thing standing between this
  * endpoint and anyone who can send an HTTP request.
  *
- * Three rules for the handlers below:
- *   - always return 2xx once the signature verifies, even for events we ignore,
- *     or Stripe retries them for three days;
- *   - treat every event as possibly duplicated — dedupe on `event.id`;
- *   - do the minimum inline and queue anything slow. Stripe times out at 20s.
+ * Unrecognised event types return 2xx — erroring makes Stripe retry an event we
+ * were never going to act on. A handler that *throws* returns 500 and Stripe
+ * does retry, which is correct for a transient database failure:
+ * `handleStripeEvent` is idempotent, so replaying a half-applied event is safe.
  */
 export const POST = withRoute(
   async ({ request }) => {
     const payload = await request.text();
     const event = verifyStripeWebhook(payload, request.headers.get('stripe-signature'));
 
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-      case 'payment_intent.payment_failed':
-      case 'charge.refunded':
-      case 'checkout.session.completed':
-        // Order reconciliation lands with checkout in phase 5.
-        logger.info('Stripe event received', { type: event.type, id: event.id });
-        break;
-
-      default:
-        logger.debug('Unhandled Stripe event', { type: event.type, id: event.id });
-    }
+    await handleStripeEvent(event);
+    logger.info('stripe.webhook.handled', { type: event.type, id: event.id });
 
     return NextResponse.json({ received: true });
   },

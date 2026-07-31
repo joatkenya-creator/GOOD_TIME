@@ -13,6 +13,14 @@ interface Toast {
   variant: ToastVariant;
   title: string;
   description?: string;
+  /**
+   * Optional single action, used for "Undo".
+   *
+   * A destructive-but-cheap action (removing a cart line) is better served by an
+   * undo than by a confirmation dialog: the dialog taxes every removal, the undo
+   * only taxes the mistakes.
+   */
+  action?: { label: string; onClick: () => void };
 }
 
 interface ToastContextValue {
@@ -98,6 +106,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   <p className="text-body-sm font-semibold text-foreground">{entry.title}</p>
                   {entry.description ? (
                     <p className="mt-0.5 text-body-sm text-foreground-muted">{entry.description}</p>
+                  ) : null}
+
+                  {entry.action ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        entry.action?.onClick();
+                        dismiss(entry.id);
+                      }}
+                      className="mt-2 rounded-md text-body-sm font-semibold text-accent-text underline underline-offset-4 hover:text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
+                    >
+                      {entry.action.label}
+                    </button>
                   ) : null}
                 </div>
 

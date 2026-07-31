@@ -45,6 +45,30 @@ const serverSchema = z.object({
     )
     .default('GOOD TIME <no-reply@example.com>'),
 
+  // --- Tax ----------------------------------------------------------------
+  /**
+   * Which implementation `quoteTax` uses.
+   *
+   * Defaults to `table`, so an unconfigured deployment charges the estimate and
+   * says so rather than silently charging nothing.
+   */
+  TAX_PROVIDER: z.enum(['table', 'taxjar']).default('table'),
+  TAXJAR_API_KEY: z.string().optional(),
+
+  /**
+   * Ship-from address. Required by any provider: US sourcing rules mean the
+   * origin decides the rate in ~11 origin-sourced states, and the destination
+   * decides it everywhere else.
+   */
+  SHIP_FROM_COUNTRY: z.string().length(2).default('US'),
+  SHIP_FROM_STATE: z.string().length(2).optional(),
+  SHIP_FROM_CITY: z.string().optional(),
+  SHIP_FROM_STREET: z.string().optional(),
+  SHIP_FROM_ZIP: z
+    .string()
+    .regex(/^\d{5}(-\d{4})?$/, 'Must be a 5- or 9-digit ZIP')
+    .optional(),
+
   // --- Media (scaffold only) ----------------------------------------------
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
@@ -53,6 +77,14 @@ const serverSchema = z.object({
   // --- Operations ---------------------------------------------------------
   /** Requests per window per identity for the default rate-limit bucket. */
   GOOGLE_SITE_VERIFICATION: z.string().optional(),
+  /**
+   * Shared secret for `/api/cron/*`.
+   *
+   * Vercel Cron sends it as `Authorization: Bearer`. Unset means the endpoints
+   * refuse every request — a scheduled job that anyone can trigger is a denial of
+   * service with extra steps.
+   */
+  CRON_SECRET: z.string().min(16).optional(),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
   RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

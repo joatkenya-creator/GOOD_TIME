@@ -1,5 +1,7 @@
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
+import { getSessionUser } from '@/server/auth/session';
+import { getCartCount } from '@/services/cart.service';
 
 /**
  * Storefront shell.
@@ -10,10 +12,15 @@ import { Header } from '@/components/layout/header';
  *
  * Route groups do not affect URLs: pages in here keep their normal paths.
  */
-export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
+export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
+  // Read here rather than inside `Header`, so the header stays presentational and
+  // the bag badge is still server-rendered with the right number.
+  const user = await getSessionUser();
+  const cartCount = await getCartCount(user?.id);
+
   return (
     <div className="flex min-h-dvh flex-col">
-      <Header />
+      <Header cartCount={cartCount} />
       <main id="main" className="flex-1">
         {children}
       </main>

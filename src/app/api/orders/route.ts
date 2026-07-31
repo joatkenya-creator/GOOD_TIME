@@ -1,6 +1,9 @@
-import { pageQuerySchema } from '@/lib/api/pagination';
-import { errors, readQuery, withRoute } from '@/lib/api/handler';
+import { buildPaginationMeta, pageQuerySchema, toSkipTake } from '@/lib/api/pagination';
+import { readQuery, withRoute } from '@/lib/api/handler';
+import { jsonPaginated } from '@/lib/api/response';
+import { prisma } from '@/lib/prisma';
 import { assertUser } from '@/server/auth/session';
+import { getOrdersForUser } from '@/services/order.service';
 
 /**
  * `GET /api/orders` — the signed-in customer's order history.
@@ -11,8 +14,14 @@ import { assertUser } from '@/server/auth/session';
 export const GET = withRoute(async ({ request }) => {
   const user = await assertUser();
   const query = readQuery(request, pageQuerySchema);
-  void user;
-  void query;
+  const { skip, take } = toSkipTake(query);
 
-  throw errors.notImplemented('Order history');
+  const [orders, total] = await Promise.all([
+    getOrdersForUser(user.id, take, skip),
+    prisma.order.count({ where: { userId: user.id } }),
+  ]);
+
+  return jsonPaginated(orders, buildPaginationMeta(query, total));
 });
+
+export const dynamic = 'force-dynamic';

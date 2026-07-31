@@ -50,13 +50,39 @@ enum MediaType {
 }
 
 enum OrderStatus {
+  /// Created, payment not yet confirmed. Stock is reserved, not decremented.
   PENDING
+  /// Payment captured. The only status that may decrement inventory.
+  PAID
   CONFIRMED
   PROCESSING
   SHIPPED
   DELIVERED
   CANCELLED
   REFUNDED
+  RETURNED
+}
+
+/// Every meaningful thing that happens to an order, for the timeline and audit.
+enum OrderEventType {
+  CREATED
+  PAYMENT_STARTED
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  STATUS_CHANGED
+  FULFILLMENT_UPDATED
+  NOTE_ADDED
+  REFUND_ISSUED
+  EMAIL_SENT
+  CANCELLED
+}
+
+/// How a shipping rate computes its price.
+enum ShippingRateType {
+  FLAT
+  FREE
+  /// Base plus a per-kilogram increment.
+  WEIGHT_BASED
 }
 
 enum PaymentStatus {
@@ -200,6 +226,8 @@ model User {
   auditLogs         AuditLog[]
   passwordResets    PasswordResetToken[]
   couponRedemptions CouponRedemption[]
+  /// Coupons issued to this customer specifically — win-back, service recovery.
+  personalCoupons   Coupon[]
   rolesAssigned     UserRole[]           @relation("RoleAssignedBy")
 
   @@index([status, createdAt])
@@ -746,12 +774,24 @@ model Cart {
   couponId  String?
   expiresAt DateTime?
 
+  /// Captured at checkout for a guest, so an order can be traced without an account.
+  email String?
+  /// Free-text gift message, carried through to the order and the packing slip.
+  giftNote String?
+
+  /// Chosen shipping rate, held on the cart so totals survive a page reload.
+  shippingRateId String?
+  /// Destination used for the tax and shipping estimate before an address exists.
+  estimateState      String?
+  estimatePostalCode String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coupon Coupon?    @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  items  CartItem[]
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon       Coupon?       @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  shippingRate ShippingRate? @relation(fields: [shippingRateId], references: [id], onDelete: SetNull)
+  items        CartItem[]
 
   @@index([userId, updatedAt])
   @@index([expiresAt])
@@ -765,6 +805,15 @@ model CartItem {
   quantity  Int    @default(1)
   /// Price captured when added, so cart totals stay stable during a price change.
   unitPriceCents Int
+
+  /**
+   * Moved out of the active cart but kept for later.
+   *
+   * A flag rather than a second table: it is the same row with the same variant
+   * and quantity, and "save for later" then "move back" is a boolean flip rather
+   * than a delete-and-recreate that loses the original price capture.
+   */
+  savedForLater Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -800,16 +849,59 @@ model Order {
   totalCents        Int
 
   couponId          String?
+  /// Code as entered, snapshotted — the coupon row may be edited or deleted later.
+  couponCode        String?
   shippingAddressId String?
   billingAddressId  String?
 
+  /**
+   * The destination, snapshotted at checkout.
+   *
+   * The `Address` rows above only exist for signed-in customers who chose to save
+   * one — a guest has no account to hang an address off, so without this the
+   * order records where to ship nothing at all, and it cannot be fulfilled.
+   *
+   * Snapshotted rather than joined even when a row does exist: editing your
+   * address book must not silently rewrite where a past order went.
+   *
+   * Shape: `{ firstName, lastName, company, line1, line2, city, state, postalCode, country, phone }`.
+   */
+  shippingAddressSnapshot Json?
+  billingAddressSnapshot  Json?
+
+  /// Chosen shipping method, snapshotted by name so a rate change cannot rewrite history.
+  shippingMethod      String?
+  shippingRateId      String?
+  estimatedDeliveryAt DateTime?
+
+  /**
+   * Per-jurisdiction tax breakdown: `[{ label, jurisdiction, ratePercent, amountCents }]`.
+   *
+   * US sales tax is state plus county plus city, and a customer disputing a
+   * charge — or an auditor — needs the split, not just the total. Snapshotted
+   * because rates change and a past order must still explain itself.
+   */
+  taxBreakdown Json?
+
+  /**
+   * Which implementation produced `taxCents`: "provider", "table" or "none".
+   *
+   * Quoting fails open — if the tax provider is unreachable the seeded estimate
+   * stands in so the store keeps taking orders. That trade is only defensible if
+   * the affected orders can be found again, which is what this column is for.
+   * Suffixed "-degraded" when a provider was configured but fell back.
+   */
+  taxSource String?
+
   customerNote String?
+  giftNote     String?
   internalNote String?
   /// Provenance for fraud review and attribution.
   ipAddress    String?
   userAgent    String?
 
   placedAt    DateTime?
+  paidAt      DateTime?
   cancelledAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -818,16 +910,47 @@ model Order {
   coupon          Coupon?     @relation(fields: [couponId], references: [id], onDelete: SetNull)
   shippingAddress Address?    @relation("OrderShippingAddress", fields: [shippingAddressId], references: [id], onDelete: SetNull)
   billingAddress  Address?    @relation("OrderBillingAddress", fields: [billingAddressId], references: [id], onDelete: SetNull)
+  shippingRate    ShippingRate? @relation(fields: [shippingRateId], references: [id], onDelete: SetNull)
   items           OrderItem[]
   payments        Payment[]
   shipments       Shipment[]
   redemptions     CouponRedemption[]
+  events          OrderEvent[]
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([paymentStatus, createdAt])
   @@index([email])
   @@map("orders")
+}
+
+/**
+ * Append-only order timeline.
+ *
+ * Every status change, payment attempt, email and note lands here and nothing is
+ * ever updated or deleted. It powers the customer-facing timeline, answers "what
+ * happened to order 100042" during a support call, and is the only record that
+ * survives a bad admin edit.
+ */
+model OrderEvent {
+  id        String         @id @default(cuid())
+  orderId   String
+  type      OrderEventType
+  /// Human-readable summary, safe to show a customer.
+  message   String
+  /// Machine-readable detail: previous/next status, provider ids, error codes.
+  data      Json?
+  /// Null for anything the system did on its own.
+  actorId   String?
+  /// False for internal notes, so one query drives the customer timeline.
+  isCustomerVisible Boolean  @default(true)
+  createdAt DateTime        @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@index([type, createdAt])
+  @@map("order_events")
 }
 
 model OrderItem {
@@ -911,6 +1034,117 @@ model Shipment {
 // Promotions
 // ---------------------------------------------------------------------------
 
+/**
+ * A purchasable shipping option.
+ *
+ * Rates are data, not code, so operations can add "Free over $75" or change a
+ * price without a deploy. `type` decides how `priceCents` is derived; carrier
+ * integrations replace this table's *pricing* later without changing how the
+ * cart or checkout consume it.
+ */
+model ShippingRate {
+  id          String           @id @default(cuid())
+  code        String           @unique // "standard", "express"
+  name        String // shown at checkout
+  description String?
+  type        ShippingRateType @default(FLAT)
+
+  baseCents Int @default(0)
+  /// WEIGHT_BASED only: added per kilogram above `freeWeightGrams`.
+  perKgCents      Int @default(0)
+  freeWeightGrams Int @default(0)
+
+  /// Order subtotal at or above which this rate costs nothing. Null disables it.
+  freeAboveSubtotalCents Int?
+  /// Rate is offered only when the subtotal reaches this. Null means always.
+  minSubtotalCents       Int?
+
+  /// Empty means everywhere we ship. Populated restricts to these US states.
+  states    String[] @default([])
+  countries String[] @default(["US"])
+
+  estimatedDaysMin Int     @default(3)
+  estimatedDaysMax Int     @default(5)
+  carrier          ShippingCarrier @default(USPS)
+
+  isActive Boolean @default(true)
+  position Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  carts  Cart[]
+  orders Order[]
+
+  @@index([isActive, position])
+  @@map("shipping_rates")
+}
+
+/**
+ * US sales tax rates, most specific match wins.
+ *
+ * Deliberately a lookup table rather than a provider integration: at one
+ * jurisdiction it is a row, and the service layer that reads it
+ * (`tax.service.ts`) is the seam an Avalara or TaxJar adapter slots into later.
+ *
+ * Rates are stored as basis points, not floats — 8.25% is `825`, so no rounding
+ * error can creep into a tax figure that has to reconcile with a filing.
+ */
+model TaxRate {
+  id String @id @default(cuid())
+
+  country String @default("US")
+  /// Two-letter state code. Null matches any state in the country.
+  state   String?
+  /// More specific than state. Null matches any county.
+  county  String?
+  /// Most specific of all. Null matches any postal code.
+  postalCode String?
+
+  label       String // "California state tax"
+  /// Basis points: 825 = 8.25%.
+  rateBasisPoints Int
+  /// Some states tax shipping, some do not.
+  appliesToShipping Boolean @default(false)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Resolution order is postal -> county -> state, so this index serves all three.
+  @@index([country, state, county, postalCode])
+  @@index([isActive])
+  @@map("tax_rates")
+}
+
+/**
+ * Marketing consent, keyed by email rather than by user.
+ *
+ * A guest who ticks "email me offers" at checkout has no `User` row to hold
+ * `acceptsMarketing`, and consent is exactly the thing that must be recorded with
+ * its own timestamp and source — "when and how did they agree" is the first
+ * question asked in any CAN-SPAM or GDPR complaint.
+ */
+model NewsletterSubscriber {
+  id     String @id @default(cuid())
+  email  String @unique
+  /// Where the opt-in happened: "checkout", "footer", "popup".
+  source String @default("unknown")
+
+  /// Null while unconfirmed, set on double opt-in.
+  confirmedAt   DateTime?
+  unsubscribedAt DateTime?
+  /// Single-use token for the confirm and unsubscribe links in every email.
+  token         String    @unique @default(cuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([unsubscribedAt])
+  @@map("newsletter_subscribers")
+}
+
 model Coupon {
   id           String       @id @default(cuid())
   code         String       @unique
@@ -927,14 +1161,28 @@ model Coupon {
   startsAt         DateTime?
   endsAt           DateTime?
 
+  /**
+   * Customer-specific coupon.
+   *
+   * Non-null restricts redemption to one account — win-back offers, service
+   * recovery, influencer codes. Enforced server-side in `coupon.service.ts`, not
+   * by obscurity: a code that only works for one person must still reject
+   * everyone else who guesses it.
+   */
+  userId String?
+  /// Restricts to customers who have never ordered before.
+  firstOrderOnly Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user        User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   carts       Cart[]
   orders      Order[]
   redemptions CouponRedemption[]
 
   @@index([isActive, endsAt])
+  @@index([userId])
   @@map("coupons")
 }
 
