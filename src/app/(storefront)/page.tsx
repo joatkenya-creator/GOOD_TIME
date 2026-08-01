@@ -16,6 +16,7 @@ import { WhyShopSection } from '@/components/home/why-shop-section';
 import { siteConfig } from '@/config/site';
 import { organizationSchema, websiteSchema } from '@/lib/seo/json-ld';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { listProductRail } from '@/services/product.service';
 
 export const metadata: Metadata = buildMetadata({
   title: `${siteConfig.name} — Body-safe sex toys, built to last`,
@@ -49,7 +50,20 @@ export const metadata: Metadata = buildMetadata({
  * material safety and billing privacy are the objections that stop a purchase,
  * so they appear above the fold-and-a-half rather than in the footer.
  */
-export default function HomePage() {
+export default async function HomePage() {
+  /*
+   * Both rails come from the catalog, in two queries rather than four.
+   *
+   * They used to be hand-written arrays: sixteen products with invented ids,
+   * ten of which were never seeded, every one linking to `/products/<slug>` —
+   * a route this app has never served. The homepage advertised a shop that did
+   * not exist, and nothing failed until someone followed a link.
+   */
+  const [best, newest] = await Promise.all([
+    listProductRail('best_selling', 8),
+    listProductRail('newest', 8),
+  ]);
+
   return (
     <>
       {/* Site-level structured data lives on the homepage, which is the graph's root. */}
@@ -58,11 +72,11 @@ export default function HomePage() {
       {/* The page's only <h1> is the hero headline — see HeroSection. */}
       <HeroSection />
       <CategoriesSection />
-      <BestSellersSection />
+      <BestSellersSection products={best} />
       <CollectionsSection />
       <WhyShopSection />
       <PromoSection />
-      <TrendingSection />
+      <TrendingSection products={newest} />
       <ReviewsSection />
       <ValuesSection />
       <JournalSection />

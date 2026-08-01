@@ -12,7 +12,6 @@ import { Price } from '@/components/ui/price';
 import { Rating } from '@/components/ui/rating';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/toast';
-import { ROUTES } from '@/constants/routes';
 import { useCompare, useWishlist } from '@/hooks/use-product-lists';
 import { cn } from '@/utils/cn';
 
@@ -145,7 +144,7 @@ export function ProductCardActions({ product }: { product: ProductCardData }) {
 
             <div className="flex flex-col gap-2 pt-2">
               <Button asChild fullWidth>
-                <Link href={product.href ?? ROUTES.product(product.slug)}>View full details</Link>
+                <Link href={product.href}>View full details</Link>
               </Button>
 
               <Button variant="outline" fullWidth onClick={onWishlist}>

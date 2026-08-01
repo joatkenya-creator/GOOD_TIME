@@ -4,6 +4,7 @@ import { Gift, Lock, Tag, Truck, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 
+import { RedemptionPanel } from '@/components/cart/redemption-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -75,6 +76,22 @@ export function CartSummary({ cart }: { cart: CartView }) {
               {formatPrice(totals.totalCents)}
             </Row>
           </div>
+
+          {/* Loyalty is shown below the total, not inside it. Credit and points
+              are tender against a bill that was already taxed in full — folding
+              them into the total would imply they reduced the taxable base. */}
+          {cart.redemption.totalCents > 0 ? (
+            <>
+              <Row label="Rewards applied" accent>
+                −{formatPrice(cart.redemption.totalCents)}
+              </Row>
+              <div className="border-t border-border pt-3">
+                <Row label="To pay" large>
+                  {formatPrice(cart.redemption.amountDueCents)}
+                </Row>
+              </div>
+            </>
+          ) : null}
         </dl>
 
         <Button asChild size="lg" className="mt-5 w-full" disabled={cart.hasIssues}>
@@ -95,6 +112,7 @@ export function CartSummary({ cart }: { cart: CartView }) {
         </p>
       </div>
 
+      <RedemptionPanel redemption={cart.redemption} />
       <CouponForm code={cart.couponCode} message={cart.couponMessage} />
       <EstimateForm />
       <GiftNoteForm note={cart.giftNote} />

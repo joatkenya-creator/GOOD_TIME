@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/product/product-card';
 import { Button } from '@/components/ui/button';
 import { Carousel } from '@/components/ui/carousel';
 import { ROUTES } from '@/constants/routes';
-import { bestSellers } from '@/features/home/content';
+import type { ProductCardView } from '@/services/product.service';
 
 /**
  * Best sellers.
@@ -16,8 +16,16 @@ import { bestSellers } from '@/features/home/content';
  *
  * Sits on the muted surface to separate it from the white sections either side
  * without introducing another accent colour.
+ *
+ * Reads the catalog. It used to render a hand-written array from phase 2, back
+ * when there was no catalog to read — which meant the homepage advertised ten
+ * products that were never seeded, each linking to a 404. Static content that
+ * names live records goes stale the moment the records change, and nothing
+ * fails loudly when it does.
  */
-export function BestSellersSection() {
+export function BestSellersSection({ products: bestSellers }: { products: ProductCardView[] }) {
+  if (bestSellers.length === 0) return null;
+
   return (
     <section
       aria-labelledby="best-sellers-title"

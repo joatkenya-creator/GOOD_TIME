@@ -27,6 +27,14 @@ export interface LocalListStore {
   getServerSnapshot: () => readonly string[];
   add: (id: string) => void;
   remove: (id: string) => void;
+  /**
+   * Replaces the whole list.
+   *
+   * Used when the server hands back an authoritative set — the wishlist merge at
+   * sign-in unions the local list with the account copy and writes the result
+   * back here, so the hearts match the account without a page load.
+   */
+  replace: (ids: readonly string[]) => void;
   toggle: (id: string) => boolean;
   clear: () => void;
   has: (id: string) => boolean;
@@ -95,6 +103,12 @@ export function createLocalListStore(key: string, limit: number): LocalListStore
     getSnapshot() {
       snapshot ??= read();
       return snapshot;
+    },
+
+    replace(ids) {
+      // De-duplicated on the way in: the server's union and the local list can
+      // overlap, and a repeated id would render the same card twice.
+      write([...new Set(ids)]);
     },
 
     getServerSnapshot() {

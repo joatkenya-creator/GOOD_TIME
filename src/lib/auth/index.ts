@@ -1,4 +1,5 @@
 import { PrismaAdapter } from '@auth/prisma-adapter';
+import { headers } from 'next/headers';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
@@ -10,7 +11,28 @@ import { env, integrations } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword } from '@/server/auth/password';
+import { createSession, recordLogin } from '@/services/account/security.service';
 import { mergeGuestCart } from '@/services/cart.service';
+
+/**
+ * IP and user agent for the audit trail.
+ *
+ * Wrapped because Auth.js callbacks can run outside a request scope (a token
+ * refresh from a background revalidation), where `headers()` throws. A missing
+ * trail is acceptable; a sign-in that fails because of one is not.
+ */
+async function requestContext(): Promise<{ ipAddress: string | null; userAgent: string | null }> {
+  try {
+    const list = await headers();
+    return {
+      // `x-forwarded-for` is a list; the first entry is the client.
+      ipAddress: list.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null,
+      userAgent: list.get('user-agent'),
+    };
+  } catch {
+    return { ipAddress: null, userAgent: null };
+  }
+}
 
 /** Re-read role grants from the database at most once an hour per session. */
 const CLAIMS_TTL_SECONDS = 60 * 60;
@@ -77,14 +99,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // `verifyPassword` runs a dummy comparison when there is no hash, so a
         // missing account and a wrong password take the same amount of time.
         const valid = await verifyPassword(parsed.data.password, user?.passwordHash ?? null);
-        if (!user || !valid) return null;
+
+        // Every attempt is written down — the failures are the ones that matter.
+        // Three bad passwords from an unfamiliar country is the signal, and it
+        // only exists if the failures were recorded.
+        const trail = await requestContext();
+
+        if (!user || !valid) {
+          await recordLogin({
+            email: parsed.data.email,
+            outcome: user ? 'BAD_PASSWORD' : 'UNKNOWN_EMAIL',
+            userId: user?.id ?? null,
+            ...trail,
+          });
+          return null;
+        }
 
         if (user.status !== 'ACTIVE') {
           logger.warn('Sign-in blocked for non-active account', { userId: user.id });
+          await recordLogin({
+            email: parsed.data.email,
+            outcome: 'LOCKED',
+            userId: user.id,
+            ...trail,
+          });
           return null;
         }
 
         await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+        await recordLogin({
+          email: user.email,
+          outcome: 'SUCCESS',
+          userId: user.id,
+          ...trail,
+        });
 
         return { id: user.id, email: user.email, name: user.firstName, image: user.image };
       },
@@ -113,6 +161,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user?.id) token.id = user.id;
       if (!token.id) return token;
 
+      // Fresh sign-in: record the device so it can be listed and revoked later.
+      if (user?.id) {
+        const context = await requestContext();
+        const session = await createSession(user.id, context).catch(() => null);
+        if (session) token.sid = session.id;
+      }
+
+      /*
+       * Revocation is **not** checked here, and that is deliberate.
+       *
+       * This callback does not run on an ordinary session read. A JWT is
+       * self-contained: Auth.js decodes the cookie and calls only `session`,
+       * re-running `jwt` on sign-in, on `update()`, or when the token is
+       * re-issued. A liveness check placed here therefore fires once, at
+       * sign-in, against a session created microseconds earlier — which is
+       * exactly what it did until a verification harness caught it.
+       *
+       * It lives in `getSessionUser` instead: the one funnel every protected
+       * page and route handler passes through, memoised per request.
+       */
+
       if (user || trigger === 'update' || stale) {
         const claims = await loadClaims(token.id);
         token.roles = claims.roles;
@@ -126,6 +195,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     session({ session, token }) {
       session.user.id = token.id;
+      session.user.sessionId = token.sid ?? null;
       session.user.roles = token.roles ?? [];
       session.user.permissions = token.permissions ?? [];
       session.user.isEmailVerified = token.isEmailVerified ?? false;

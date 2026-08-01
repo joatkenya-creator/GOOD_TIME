@@ -4,13 +4,15 @@ import { withRoute } from '@/lib/api/handler';
 import { jsonOk } from '@/lib/api/response';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { expirePoints } from '@/services/account/rewards.service';
 import { releaseExpiredReservations } from '@/services/order.service';
 
 /**
  * `POST|GET /api/cron/release-reservations`
  *
- * Cancels `PENDING` orders that have held inventory past the window, returning
- * the stock. Scheduled every 15 minutes by `vercel.json`.
+ * Two housekeeping sweeps on one schedule, every 15 minutes per `vercel.json`:
+ * cancelling `PENDING` orders that have held inventory past the window, and
+ * expiring reward points past their date.
  *
  * Without this, reserve-on-order is a slow leak: every abandoned checkout holds
  * stock that is neither sold nor sellable, and a popular variant eventually reads
@@ -36,9 +38,17 @@ async function handler({ request }: { request: Request }): Promise<NextResponse>
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const result = await releaseExpiredReservations();
+  // Two sweeps, one schedule. Both are cheap, both are idempotent, and neither
+  // deserves its own cron entry or its own secret.
+  const [reservations, points] = await Promise.all([
+    releaseExpiredReservations(),
+    expirePoints().catch((error: unknown) => {
+      logger.error('rewards.expiry_failed', error);
+      return { customers: 0, points: 0 };
+    }),
+  ]);
 
-  return jsonOk(result);
+  return jsonOk({ reservations, points });
 }
 
 export const dynamic = 'force-dynamic';

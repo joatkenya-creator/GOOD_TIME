@@ -1,3 +1,4 @@
+import { WishlistSync } from '@/components/account/wishlist-sync';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { getSessionUser } from '@/server/auth/session';
@@ -21,6 +22,10 @@ export default async function StorefrontLayout({ children }: { children: React.R
   return (
     <div className="flex min-h-dvh flex-col">
       <Header cartCount={cartCount} />
+
+      {/* Signed-in only: a guest's list lives in `localStorage` and is already
+          the whole truth, so there is nothing to merge. */}
+      {user ? <WishlistSync /> : null}
       <main id="main" className="flex-1">
         {children}
       </main>

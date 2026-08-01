@@ -122,10 +122,29 @@ export function CheckoutForm({
     setPayment(result);
   });
 
+  // Store credit covered the whole bill, so there was never a card form to show.
+  // The order is already paid; send them to the confirmation.
+  if (payment && payment.clientSecret === null) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="success" title="Paid in full with your store credit">
+          Order <strong>{payment.orderNumber}</strong> is confirmed. Nothing was charged to a
+          card.
+        </Alert>
+
+        <Button asChild size="lg">
+          <Link href={`/order/${payment.orderNumber}?email=${encodeURIComponent(values.email ?? '')}`}>
+            View your order
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
   if (payment) {
     return (
       <PaymentStep
-        clientSecret={payment.clientSecret}
+        clientSecret={payment.clientSecret!}
         orderNumber={payment.orderNumber}
         totals={payment.totals}
         email={values.email ?? ''}

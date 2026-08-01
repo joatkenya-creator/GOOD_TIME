@@ -5,7 +5,6 @@ import { ProductCardActions } from '@/components/product/product-card-actions';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { Rating } from '@/components/ui/rating';
-import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
 
 export interface ProductCardData {
@@ -25,8 +24,18 @@ export interface ProductCardData {
   /** Second image, revealed on hover. Omit for a single-image card. */
   hoverImageSeed?: string | null;
   imageLabel?: string;
-  /** Canonical URL. Falls back to the slug-only route when absent. */
-  href?: string;
+  /**
+   * Canonical URL, and required.
+   *
+   * It used to be optional, falling back to `/products/<slug>` — a route this
+   * app has never had. Anything that built a card without asking the catalog
+   * where the product lives produced a link straight to a 404, and the type
+   * checker had nothing to say about it. Products live under their category
+   * (`/shop/vibrators/bullets/pebble-bullet-vibrator`), which a bare slug
+   * cannot reconstruct, so the only safe contract is to demand the real URL.
+   * `productHref()` builds it.
+   */
+  href: string;
   stock?: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'BACKORDER';
   shortDescription?: string | null;
 }
@@ -56,7 +65,6 @@ export function ProductCard({
   layout = 'grid',
   className,
 }: ProductCardProps) {
-  const href = product.href ?? ROUTES.product(product.slug);
   const isList = layout === 'list';
   const soldOut = product.stock === 'OUT_OF_STOCK';
 
@@ -136,7 +144,7 @@ export function ProductCard({
           )}
         >
           <Link
-            href={href}
+            href={product.href}
             className="before:absolute before:inset-0 before:content-[''] hover:text-accent-text focus-visible:outline-none"
           >
             {product.name}

@@ -4,6 +4,8 @@ import { escapeJsonLd, normalizeText, safeRedirectPath, safeUrl } from '@/lib/se
 import { rateLimit } from '@/lib/security/rate-limit';
 import { securityHeaders } from '@/lib/security/headers';
 
+import { isSameOrigin } from '@/lib/security/csrf';
+
 describe('safeUrl', () => {
   it('accepts the protocols we render in hrefs', () => {
     expect(safeUrl('https://example.com/x')).toBe('https://example.com/x');
@@ -165,5 +167,74 @@ describe('rateLimit', () => {
     const options = { limit: 1, windowSeconds: 60 };
     expect(rateLimit('bucket-a', options).success).toBe(true);
     expect(rateLimit('bucket-b', options).success).toBe(true);
+  });
+});
+
+describe('isSameOrigin', () => {
+  const SITE = 'http://localhost:3000';
+
+  /** A request as Next hands it over: `url` normalised to the deployment URL. */
+  function request(
+    method: string,
+    headers: Record<string, string>,
+    url = `${SITE}/api/cart`,
+  ): Request {
+    return new Request(url, { method, headers });
+  }
+
+  it('lets safe methods through without an Origin', () => {
+    expect(isSameOrigin(request('GET', {}))).toBe(true);
+    expect(isSameOrigin(request('HEAD', {}))).toBe(true);
+  });
+
+  it('accepts a same-origin write', () => {
+    expect(isSameOrigin(request('POST', { origin: SITE }))).toBe(true);
+  });
+
+  it('rejects a cross-site write', () => {
+    expect(isSameOrigin(request('POST', { origin: 'https://evil.example' }))).toBe(false);
+  });
+
+  it('rejects a write with no Origin and no Referer', () => {
+    // The classic cross-site form post, which sends neither.
+    expect(isSameOrigin(request('POST', {}))).toBe(false);
+  });
+
+  it('falls back to Referer when Origin is absent', () => {
+    expect(isSameOrigin(request('POST', { referer: `${SITE}/cart` }))).toBe(true);
+    expect(isSameOrigin(request('POST', { referer: 'https://evil.example/x' }))).toBe(false);
+  });
+
+  it('accepts the host the client actually asked for', () => {
+    // A preview deployment, or `127.0.0.1` when the config says `localhost`.
+    // Next normalises `request.url`, so without the forwarded host this is the
+    // case that wrongly 403s a legitimate same-origin request.
+    expect(
+      isSameOrigin(
+        request('POST', { origin: 'http://127.0.0.1:3000', host: '127.0.0.1:3000' }),
+      ),
+    ).toBe(true);
+
+    expect(
+      isSameOrigin(
+        request('POST', {
+          origin: 'https://preview-abc.vercel.app',
+          'x-forwarded-host': 'preview-abc.vercel.app',
+          'x-forwarded-proto': 'https',
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('still rejects a foreign origin even when the host header is present', () => {
+    expect(
+      isSameOrigin(
+        request('POST', { origin: 'https://evil.example', host: '127.0.0.1:3000' }),
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects a malformed Origin', () => {
+    expect(isSameOrigin(request('POST', { origin: 'not-a-url' }))).toBe(false);
   });
 });

@@ -71,8 +71,18 @@ export function Counter({
   const final = `${prefix}${to.toLocaleString('en-US')}${suffix}`;
 
   return (
-    <span ref={ref} className={className} aria-label={final}>
+    <span ref={ref} className={className}>
       <span aria-hidden="true">{formatted}</span>
+      {/*
+        The final value, for assistive technology only.
+
+        This used to be an `aria-label` on the outer span. ARIA prohibits that
+        attribute on a generic element — a `span` with no role is not something
+        a name can be given to, and screen readers are free to ignore it, which
+        would have left the counter announcing nothing at all. A visually hidden
+        sibling says the same thing in markup that is allowed to say it.
+      */}
+      <span className="sr-only">{final}</span>
     </span>
   );
 }

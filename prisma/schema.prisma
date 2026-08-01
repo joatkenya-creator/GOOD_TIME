@@ -230,6 +230,16 @@ model User {
   personalCoupons   Coupon[]
   rolesAssigned     UserRole[]           @relation("RoleAssignedBy")
 
+  // --- Customer account (phase 5) ---
+  preferences             UserPreferences?
+  notificationPreferences NotificationPreference[]
+  paymentMethods          SavedPaymentMethod[]
+  userSessions            UserSession[]
+  loginEvents             LoginEvent[]
+  rewardAccount           RewardAccount?
+  referralCode            ReferralCode?
+  returnRequests          ReturnRequest[]
+
   @@index([status, createdAt])
   @@index([deletedAt])
   @@map("users")
@@ -785,6 +795,11 @@ model Cart {
   estimateState      String?
   estimatePostalCode String?
 
+  /// Whether to spend loyalty on this basket. Intent only — the amounts are
+  /// recomputed at checkout from the live balance, never trusted from here.
+  applyStoreCredit Boolean @default(false)
+  redeemPoints     Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -884,6 +899,20 @@ model Order {
   taxBreakdown Json?
 
   /**
+   * Loyalty tender applied to this order.
+   *
+   * Deliberately *not* folded into `discountCents`. Store credit and points are
+   * tender, not a discount: a discount reduces what is owed and therefore the
+   * taxable base, while credit pays part of a bill that was already taxed in
+   * full. Treating them the same under-collects tax.
+   *
+   * So `totalCents` stays the full amount owed and keeps satisfying
+   * `orders_total_is_sum`; the card is charged `totalCents - creditAppliedCents`.
+   */
+  creditAppliedCents Int @default(0)
+  pointsRedeemed     Int @default(0)
+
+  /**
    * Which implementation produced `taxCents`: "provider", "table" or "none".
    *
    * Quoting fails open — if the tax provider is unreachable the seeded estimate
@@ -914,6 +943,7 @@ model Order {
   items           OrderItem[]
   payments        Payment[]
   shipments       Shipment[]
+  returnRequests  ReturnRequest[]
   redemptions     CouponRedemption[]
   events          OrderEvent[]
 
@@ -970,8 +1000,9 @@ model OrderItem {
   taxCents        Int @default(0)
   totalCents      Int
 
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variant Variant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant     Variant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  returnItems ReturnItem[]
 
   @@index([orderId])
   @@index([variantId])
@@ -1592,4 +1623,365 @@ model ImportJob {
 
   @@index([status, createdAt])
   @@map("import_jobs")
+}
+
+// ---------------------------------------------------------------------------
+// Customer account — phase 5
+// ---------------------------------------------------------------------------
+
+/// What a customer can be notified about. Channels are columns; topics are rows.
+enum NotificationTopic {
+  ORDER_UPDATES
+  SHIPPING_UPDATES
+  RETURNS
+  PROMOTIONS
+  NEWSLETTER
+  PRODUCT_BACK_IN_STOCK
+  REVIEW_REMINDERS
+  SECURITY_ALERTS
+}
+
+enum ReturnStatus {
+  /// Customer submitted it; nobody has looked yet.
+  REQUESTED
+  APPROVED
+  REJECTED
+  /// Label issued, parcel not yet scanned.
+  IN_TRANSIT
+  RECEIVED
+  /// Inspected and refunded.
+  REFUNDED
+  CANCELLED
+}
+
+enum ReturnReason {
+  DAMAGED
+  NOT_AS_DESCRIBED
+  WRONG_ITEM
+  ARRIVED_LATE
+  CHANGED_MIND
+  QUALITY
+  OTHER
+}
+
+/// Every movement in a reward balance. Points and credit share one ledger.
+enum RewardTransactionType {
+  EARNED_PURCHASE
+  EARNED_REVIEW
+  EARNED_REFERRAL
+  EARNED_BIRTHDAY
+  REDEEMED
+  ADJUSTMENT
+  EXPIRED
+  /// Money, not points — a gift card or service-recovery credit.
+  STORE_CREDIT
+}
+
+enum VipTier {
+  STANDARD
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum LoginOutcome {
+  SUCCESS
+  BAD_PASSWORD
+  UNKNOWN_EMAIL
+  LOCKED
+  /// Reached the second factor but failed it.
+  FAILED_2FA
+}
+
+/**
+ * Per-customer settings that are not identity.
+ *
+ * One row, created lazily on first save. Separate from `User` because these are
+ * read on a handful of pages while `User` is read on nearly every request — and
+ * because "who you are" and "how you like things" have different write patterns.
+ */
+model UserPreferences {
+  userId String @id
+
+  /// IANA zone, e.g. "America/New_York". Dates render in the customer's own time.
+  timezone String @default("America/New_York")
+  /// BCP-47 tag. Only "en-US" is served today; the column is what makes adding a
+  /// second locale a data change rather than a schema change.
+  locale   String @default("en-US")
+  currency String @default("USD")
+
+  /// Drives the "finish setting up your account" nudge on the dashboard.
+  onboardingCompletedAt DateTime?
+  /// For birthday rewards. Day and month only — the year is not collected.
+  birthMonth Int?
+  birthDay   Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+/**
+ * One row per customer per topic.
+ *
+ * Rows rather than a column per topic-and-channel: adding a topic becomes an
+ * insert instead of a migration, and a missing row means "the default for that
+ * topic" rather than "off" — which matters, because order updates must never
+ * silently stop because a row was never written.
+ */
+model NotificationPreference {
+  userId String
+  topic  NotificationTopic
+
+  email Boolean @default(true)
+  /// Both are architecture. No SMS or push provider is wired up yet.
+  sms   Boolean @default(false)
+  push  Boolean @default(false)
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, topic])
+  @@map("notification_preferences")
+}
+
+/**
+ * A card on file, by reference only.
+ *
+ * **No card data is stored here and none may ever be.** `providerRef` is a Stripe
+ * PaymentMethod id; `brand`, `last4` and the expiry are the display fragments
+ * Stripe itself returns, enough to render "Visa ending 4242". Storing a card
+ * number — even encrypted — moves this store out of PCI SAQ-A into a scope that
+ * needs an annual audit. That is a business decision, not an engineering one.
+ */
+model SavedPaymentMethod {
+  id     String @id @default(cuid())
+  userId String
+
+  provider    PaymentProvider @default(STRIPE)
+  /// Stripe Customer id. Needed to list or detach the method later.
+  customerRef String
+  /// Stripe PaymentMethod id — the only handle we hold on the card.
+  providerRef String          @unique
+
+  brand     String?
+  last4     String?
+  expMonth  Int?
+  expYear   Int?
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isDefault])
+  @@map("saved_payment_methods")
+}
+
+/**
+ * A signed-in device.
+ *
+ * Sessions live in a JWT, so this table does not authenticate anyone — it exists
+ * so a customer can *see* where they are signed in and revoke it. The JWT carries
+ * this row's id, and `revokedAt` is checked on every authenticated request — a
+ * primary-key lookup — so revoking a device takes effect on its very next request.
+ */
+model UserSession {
+  id     String @id @default(cuid())
+  userId String
+
+  userAgent String?
+  ipAddress String?
+  /// Coarse location for the "signed in from" line. City-level at most.
+  location  String?
+
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, lastSeenAt])
+  @@map("user_sessions")
+}
+
+/**
+ * Sign-in attempts, successful or not.
+ *
+ * Shown to the customer as recent activity, and kept as the evidence trail for an
+ * account-takeover investigation. Failures are recorded too: three bad passwords
+ * from a country the customer has never visited is the signal, and it only exists
+ * if the failures were written down.
+ */
+model LoginEvent {
+  id     String @id @default(cuid())
+  /// Null when the email matched no account — there is nobody to attribute it to.
+  userId String?
+  /// Recorded even when `userId` is null, so attempts against a non-existent
+  /// account are still countable.
+  email  String
+
+  outcome   LoginOutcome
+  /// "credentials", "google", ...
+  method    String       @default("credentials")
+  ipAddress String?
+  userAgent String?
+  location  String?
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([email, createdAt])
+  @@map("login_events")
+}
+
+/**
+ * A customer's loyalty balances.
+ *
+ * The balances are cached aggregates; `RewardTransaction` is the truth. Storing
+ * the running total avoids summing a lifetime of rows to render a badge, and any
+ * disagreement between the two is a bug that the ledger wins.
+ *
+ * **No business rules are implemented.** Nothing earns, expires or redeems yet —
+ * this is the shape those rules will eventually write into.
+ */
+model RewardAccount {
+  userId String @id
+
+  pointsBalance    Int     @default(0)
+  /// Money, in cents, like every other amount in this system.
+  storeCreditCents Int     @default(0)
+  tier             VipTier @default(STANDARD)
+  tierReviewedAt   DateTime?
+
+  /// Last birthday grant, so the annual reward pays once a year and not once a visit.
+  lastBirthdayGrantAt DateTime?
+  /// The code this customer signed up with, and when their referrer was paid.
+  referredByCode      String?
+  referralPaidAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions RewardTransaction[]
+
+  @@map("reward_accounts")
+}
+
+model RewardTransaction {
+  id     String @id @default(cuid())
+  userId String
+
+  type RewardTransactionType
+  /// Signed. Negative is a redemption or an expiry.
+  points      Int @default(0)
+  amountCents Int @default(0)
+
+  /// Customer-facing: "Order GT-100042", "Referred a friend".
+  description String
+  orderId     String?
+  /// Null means it never expires.
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  account RewardAccount @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("reward_transactions")
+}
+
+/**
+ * A customer's referral code.
+ *
+ * One per customer, created on demand. `uses` is denormalised for display; the
+ * authoritative count is the reward transactions attributed to it.
+ */
+model ReferralCode {
+  id     String @id @default(cuid())
+  userId String @unique
+  code   String @unique
+
+  uses        Int  @default(0)
+  /// What the referred friend gets. Null until the programme is configured.
+  rewardCents Int?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("referral_codes")
+}
+
+/**
+ * A request to send something back.
+ *
+ * Its own aggregate rather than a flag on `Order`, because a return has its own
+ * lifecycle, its own timeline and its own subset of line items — an order can be
+ * partly returned twice, for different reasons, weeks apart.
+ *
+ * The approval workflow is architecture: the statuses and their transitions exist,
+ * and the admin UI that drives them arrives in a later phase.
+ */
+model ReturnRequest {
+  id           String @id @default(cuid())
+  /// Human-facing, like an order number: "RMA-100042".
+  returnNumber String @unique
+  orderId      String
+  userId       String?
+
+  status ReturnStatus @default(REQUESTED)
+  reason ReturnReason
+  /// The customer's own words, shown to whoever reviews it.
+  comment String?
+
+  /// Filled in once inspected. Not necessarily the sum of the items' prices — a
+  /// restocking fee or a partial refund is a judgement call.
+  refundCents Int?
+  refundedAt  DateTime?
+
+  /// Return shipping, once a label exists.
+  carrier        ShippingCarrier?
+  trackingNumber String?
+  trackingUrl    String?
+
+  /// Set when a reviewer acts. Null while REQUESTED.
+  reviewedAt   DateTime?
+  reviewerNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items ReturnItem[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@map("return_requests")
+}
+
+model ReturnItem {
+  id              String @id @default(cuid())
+  returnRequestId String
+  orderItemId     String
+
+  quantity Int
+  reason   ReturnReason
+  /// Recorded on inspection: "unopened", "opened", "damaged".
+  condition String?
+
+  returnRequest ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+  orderItem     OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@index([returnRequestId])
+  @@map("return_items")
 }

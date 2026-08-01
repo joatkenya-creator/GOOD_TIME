@@ -5,7 +5,7 @@ import { Reveal } from '@/components/motion/reveal';
 import { ProductCard } from '@/components/product/product-card';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
-import { trendingProducts } from '@/features/home/content';
+import type { ProductCardView } from '@/services/product.service';
 
 /**
  * Trending products.
@@ -14,8 +14,15 @@ import { trendingProducts } from '@/features/home/content';
  * rail, so two product sections on one page do not feel like a repeated block.
  * The grid also lets a visitor scan everything at once, which suits browsing
  * intent rather than the curated intent of the rail.
+ *
+ * "Newest" stands in for trending. Real trending needs view and add-to-cart
+ * counts over a rolling window, which is an analytics job; ranking by recency
+ * is at least true, and the section says "moving quickly this week" rather than
+ * claiming a popularity signal nothing measures yet.
  */
-export function TrendingSection() {
+export function TrendingSection({ products: trendingProducts }: { products: ProductCardView[] }) {
+  if (trendingProducts.length === 0) return null;
+
   return (
     <section aria-labelledby="trending-title" className="py-(--spacing-section)">
       <Container>

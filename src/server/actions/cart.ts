@@ -207,6 +207,20 @@ export async function setEstimateAction(formData: FormData): Promise<ActionResul
   }
 }
 
+/** Records whether to spend points or store credit on this basket. */
+export async function setRedemptionAction(input: {
+  applyStoreCredit?: boolean;
+  redeemPoints?: boolean;
+}): Promise<ActionResult> {
+  try {
+    await cart.setRedemption(input, await currentUserId());
+    refresh();
+    return { ok: true, message: 'Rewards updated.' };
+  } catch (error) {
+    return toResult(error);
+  }
+}
+
 export async function setShippingRateAction(rateId: string): Promise<ActionResult> {
   try {
     await cart.setShippingRate(rateId, await currentUserId());

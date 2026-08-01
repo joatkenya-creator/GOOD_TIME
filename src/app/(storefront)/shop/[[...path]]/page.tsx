@@ -27,7 +27,9 @@ import {
   productHref,
   recordProductView,
 } from '@/services/product.service';
+import { recordView } from '@/services/recommendation.service';
 import { getRatingSummary, listProductReviews } from '@/services/review.service';
+import { getSessionUser } from '@/server/auth/session';
 
 /**
  * The whole shop, on one route.
@@ -239,6 +241,12 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 
     // Not awaited: a page render must never block on a counter.
     void recordProductView(product.id);
+
+    // The durable, per-customer half of browsing history. Guests keep theirs in
+    // `localStorage`; this is what survives a new device and feeds the
+    // recommendation heuristics.
+    const viewer = await getSessionUser();
+    if (viewer) void recordView(viewer.id, product.id);
 
     const buildReviewHref = (page: number) => {
       const next = new URLSearchParams(query);

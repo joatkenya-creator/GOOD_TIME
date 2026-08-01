@@ -12,6 +12,7 @@ import { prisma } from '@/lib/prisma';
 import { productHref } from '@/services/product.service';
 import { toDiscount, validateCoupon } from '@/services/coupon.service';
 import { getCheapestOption, getShippingRate, priceFor } from '@/services/shipping.service';
+import { quoteRedemption } from '@/services/account/rewards.service';
 import { resolveJurisdictions } from '@/services/tax.service';
 
 /**
@@ -159,6 +160,27 @@ export interface CartView {
   hasIssues: boolean;
   /** Billable weight of the active lines, for weight-based shipping rates. */
   totalWeightGrams: number;
+  /**
+   * What loyalty would pay towards this basket, and what is available.
+   *
+   * Null for a guest, who has no balance. Quoted, never committed — nothing is
+   * deducted until an order exists.
+   */
+  redemption: {
+    applyStoreCredit: boolean;
+    redeemPoints: boolean;
+    creditCents: number;
+    points: number;
+    pointsCents: number;
+    totalCents: number;
+    amountDueCents: number;
+    available: {
+      storeCreditCents: number;
+      pointsBalance: number;
+      pointsValueCents: number;
+      minimumPoints: number;
+    } | null;
+  };
 }
 
 function toLineView(item: CartRecord['items'][number]): CartLineView {
@@ -278,6 +300,13 @@ export async function getCartView(userId?: string | null): Promise<CartView | nu
     taxJurisdictions,
   });
 
+  const redemption = await quoteRedemption({
+    userId,
+    amountDueCents: totals.totalCents,
+    usePoints: cart.redeemPoints,
+    useCredit: cart.applyStoreCredit,
+  });
+
   return {
     id: cart.id,
     currency: cart.currency,
@@ -291,6 +320,12 @@ export async function getCartView(userId?: string | null): Promise<CartView | nu
     isEmpty: active.length === 0,
     hasIssues: active.some((line) => line.quantityIssue !== null),
     totalWeightGrams: weightGrams,
+    redemption: {
+      applyStoreCredit: cart.applyStoreCredit,
+      redeemPoints: cart.redeemPoints,
+      ...redemption,
+      amountDueCents: totals.totalCents - redemption.totalCents,
+    },
   };
 }
 
@@ -481,6 +516,29 @@ export async function setGiftNote(note: string | null, userId?: string | null): 
   await prisma.cart.update({
     where: { id: cart.id },
     data: { giftNote: note?.trim() ? note.trim().slice(0, 500) : null },
+  });
+}
+
+/**
+ * Records whether to spend loyalty on this basket.
+ *
+ * Intent only. The amounts are quoted against the live balance every time the
+ * cart renders and re-quoted at checkout, so a flag left on a month-old cart
+ * cannot spend a balance that has since been used elsewhere.
+ */
+export async function setRedemption(
+  input: { applyStoreCredit?: boolean; redeemPoints?: boolean },
+  userId?: string | null,
+): Promise<void> {
+  const cart = await getCart(userId, false);
+  if (!cart) return;
+
+  await prisma.cart.update({
+    where: { id: cart.id },
+    data: {
+      ...(input.applyStoreCredit !== undefined ? { applyStoreCredit: input.applyStoreCredit } : {}),
+      ...(input.redeemPoints !== undefined ? { redeemPoints: input.redeemPoints } : {}),
+    },
   });
 }
 

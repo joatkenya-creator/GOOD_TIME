@@ -46,9 +46,9 @@ token declared there becomes both a custom property and a utility class:
 | `brand-50`        | `#FDF2F7` | Tinted section backgrounds                    |
 | `brand-100`       | `#FCE4EC` | **Brand light pink.** Badges, focus rings     |
 | `brand-200`–`400` |           | Illustration and gradient steps               |
-| `brand-500`       | `#E91E63` | **Brand primary.** CTA buttons, active states |
-| `brand-600`       | `#D81B60` | **Primary hover**                             |
-| `brand-700`       | `#C2185B` | Pink text on white (see contrast note)        |
+| `brand-500`       | `#E91E63` | Brand primary. Illustration and marketing art |
+| `brand-600`       | `#D81B60` | **`accent`.** CTA buttons, active states      |
+| `brand-700`       | `#C2185B` | **`accent-hover`**, and pink text on white    |
 | `brand-800`–`950` |           | Deep accents, selection text                  |
 
 ### Neutral ramp
@@ -58,7 +58,8 @@ token declared there becomes both a custom property and a utility class:
 | `ink-50`  | `#F5F5F5` | **Light grey** — muted surface   |
 | `ink-200` | `#E5E5E5` | **Default border**               |
 | `ink-300` | `#CCCCCC` | Strong border                    |
-| `ink-400` | `#999999` | Placeholder text                 |
+| `ink-400` | `#999999` | Decorative only — never text     |
+| `ink-450` | `#707070` | **`foreground-subtle`** — quiet text |
 | `ink-500` | `#666666` | **Medium grey** — secondary text |
 | `ink-700` | `#333333` | **Dark grey** — body text        |
 | `ink-900` | `#1A1A1A` | Inverse surface, modal backdrop  |
@@ -85,11 +86,11 @@ Components reference these, never the raw ramp. A rebrand touches one block.
 | `surface-inverse`       | `ink-900`   |
 | `foreground`            | `ink-700`   |
 | `foreground-muted`      | `ink-500`   |
-| `foreground-subtle`     | `ink-400`   |
+| `foreground-subtle`     | `ink-450`   |
 | `border`                | `ink-200`   |
 | `border-strong`         | `ink-300`   |
-| `accent`                | `brand-500` |
-| `accent-hover`          | `brand-600` |
+| `accent`                | `brand-600` |
+| `accent-hover`          | `brand-700` |
 | `accent-soft`           | `brand-50`  |
 | `accent-muted`          | `brand-100` |
 | `accent-text`           | `brand-700` |
@@ -97,27 +98,40 @@ Components reference these, never the raw ramp. A rebrand touches one block.
 
 **The rule:** `bg-accent`, not `bg-brand-500`, in application code.
 
-### Contrast: why `accent-text` exists
+### Contrast
 
-`#E91E63` measures **4.34:1** against white — just under the 4.5:1 that WCAG AA
-requires for normal-size text. So:
+Every text and surface pairing clears WCAG AA. Three of them did not until an
+axe-core sweep said so, and the reasons they slipped are worth keeping.
 
-- **Surfaces** (buttons, badges, fills) use `accent` (`#E91E63`) as specified.
-  White text on it is fine at the 18.66px+ semibold sizes used for large CTAs.
-- **Text on white** (links, eyebrows, inline accents) uses `accent-text`
-  (`#C2185B`, **5.85:1**), which passes AA at every size.
+**`accent` is `brand-600`, not the brand primary.** `#E91E63` is **4.34:1**
+against white. This file used to argue that was acceptable because white on
+accent only appeared "at the 18.66px+ semibold sizes used for large CTAs" — and
+then documented the one-line fix for anyone wanting strict AA. The sweep found
+16px normal-weight submit buttons on that background across the cart, the
+newsletter form and guest order lookup. The exception had quietly become the
+common case, so the one-line fix is now simply the default: `#D81B60` is
+**4.95:1** and is the brand's own hover shade, so the palette lost nothing.
 
-If you want strict AA on _every_ pink surface including small buttons, change one
-line in `tokens.css`:
+**`foreground-subtle` is `#707070`, not `#999999`.** At 2.84:1 the old value
+failed by a wide margin while carrying timestamps, table headers, helper text
+and card metadata on every page — 46 instances on the shop page alone. "Subtle"
+described how it looked to someone who could already read it. `#707070` is the
+lightest grey that clears 4.5:1 on **both** white and the `#F5F5F5` muted
+surface, which is where this text actually sits; anything lighter passes on one
+and fails on the other.
 
-```css
---color-accent: var(--color-brand-600); /* #D81B60 — 4.91:1 with white */
-```
+**`warning-700` is `#C2410C`, not `#E65100`.** 3.78:1, used for low-stock
+warnings — text that exists specifically to be noticed.
+
+`ink-400` survives for borders and decorative marks. It is not a text colour and
+the alias no longer points at it.
 
 Verified pairings: `foreground` on white 12.6:1 · `foreground-muted` on white
-5.74:1 · `accent-text` on white 5.85:1 · white on `ink-900` 16.1:1.
-`foreground-subtle` (2.8:1) is for placeholders and decorative text only — never
-for content.
+5.74:1 · `foreground-subtle` on white 4.95:1, on `#F5F5F5` 4.54:1 · `accent-text`
+on white 5.85:1 · white on `accent` 4.95:1 · white on `ink-900` 16.1:1.
+
+`npm run verify:quality` re-runs axe-core over every page at three viewports, so
+the next regression fails a check rather than waiting for a complaint.
 
 ---
 

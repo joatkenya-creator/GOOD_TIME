@@ -7,6 +7,7 @@ import { env } from '@/lib/env';
 import { stripe } from '@/lib/integrations/stripe';
 import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
+import { reverseForOrder } from '@/services/account/rewards.service';
 import { releaseRedemption } from '@/services/coupon.service';
 import { sendCancellationEmail, sendOrderConfirmation, sendRefundEmail } from '@/services/email.service';
 import { recordEvent, transitionOrder } from '@/services/order.service';
@@ -51,6 +52,14 @@ export async function createPaymentIntent(orderId: string): Promise<{
   if (!order) throw errors.notFound('Order');
   if (order.status !== 'PENDING') throw errors.conflict('That order has already been paid.');
 
+  // Store credit and points already paid part of this bill. The card covers the
+  // rest — charging `totalCents` would take the loyalty tender twice.
+  const amountDueCents = order.totalCents - order.creditAppliedCents;
+
+  if (amountDueCents <= 0) {
+    throw errors.conflict('That order is already covered in full and needs no payment.');
+  }
+
   const existing = order.payments[0];
 
   if (existing?.providerRef) {
@@ -58,9 +67,9 @@ export async function createPaymentIntent(orderId: string): Promise<{
 
     if (intent.status !== 'canceled' && intent.status !== 'succeeded') {
       const refreshed =
-        intent.amount === order.totalCents
+        intent.amount === amountDueCents
           ? intent
-          : await stripe().paymentIntents.update(intent.id, { amount: order.totalCents });
+          : await stripe().paymentIntents.update(intent.id, { amount: amountDueCents });
 
       return { clientSecret: refreshed.client_secret!, paymentIntentId: refreshed.id };
     }
@@ -68,7 +77,7 @@ export async function createPaymentIntent(orderId: string): Promise<{
 
   const intent = await stripe().paymentIntents.create(
     {
-      amount: order.totalCents,
+      amount: amountDueCents,
       currency: order.currency.toLowerCase(),
       // Discreet: this appears on a shared bank statement.
       statement_descriptor_suffix: 'GT ORDER',
@@ -87,7 +96,7 @@ export async function createPaymentIntent(orderId: string): Promise<{
       orderId: order.id,
       provider: 'STRIPE',
       status: 'PENDING',
-      amountCents: order.totalCents,
+      amountCents: amountDueCents,
       currency: order.currency,
       providerRef: intent.id,
       idempotencyKey: `order_${order.id}_intent`,
@@ -169,11 +178,13 @@ async function onPaymentSucceeded(intent: Stripe.PaymentIntent): Promise<void> {
 
   // A mismatch means the order changed after the intent was created. Take the
   // money — the customer authorised this amount — and flag it for a human.
-  if (intent.amount_received !== order.totalCents) {
+  const expected = order.totalCents - order.creditAppliedCents;
+
+  if (intent.amount_received !== expected) {
     logger.error('stripe.amount_mismatch', {
       orderId: order.id,
       paid: intent.amount_received,
-      expected: order.totalCents,
+      expected,
     });
   }
 
@@ -270,6 +281,15 @@ async function onChargeRefunded(charge: Stripe.Charge): Promise<void> {
   }
 
   await sendRefundEmail(payment.orderId, charge.amount_refunded);
+
+  // Hands back whatever loyalty the order spent, and claws back what it earned.
+  // Only on a full refund: a partial one is a judgement call about which lines
+  // came back, and guessing at the loyalty split would be worse than waiting.
+  if (isFull) {
+    await reverseForOrder(payment.orderId).catch((error: unknown) =>
+      logger.error('rewards.reverse_failed', error, { orderId: payment.orderId }),
+    );
+  }
 }
 
 async function onDisputeCreated(dispute: Stripe.Dispute): Promise<void> {

@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
 
+import { LEGAL_SLUGS } from '@/features/legal/documents';
 import { absoluteUrl } from '@/lib/seo/url';
-import { listCategoryPaths, listCollections } from '@/services/category.service';
+import { listCategoryPaths } from '@/services/category.service';
 import { listProductSlugs, productHref } from '@/services/product.service';
 
 /**
@@ -24,24 +25,30 @@ export const revalidate = 86_400; // 24h
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [categories, collections, products] = await Promise.all([
-    listCategoryPaths(),
-    listCollections(),
-    listProductSlugs(),
-  ]);
+  const [categories, products] = await Promise.all([listCategoryPaths(), listProductSlugs()]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: absoluteUrl('/'), lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: absoluteUrl('/shop'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    {
-      url: absoluteUrl('/collections'),
+
+    // Low priority, but listed: a shopper checking whether a retailer is
+    // trustworthy often reads these before anything else.
+    ...LEGAL_SLUGS.map((slug) => ({
+      url: absoluteUrl(`/pages/${slug}`),
       lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    { url: absoluteUrl('/brands'), lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: absoluteUrl('/guides'), lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+      changeFrequency: 'yearly' as const,
+      priority: 0.3,
+    })),
   ];
+
+  /*
+   * `/collections`, `/brands` and `/guides` used to be listed here, along with a
+   * URL per collection. None of those routes exist yet, so the sitemap was
+   * handing search engines a list of 404s and asking them to index it — which
+   * costs crawl budget and reads as a low-quality site. They go back in when the
+   * pages do, not before. `verify:quality` now fetches every URL the sitemap
+   * publishes, so the next one to drift fails the build instead of shipping.
+   */
 
   return [
     ...staticRoutes,
@@ -53,13 +60,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Deeper categories are more specific and convert better, but have less
       // authority to distribute. Shallow beats deep.
       priority: category.path.split('/').filter(Boolean).length === 1 ? 0.8 : 0.7,
-    })),
-
-    ...collections.map((collection) => ({
-      url: absoluteUrl(`/collections/${collection.slug}`),
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
     })),
 
     ...products.map((product) => ({

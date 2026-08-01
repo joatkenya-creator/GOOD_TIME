@@ -164,7 +164,8 @@ export const accountNav: NavItem[] = [
   { label: 'Orders', href: ROUTES.account.orders },
   { label: 'Addresses', href: ROUTES.account.addresses },
   { label: 'Wishlist', href: ROUTES.account.wishlist },
-  { label: 'Settings', href: ROUTES.account.settings },
+  { label: 'Profile', href: ROUTES.account.profile },
+  { label: 'Security', href: ROUTES.account.security },
 ];
 
 export const adminNav: NavItem[] = [

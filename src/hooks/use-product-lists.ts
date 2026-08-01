@@ -2,6 +2,8 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 
+import { syncWishlistAction } from '@/server/actions/wishlist';
+
 import {
   COMPARE_LIMIT,
   compareStore,
@@ -31,8 +33,28 @@ function useLocalList(store: LocalListStore) {
   };
 }
 
+/**
+ * The wishlist.
+ *
+ * `localStorage` stays the source of truth for the UI, so toggling a heart is
+ * instant and works signed out. For a signed-in customer the change is also
+ * pushed to the server, where it survives a new device — fire-and-forget, because
+ * a failed sync must never undo what the customer just saw happen.
+ */
 export function useWishlist() {
-  return useLocalList(wishlistStore);
+  const list = useLocalList(wishlistStore);
+
+  return {
+    ...list,
+    toggle: useCallback(
+      (id: string) => {
+        const saved = wishlistStore.toggle(id);
+        void syncWishlistAction(id, saved);
+        return saved;
+      },
+      [],
+    ),
+  };
 }
 
 export function useRecentlyViewed() {

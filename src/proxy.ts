@@ -35,7 +35,16 @@ export default withAuth((request) => {
   const isAuthenticated = Boolean(session?.user);
 
   // Signed-in visitors have no business on the sign-in or register pages.
-  if (isAuthenticated && matchesPrefix(pathname, GUEST_ONLY_PREFIXES)) {
+  //
+  // Unless they arrived with a `callbackUrl`, which only a server-side guard
+  // sets. This runs on the edge, where the JWT is all there is: a session
+  // revoked from another device still presents a perfectly valid cookie here.
+  // Bouncing that visitor back to `/account` puts them in a loop against the
+  // guard that just rejected them — page redirects to sign-in, edge redirects
+  // to account, forever. The `callbackUrl` is the signal that the database has
+  // already said no, and the edge should not overrule it.
+  const rejectedByGuard = request.nextUrl.searchParams.has('callbackUrl');
+  if (isAuthenticated && !rejectedByGuard && matchesPrefix(pathname, GUEST_ONLY_PREFIXES)) {
     return NextResponse.redirect(new URL(ROUTES.account.root, request.url));
   }
 

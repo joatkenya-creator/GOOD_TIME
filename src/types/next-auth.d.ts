@@ -21,6 +21,13 @@ declare module 'next-auth' {
       roles: RoleKey[];
       permissions: Permission[];
       isEmailVerified: boolean;
+      /**
+       * The `UserSession` row backing this token.
+       *
+       * Lets the security page mark which device in the list is the one reading
+       * it, and lets "sign out everywhere else" spare the current one.
+       */
+      sessionId: string | null;
     } & DefaultSession['user'];
   }
 
@@ -43,6 +50,14 @@ declare module 'next-auth/jwt' {
     isEmailVerified: boolean;
     /** Unix seconds at which claims were last refreshed from the database. */
     claimsRefreshedAt: number;
+    /**
+     * The `UserSession` row backing this token.
+     *
+     * Lets a customer see and revoke individual devices, which a stateless token
+     * cannot express on its own.
+     */
+    sid?: string;
+    /** When the session was last confirmed live. See `SESSION_LIVENESS_SECONDS`. */
   }
 }
 
@@ -53,5 +68,13 @@ declare module '@auth/core/jwt' {
     permissions: Permission[];
     isEmailVerified: boolean;
     claimsRefreshedAt: number;
+    /**
+     * The `UserSession` row backing this token.
+     *
+     * Lets a customer see and revoke individual devices, which a stateless token
+     * cannot express on its own.
+     */
+    sid?: string;
+    /** When the session was last confirmed live. See `SESSION_LIVENESS_SECONDS`. */
   }
 }

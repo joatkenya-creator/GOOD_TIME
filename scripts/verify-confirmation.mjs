@@ -8,7 +8,7 @@ import { chromium } from 'playwright';
  *
  *   node scripts/verify-confirmation.mjs GT-100010 someone@example.test
  */
-const BASE = 'http://localhost:3100';
+const BASE = process.env.BASE_URL ?? 'http://localhost:3100';
 const ORDER = process.argv[2];
 const EMAIL = process.argv[3];
 

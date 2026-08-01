@@ -13,7 +13,6 @@ export const ROUTES = {
   cart: '/cart',
   checkout: '/checkout',
 
-  product: (slug: string) => `/products/${slug}`,
   category: (slug: string) => `/shop/${slug}`,
   collection: (slug: string) => `/collections/${slug}`,
   brand: (slug: string) => `/brands/${slug}`,
@@ -35,7 +34,10 @@ export const ROUTES = {
     order: (orderNumber: string) => `/account/orders/${orderNumber}`,
     addresses: '/account/addresses',
     wishlist: '/account/wishlist',
-    settings: '/account/settings',
+    profile: '/account/profile',
+    security: '/account/security',
+    rewards: '/account/rewards',
+    returns: '/account/returns',
   },
 
   admin: {

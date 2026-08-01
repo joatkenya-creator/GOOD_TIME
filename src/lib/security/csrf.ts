@@ -25,6 +25,27 @@ export function isSameOrigin(request: Request): boolean {
 
   const allowed = new Set<string>([siteConfig.url, new URL(request.url).origin]);
 
+  /*
+   * The host the client actually asked for.
+   *
+   * `new URL(request.url).origin` above looks like it covers this, but Next
+   * normalises `request.url` to the deployment URL — so on any host other than
+   * `siteConfig.url` the set collapses to one entry and legitimate same-origin
+   * requests are rejected. That is what a Vercel preview deployment is, and what
+   * `127.0.0.1` is when the config says `localhost`.
+   *
+   * Reading the forwarded host is safe here: an attacker cannot make a victim's
+   * browser send a Host that differs from the site it is on, so `Origin` matching
+   * the requested host *is* the definition of same-origin.
+   */
+  const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+  if (forwardedHost) {
+    const scheme = request.headers.get('x-forwarded-proto') ?? 'https';
+    allowed.add(`${scheme}://${forwardedHost}`);
+    // Local development is served over http; the proxy header is absent there.
+    allowed.add(`http://${forwardedHost}`);
+  }
+
   try {
     return allowed.has(new URL(source).origin);
   } catch {

@@ -8,8 +8,8 @@ import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/server/auth/session';
 import { getCart } from '@/services/cart.service';
-import { sendNewsletterConfirmation } from '@/services/email.service';
-import { placeOrder } from '@/services/order.service';
+import { sendNewsletterConfirmation, sendOrderConfirmation } from '@/services/email.service';
+import { placeOrder, transitionOrder } from '@/services/order.service';
 import { createPaymentIntent } from '@/services/payment.service';
 
 /**
@@ -26,7 +26,8 @@ export type CheckoutResult =
       ok: true;
       orderId: string;
       orderNumber: string;
-      clientSecret: string;
+      /** Null when store credit covered the whole bill and no card is needed. */
+      clientSecret: string | null;
       /**
        * The amount actually about to be charged.
        *
@@ -35,7 +36,16 @@ export type CheckoutResult =
        * tax provider, which happens here. Sending someone to a card form without
        * showing them the final number is how a chargeback starts.
        */
-      totals: { subtotalCents: number; shippingCents: number; taxCents: number; totalCents: number };
+      totals: {
+        subtotalCents: number;
+        shippingCents: number;
+        taxCents: number;
+        totalCents: number;
+        /** Paid by loyalty rather than by card. */
+        creditAppliedCents: number;
+        /** What the card is actually charged. */
+        amountDueCents: number;
+      };
     }
   | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
 
@@ -99,6 +109,40 @@ export async function submitCheckoutAction(input: CheckoutInput): Promise<Checko
       userAgent: headerList.get('user-agent'),
     });
 
+    /*
+     * An order fully covered by store credit has nothing to charge.
+     *
+     * Stripe rejects a zero-amount intent, and rightly so — there is no payment
+     * to make. The order is marked paid directly, which runs the same transition
+     * a webhook would: stock is committed, points are awarded, the confirmation
+     * is sent.
+     */
+    const amountDueCents = order.totalCents - order.creditAppliedCents;
+
+    if (amountDueCents <= 0) {
+      await transitionOrder(order.id, 'PAID', {
+        message: 'Paid in full with store credit.',
+        data: { creditAppliedCents: order.creditAppliedCents },
+      });
+
+      await sendOrderConfirmation(order.id);
+
+      return {
+        ok: true,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        clientSecret: null,
+        totals: {
+          subtotalCents: order.subtotalCents,
+          shippingCents: order.shippingCents,
+          taxCents: order.taxCents,
+          totalCents: order.totalCents,
+          creditAppliedCents: order.creditAppliedCents,
+          amountDueCents: 0,
+        },
+      };
+    }
+
     const { clientSecret } = await createPaymentIntent(order.id);
 
     if (data.subscribe) {
@@ -126,6 +170,8 @@ export async function submitCheckoutAction(input: CheckoutInput): Promise<Checko
         shippingCents: order.shippingCents,
         taxCents: order.taxCents,
         totalCents: order.totalCents,
+        creditAppliedCents: order.creditAppliedCents,
+        amountDueCents,
       },
     };
   } catch (error) {

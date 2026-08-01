@@ -13,6 +13,12 @@ import {
   validateCoupon,
 } from '@/services/coupon.service';
 import { estimateDelivery, getShippingRate, priceFor } from '@/services/shipping.service';
+import {
+  awardForOrder,
+  quoteRedemption,
+  redeem,
+  reverseForOrder,
+} from '@/services/account/rewards.service';
 import { quoteTax } from '@/services/tax.service';
 
 /**
@@ -200,7 +206,29 @@ export async function placeOrder(input: PlaceOrderInput) {
   });
 
   const totals = computeTotals({ lines, shippingCents, discount, taxLines: tax.lines });
-  assertChargeable(totals);
+
+  /*
+   * Loyalty tender.
+   *
+   * Quoted against the live balance here, never taken from the client — a basket
+   * that claims $500 of store credit gets whatever the customer actually has.
+   *
+   * It is applied *after* tax, because credit and points are tender, not a
+   * discount: the bill is taxed in full and then partly paid with credit. Folding
+   * them into `discountCents` would shrink the taxable base and under-collect.
+   */
+  const redemption = await quoteRedemption({
+    userId: input.userId,
+    amountDueCents: totals.totalCents,
+    usePoints: cart.redeemPoints,
+    useCredit: cart.applyStoreCredit,
+  });
+
+  const amountDueCents = totals.totalCents - redemption.totalCents;
+
+  // Only guard the amount actually going to the card. A bill fully covered by
+  // credit is a legitimate zero, and `assertChargeable` rejects zero by design.
+  if (amountDueCents > 0) assertChargeable({ ...totals, totalCents: amountDueCents });
 
   // Recorded so an order priced from the estimate during a provider outage can
   // be found and reconciled later.
@@ -236,6 +264,8 @@ export async function placeOrder(input: PlaceOrderInput) {
         estimatedDeliveryAt: delivery.latest,
         taxBreakdown: totals.taxBreakdown as unknown as Prisma.InputJsonValue,
         taxSource,
+        creditAppliedCents: redemption.creditCents,
+        pointsRedeemed: redemption.points,
         customerNote: input.customerNote ?? null,
         giftNote: cart.giftNote,
         ipAddress: input.ipAddress ?? null,
@@ -271,6 +301,21 @@ export async function placeOrder(input: PlaceOrderInput) {
       }
     }
 
+    // Deducted here, in the order's own transaction, for the same reason a coupon
+    // redemption is: two checkouts started at once must not both spend the same
+    // balance. The non-negative check constraints are the backstop.
+    if (redemption.totalCents > 0 && input.userId) {
+      const spent = await redeem({
+        userId: input.userId,
+        points: redemption.points,
+        amountCents: redemption.creditCents,
+        description: `Order ${orderNumber}`,
+        orderId: order.id,
+      });
+
+      if (!spent.ok) throw errors.conflict(spent.message);
+    }
+
     if (couponId) {
       await recordRedemption(tx, {
         couponId,
@@ -304,7 +349,7 @@ export async function transitionOrder(
   to: OrderStatus,
   options: { message?: string; actorId?: string | null; data?: Record<string, unknown> } = {},
 ) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       include: { items: true },
@@ -342,6 +387,28 @@ export async function transitionOrder(
 
     return updated;
   });
+
+  /*
+   * Loyalty, after the transaction commits.
+   *
+   * Deliberately outside it. Awarding points is not worth failing a payment over,
+   * and `awardForOrder` is idempotent — a replayed webhook checks the ledger for
+   * an existing award against this order rather than paying twice. A cancellation
+   * hands back whatever the order spent.
+   */
+  if (to === 'PAID') {
+    await awardForOrder(orderId).catch((error: unknown) =>
+      logger.error('rewards.award_failed', error, { orderId }),
+    );
+  }
+
+  if (to === 'CANCELLED') {
+    await reverseForOrder(orderId).catch((error: unknown) =>
+      logger.error('rewards.reverse_failed', error, { orderId }),
+    );
+  }
+
+  return result;
 }
 
 type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];

@@ -282,6 +282,32 @@ export async function listProducts(
   };
 }
 
+/**
+ * A fixed-size rail: the first `limit` products by `sort`, and nothing else.
+ *
+ * `listProducts` answers "which page of how many", so it pairs every `findMany`
+ * with a `count`. A homepage rail shows eight products and renders no
+ * pagination, making that second query pure cost on the most-visited page —
+ * two of them, since the page has two rails.
+ *
+ * Same predicate and same ordering as the listing, so a rail and the shop agree
+ * about what "best selling" means.
+ */
+export async function listProductRail(
+  sort: ProductSort,
+  limit: number,
+  extra?: Prisma.ProductWhereInput,
+): Promise<ProductCardView[]> {
+  const rows = await prisma.product.findMany({
+    where: buildProductWhere({}, extra),
+    orderBy: buildOrderBy(sort),
+    select: CARD_SELECT,
+    take: limit,
+  });
+
+  return rows.map(toCardView);
+}
+
 // ---------------------------------------------------------------------------
 // Facet counts
 // ---------------------------------------------------------------------------

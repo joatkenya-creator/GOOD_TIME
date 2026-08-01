@@ -394,3 +394,195 @@ ${paragraph('If you did not sign up, ignore this email and nothing further will 
 
   return result.ok;
 }
+
+// ---------------------------------------------------------------------------
+// Account emails — phase 5
+// ---------------------------------------------------------------------------
+
+/**
+ * Account mail is not order mail.
+ *
+ * Order emails are addressed to whoever placed the order, which may be a guest.
+ * These are addressed to an account, so they load the customer instead — and
+ * they never write an `EMAIL_SENT` order event, because there is no order.
+ *
+ * The discretion rules are the same and matter just as much: someone reading
+ * "your password was changed" over a shoulder learns nothing about what the shop
+ * sells.
+ */
+
+interface EmailCustomer {
+  id: string;
+  email: string;
+  firstName: string | null;
+}
+
+async function loadCustomer(userId: string): Promise<EmailCustomer | null> {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, firstName: true },
+  });
+}
+
+/** "Hi Ada," or just "Hi," — never "Hi null,". */
+function greeting(customer: EmailCustomer): string {
+  return customer.firstName ? `Hi ${escapeHtml(customer.firstName)},` : 'Hi,';
+}
+
+async function sendToCustomer(
+  userId: string,
+  build: (customer: EmailCustomer) => { subject: string; preheader: string; body: string },
+): Promise<boolean> {
+  const customer = await loadCustomer(userId);
+  if (!customer) return false;
+
+  const { subject, preheader, body } = build(customer);
+
+  const result = await sendEmail({
+    to: customer.email,
+    subject,
+    html: layout({ title: subject, preheader, body }),
+  });
+
+  return result.ok;
+}
+
+/** Sent once, after registration. The first impression the inbox gets. */
+export async function sendWelcomeEmail(userId: string): Promise<boolean> {
+  return sendToCustomer(userId, (customer) => ({
+    subject: 'Welcome to GOOD TIME',
+    preheader: 'Your account is ready.',
+    body: `
+${heading('Welcome')}
+${paragraph(`${greeting(customer)} your account is ready.`)}
+${paragraph('Everything ships in plain, unbranded packaging, and your card statement shows a neutral descriptor. Nothing we send you will name a product in the subject line.')}
+${button(`${siteUrl()}/account`, 'Go to your account')}
+${paragraph(`You can change what we email you at any time in <a href="${siteUrl()}/account/notifications" style="color:${BRAND.pink};">notification settings</a>.`)}`,
+  }));
+}
+
+export async function sendEmailVerification(userId: string, token: string): Promise<boolean> {
+  return sendToCustomer(userId, (customer) => ({
+    subject: 'Verify your email address',
+    preheader: 'One tap to confirm this address.',
+    body: `
+${heading('Confirm your email address')}
+${paragraph(`${greeting(customer)} tap below to confirm this is your address. It keeps your account recoverable if you ever forget your password.`)}
+${button(`${siteUrl()}/verify-email?token=${encodeURIComponent(token)}`, 'Verify email address')}
+${paragraph('If you did not create an account, ignore this email and nothing further will happen.')}`,
+  }));
+}
+
+/**
+ * Sent after a password change — including one the customer made themselves.
+ *
+ * Especially then. If they did it, it confirms the change; if they did not, it is
+ * the only warning they will get, and it arrives while there is still time to act.
+ */
+export async function sendPasswordChangedEmail(userId: string): Promise<boolean> {
+  return sendToCustomer(userId, (customer) => ({
+    subject: 'Your password was changed',
+    preheader: 'If this was not you, act now.',
+    body: `
+${heading('Your password was changed')}
+${paragraph(`${greeting(customer)} the password on your GOOD TIME account was just changed, and every other signed-in device was signed out.`)}
+${paragraph('<strong>If this was not you</strong>, reset your password immediately and reply to this email.')}
+${button(`${siteUrl()}/forgot-password`, 'Reset your password')}
+${paragraph(`You can review where you are signed in on your <a href="${siteUrl()}/account/security" style="color:${BRAND.pink};">security page</a>.`)}`,
+  }));
+}
+
+export async function sendPasswordResetEmail(userId: string, token: string): Promise<boolean> {
+  return sendToCustomer(userId, (customer) => ({
+    subject: 'Reset your password',
+    preheader: 'This link expires in one hour.',
+    body: `
+${heading('Reset your password')}
+${paragraph(`${greeting(customer)} tap below to choose a new password. The link expires in one hour and can only be used once.`)}
+${button(`${siteUrl()}/reset-password?token=${encodeURIComponent(token)}`, 'Choose a new password')}
+${paragraph('If you did not ask for this, ignore it — your password has not changed.')}`,
+  }));
+}
+
+/** Sent whenever profile fields change, so a silent takeover is not silent. */
+export async function sendProfileUpdatedEmail(
+  userId: string,
+  changed: string[],
+): Promise<boolean> {
+  return sendToCustomer(userId, (customer) => ({
+    subject: 'Your account details were updated',
+    preheader: 'A change was made to your profile.',
+    body: `
+${heading('Your details were updated')}
+${paragraph(`${greeting(customer)} we updated ${escapeHtml(changed.join(' and '))} on your account.`)}
+${paragraph('If this was not you, change your password and reply to this email.')}
+${button(`${siteUrl()}/account/profile`, 'Review your profile')}`,
+  }));
+}
+
+export async function sendPreferencesUpdatedEmail(userId: string): Promise<boolean> {
+  return sendToCustomer(userId, (customer) => ({
+    subject: 'Your email preferences were updated',
+    preheader: 'Confirming what you will hear from us about.',
+    body: `
+${heading('Email preferences updated')}
+${paragraph(`${greeting(customer)} your notification settings have been saved.`)}
+${paragraph('Order, shipping and security emails always come through — everything else is up to you.')}
+${button(`${siteUrl()}/account/notifications`, 'Change them again')}`,
+  }));
+}
+
+/** Sent when a return request is filed. Confirms it landed. */
+export async function sendReturnReceivedEmail(returnNumber: string): Promise<boolean> {
+  const request = await prisma.returnRequest.findUnique({
+    where: { returnNumber },
+    include: { order: { select: { orderNumber: true, email: true } }, items: true },
+  });
+
+  if (!request) return false;
+
+  const subject = `Return ${request.returnNumber} received`;
+  const body = `
+${heading('We have your return request')}
+${paragraph(`Thanks — we have logged return <strong>${escapeHtml(request.returnNumber)}</strong> against order ${escapeHtml(request.order.orderNumber)}.`)}
+${paragraph(`It covers ${request.items.length} ${request.items.length === 1 ? 'item' : 'items'}. We will review it within two working days and email you what happens next.`)}
+${button(`${siteUrl()}/account/returns`, 'Track this return')}`;
+
+  const result = await sendEmail({
+    to: request.order.email,
+    subject,
+    html: layout({ title: subject, preheader: 'We are reviewing your return.', body }),
+  });
+
+  return result.ok;
+}
+
+/** Sent when a return is approved, with what to do next. */
+export async function sendReturnApprovedEmail(returnNumber: string): Promise<boolean> {
+  const request = await prisma.returnRequest.findUnique({
+    where: { returnNumber },
+    include: { order: { select: { orderNumber: true, email: true } } },
+  });
+
+  if (!request) return false;
+
+  const subject = `Return ${request.returnNumber} approved`;
+  const body = `
+${heading('Your return is approved')}
+${paragraph(`Return <strong>${escapeHtml(request.returnNumber)}</strong> for order ${escapeHtml(request.order.orderNumber)} has been approved.`)}
+${paragraph('Pack the items as securely as you can and send them back using the label attached. Once we have inspected them, your refund goes back to the original payment method within 5–10 business days.')}
+${
+  request.trackingUrl
+    ? button(request.trackingUrl, 'Track your return')
+    : button(`${siteUrl()}/account/returns`, 'View this return')
+}
+${paragraph('For hygiene reasons we can only accept unopened items, which is why we check before refunding.')}`;
+
+  const result = await sendEmail({
+    to: request.order.email,
+    subject,
+    html: layout({ title: subject, preheader: 'Send it back and we will refund you.', body }),
+  });
+
+  return result.ok;
+}

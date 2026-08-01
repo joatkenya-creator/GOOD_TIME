@@ -21,7 +21,8 @@
     "forceConsistentCasingInFileNames": true,
     "useUnknownInCatchVariables": true,
     "exactOptionalPropertyTypes": false,
-    "baseUrl": ".",
+    /* No `baseUrl`: deprecated in TS 6 and gone in 7. Since TS 4.4 `paths` are
+       resolved relative to this file, which is what the `./` prefix below means. */
     "paths": {
       "@/*": ["./src/*"]
     },
