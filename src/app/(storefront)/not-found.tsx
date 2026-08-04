@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Container } from '@/components/layout/container';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
+import { applyRedirect } from '@/services/seo/redirects';
 
 /**
  * 404 inside the storefront.
@@ -16,7 +17,17 @@ import { ROUTES } from '@/constants/routes';
  * Keeping the header and footer is the other half of the point: a 404 reached
  * from inside the shop should still be somewhere you can shop from.
  */
-export default function StorefrontNotFound() {
+export default async function StorefrontNotFound() {
+  /*
+   * The redirect table is consulted before the 404 is rendered.
+   *
+   * A slug that changed keeps its inbound links and its ranking only if
+   * something forwards it, and this is the one place that knows the request
+   * did not resolve. `applyRedirect` throws to unwind when it finds a match,
+   * so nothing below runs in that case.
+   */
+  await applyRedirect();
+
   return (
     <Container
       as="section"

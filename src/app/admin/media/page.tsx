@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 
 import { TablePagination } from '@/components/admin/data-table';
 import { ListToolbar } from '@/components/admin/list-toolbar';
@@ -55,16 +54,6 @@ export default async function AdminMediaPage({
         title="Media"
         description={`${result.total} assets.${missingAlt > 0 ? ` ${missingAlt} on this page have no alt text.` : ''}`}
         pathname={BASE}
-        actions={
-          canWrite ? (
-            <Link
-              href="/admin/media/upload"
-              className="rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white hover:bg-accent-hover"
-            >
-              Upload
-            </Link>
-          ) : null
-        }
       />
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">

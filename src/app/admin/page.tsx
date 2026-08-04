@@ -62,7 +62,6 @@ export default async function AdminDashboardPage() {
     { label: 'New product', href: '/admin/products/new', permission: PERMISSIONS.productWrite },
     { label: 'Orders to fulfil', href: '/admin/orders?status=PAID', permission: PERMISSIONS.orderRead },
     { label: 'Low stock', href: '/admin/inventory?status=low', permission: PERMISSIONS.inventoryRead },
-    { label: 'New coupon', href: '/admin/promotions/new', permission: PERMISSIONS.couponWrite },
   ].filter((action) => can(user, action.permission));
 
   return (
@@ -128,7 +127,7 @@ export default async function AdminDashboardPage() {
           label="Refund requests"
           value={String(metrics.refundRequests)}
           changePercent={null}
-          href="/admin/orders/returns"
+          href="/admin/reports?report=returns"
           invertTrend
         />
         <StatCard

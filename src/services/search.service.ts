@@ -104,16 +104,31 @@ export interface SearchResult {
   isFuzzy: boolean;
 }
 
+/**
+ * The storefront's search.
+ *
+ * Routed through the phase 7 engine rather than the phase 3 query, so a
+ * shopper actually gets the synonyms a merchandiser curated and the typo
+ * tolerance the index supports. The engine is an interface with a Postgres
+ * driver behind it; swapping in Meilisearch changes this file not at all.
+ *
+ * The phase 3 helpers below are kept because they still serve typeahead and
+ * the taxonomy suggestions, which want ids and names rather than a full
+ * ranked page.
+ */
 export async function searchProducts(term: string, limit = 24): Promise<SearchResult> {
-  const ranked = await rankedProductIds(term, limit);
-  const items = await getProductsByIds(ranked.map((row) => row.id));
+  const { searchEngine } = await import('@/services/search/engine');
+
+  const response = await searchEngine().search({ term, pageSize: limit });
+  const items = await getProductsByIds(response.items.map((hit) => hit.productId));
 
   return {
     term,
     items,
-    total: items.length,
-    // A perfect full-text hit ranks well above zero; trigram scores sit under 1.
-    isFuzzy: ranked.length > 0 && ranked.every((row) => row.rank < 0.05),
+    total: response.total,
+    // The engine reports this directly: it relaxed the query and says so,
+    // rather than the caller inferring it from a score threshold.
+    isFuzzy: Boolean(response.correctedTerm),
   };
 }
 

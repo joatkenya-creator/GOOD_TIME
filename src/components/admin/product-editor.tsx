@@ -78,7 +78,7 @@ export function ProductEditor({
   ] as const;
 
   return (
-    <form action={formAction} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+    <form action={formAction} className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
       <div className="min-w-0">

@@ -24,7 +24,12 @@ export type AdminIconName =
   | 'seo'
   | 'staff'
   | 'audit'
-  | 'settings';
+  | 'settings'
+  | 'imports'
+  | 'jobs'
+  | 'analytics'
+  | 'search'
+  | 'marketing';
 
 /**
  * The admin's single navigation source.
@@ -164,6 +169,46 @@ export const ADMIN_NAV: AdminNavSection[] = [
         icon: 'seo',
         permission: PERMISSIONS.seoWrite,
         hint: 'Metadata, redirects and sitemap',
+      },
+    ],
+  },
+  {
+    title: 'Operations',
+    items: [
+      {
+        label: 'Imports',
+        href: '/admin/imports',
+        icon: 'imports',
+        permission: PERMISSIONS.importRead,
+        hint: 'Supplier feeds and catalogue uploads',
+      },
+      {
+        label: 'Background jobs',
+        href: '/admin/jobs',
+        icon: 'jobs',
+        permission: PERMISSIONS.jobsRead,
+        hint: 'The queue, schedules and failures',
+      },
+      {
+        label: 'Search',
+        href: '/admin/search',
+        icon: 'search',
+        permission: PERMISSIONS.analyticsRead,
+        hint: 'What people look for, and what they do not find',
+      },
+      {
+        label: 'Analytics',
+        href: '/admin/analytics',
+        icon: 'analytics',
+        permission: PERMISSIONS.analyticsRead,
+        hint: 'Traffic, funnel and lifetime value',
+      },
+      {
+        label: 'Marketing',
+        href: '/admin/marketing',
+        icon: 'marketing',
+        permission: PERMISSIONS.settingsRead,
+        hint: 'Tracking pixels and the Merchant feed',
       },
     ],
   },

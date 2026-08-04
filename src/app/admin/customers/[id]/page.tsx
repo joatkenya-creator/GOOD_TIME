@@ -50,7 +50,7 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
         <StatCard label="Average order" value={formatMoney(averageOrderCents)} changePercent={null} />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="space-y-6">
           <AdminCard title="Orders" description={`${orders.length} most recent`}>
             {orders.length === 0 ? (

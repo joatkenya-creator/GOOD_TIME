@@ -33,7 +33,7 @@ export default async function AdminSeoPage() {
         pathname="/admin/seo"
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="space-y-6">
           <AdminCard
             title="Redirects"
@@ -174,11 +174,13 @@ export default async function AdminSeoPage() {
                 name="statusCode"
                 className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-body-sm"
               >
-                <option value="301">301 — permanent</option>
-                <option value="302">302 — temporary</option>
+                <option value="301">Permanent (308)</option>
+                <option value="302">Temporary (307)</option>
               </select>
               <p className="mt-1 text-body-xs text-foreground-subtle">
-                A 301 is cached by browsers for months. Use 302 if you might change your mind.
+                Permanent redirects are cached by browsers for months — use temporary if you might
+                change your mind. Served as 308 and 307, which Google treats identically to 301 and
+                302 and which additionally preserve the request method.
               </p>
             </div>
 

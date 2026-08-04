@@ -86,7 +86,21 @@ export default withAuth((request) => {
     return redirectToSignIn(request.url, pathname + search);
   }
 
-  return NextResponse.next();
+  /*
+   * Forward the pathname so a `not-found` boundary can read it.
+   *
+   * A React Server Component has no way to learn which URL was requested —
+   * `headers()` carries what the client sent, and the client sends a Host, not
+   * a path. The redirect table is consulted on the 404 path, and it needs to
+   * know what was asked for.
+   *
+   * Done here because the proxy has already parsed the URL, so it costs one
+   * header rather than a second parse on every request.
+   */
+  const forwarded = new Headers(request.headers);
+  forwarded.set('x-pathname', pathname);
+
+  return NextResponse.next({ request: { headers: forwarded } });
 });
 
 function redirectToSignIn(base: string, callbackUrl: string): NextResponse {

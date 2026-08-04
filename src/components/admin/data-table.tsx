@@ -55,7 +55,16 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="overflow-x-auto">
+    /*
+      `relative` is load-bearing, not decoration.
+
+      `sr-only` is `position: absolute`, so the hidden labels on the inline
+      row forms anchor to the nearest positioned ancestor. Without one they
+      anchor to the document and sit at the table's full scrolled width —
+      extending the page by 281px past the viewport even though the table
+      itself scrolls correctly inside this container.
+    */
+    <div className="relative overflow-x-auto">
       <table className="w-full min-w-[40rem] border-collapse text-left">
         <thead>
           <tr className="border-b border-border">

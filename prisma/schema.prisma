@@ -165,18 +165,27 @@ enum AuditAction {
 
 enum ImportSourceType {
   CSV
+  EXCEL
   XML
   JSON
+  /// A Google Merchant-format feed a partner publishes for us. Same XML shape
+  /// as RSS 2.0 with the `g:` namespace, which most affiliate networks emit.
+  GOOGLE_MERCHANT
   SUPPLIER_API
   AFFILIATE_FEED
+  PARTNER_CATALOG
 }
 
 enum ImportJobStatus {
   QUEUED
   RUNNING
   COMPLETED
+  /// Some rows landed, some did not. Distinguished from FAILED because the
+  /// operator's next move is different: review the failures, not re-run the lot.
+  PARTIAL
   FAILED
   CANCELLED
+  ROLLED_BACK
 }
 
 /// How two products relate. One table, one enum — not four near-identical tables.
@@ -246,15 +255,18 @@ model User {
   returnRequests          ReturnRequest[]
 
   // --- Phase 6: administration ------------------------------------------
-  stockAdjustments  StockAdjustment[]     @relation("StockAdjustedBy")
-  redirectsCreated  Redirect[]            @relation("RedirectCreatedBy")
-  staffNotesAbout   StaffNote[]           @relation("StaffNoteSubject")
-  staffNotesWritten StaffNote[]           @relation("StaffNoteAuthor")
-  giftCardsIssued   GiftCard[]            @relation("GiftCardIssuedBy")
-  giftCardAdjusted  GiftCardTransaction[] @relation("GiftCardAdjustedBy")
-  adminAlertsRead   AdminAlert[]          @relation("AdminAlertReadBy")
+  stockAdjustments  StockAdjustment[]      @relation("StockAdjustedBy")
+  redirectsCreated  Redirect[]             @relation("RedirectCreatedBy")
+  staffNotesAbout   StaffNote[]            @relation("StaffNoteSubject")
+  staffNotesWritten StaffNote[]            @relation("StaffNoteAuthor")
+  giftCardsIssued   GiftCard[]             @relation("GiftCardIssuedBy")
+  giftCardAdjusted  GiftCardTransaction[]  @relation("GiftCardAdjustedBy")
+  importTemplates   ImportTemplate[]       @relation("ImportTemplateAuthor")
+  marketingEdits    MarketingIntegration[] @relation("MarketingIntegrationEditor")
+  analyticsEvents   AnalyticsEvent[]
+  adminAlertsRead   AdminAlert[]           @relation("AdminAlertReadBy")
   /// Staff-applied labels for segmentation. Never visible to the customer.
-  adminTags         String[]              @default([])
+  adminTags         String[]               @default([])
 
   @@index([status, createdAt])
   @@index([deletedAt])
@@ -395,18 +407,26 @@ model Address {
 /// Cloudinary-backed asset. `publicId` is the Cloudinary handle, not a URL, so the
 /// delivery transform can change without a data migration.
 model Media {
-  id        String    @id @default(cuid())
-  type      MediaType @default(IMAGE)
-  publicId  String    @unique
-  url       String
-  alt       String?
-  width     Int?
-  height    Int?
-  bytes     Int?
-  format    String?
-  folder    String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id       String    @id @default(cuid())
+  type     MediaType @default(IMAGE)
+  publicId String    @unique
+  url      String
+  alt      String?
+  width    Int?
+  height   Int?
+  bytes    Int?
+  format   String?
+  folder   String?
+
+  /// SHA-256 of the uploaded bytes.
+  ///
+  /// The same product photo arrives from three suppliers as `IMG_4821.jpg`,
+  /// `main.jpg` and `SKU-1234-1.jpg`. Comparing filenames catches none of
+  /// them; comparing content catches all three before anything reaches the CDN.
+  checksum String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   productMedia ProductMedia[]
   categories   Category[]
@@ -414,9 +434,11 @@ model Media {
   collections  Collection[]
   posts        Post[]
 
-  contentBlocks ContentBlock[] @relation("ContentBlockImage")
+  contentBlocks    ContentBlock[]         @relation("ContentBlockImage")
+  optimizationLogs MediaOptimizationLog[]
 
   @@index([folder, createdAt])
+  @@index([checksum])
   @@map("media")
 }
 
@@ -538,6 +560,11 @@ model Collection {
 }
 
 model Product {
+  /// The supplier's identifier for this product, when it came from a feed.
+  /// Matching on re-import prefers this over SKU: it survives a supplier
+  /// renaming the product, which their SKU sometimes does not.
+  externalId String?
+
   id               String        @id @default(cuid())
   slug             String        @unique
   name             String
@@ -621,6 +648,7 @@ model Product {
   relationsTo       ProductRelation[]      @relation("RelationTarget")
   recentlyViewed    RecentlyViewed[]
   searchDocument    ProductSearchDocument?
+  analyticsEvents   AnalyticsEvent[]
 
   // Storefront listing: "active, not deleted, newest first".
   @@index([status, deletedAt, publishedAt])
@@ -635,6 +663,7 @@ model Product {
   @@index([primaryCategoryId])
   // Multi-facet filtering. GIN is what makes `facets hasSome [...]` an index scan.
   @@index([facets], type: Gin)
+  @@index([externalId])
   @@map("products")
 }
 
@@ -1633,7 +1662,18 @@ model ImportJob {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
+  /// A dry run writes rows and reports outcomes but persists no products.
+  isDryRun     Boolean   @default(false)
+  /// Set once a rollback has been applied, so it cannot be applied twice.
+  rolledBackAt DateTime?
+  templateId   String?
+  createdById  String?
+
+  template ImportTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  rows     ImportRow[]
+
   @@index([status, createdAt])
+  @@index([templateId])
   @@map("import_jobs")
 }
 
@@ -2316,4 +2356,366 @@ model GiftCardTransaction {
   @@index([giftCardId, createdAt])
   @@index([orderId])
   @@map("gift_card_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7 — scale, ingestion, search, analytics
+// ---------------------------------------------------------------------------
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  /// Exhausted its retries. Kept forever; this is the dead-letter queue.
+  DEAD
+  CANCELLED
+}
+
+/// The background job queue.
+///
+/// Postgres, not Redis. `SELECT ... FOR UPDATE SKIP LOCKED` gives exactly-once
+/// claiming across any number of workers, which is the only hard part of a
+/// queue, and it comes with the database already in the stack. A dedicated
+/// broker earns its operational cost somewhere north of a few thousand jobs a
+/// second; this catalogue will not see that, and the day it does, the adapter
+/// boundary in `lib/jobs` is where a broker slots in.
+///
+/// Every row is its own audit trail: what ran, when, how often it failed and
+/// with what error.
+model BackgroundJob {
+  id       String    @id @default(cuid())
+  /// Handler key, e.g. `import.run`, `price.sync`, `email.send`.
+  kind     String
+  status   JobStatus @default(QUEUED)
+  /// Handler input. Never secrets — this table is readable and backed up.
+  payload  Json      @default("{}")
+  /// Lower runs first; ties break by `runAt`.
+  priority Int       @default(100)
+
+  /// When it becomes eligible. Future-dated rows are how scheduling works.
+  runAt       DateTime @default(now())
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+
+  /// Set while a worker holds it. A stale lock is how a crashed worker is found.
+  lockedAt DateTime?
+  lockedBy String?
+
+  lastError String? @db.Text
+  result    Json?
+
+  /// Collapses duplicate work: two "reindex product X" requests are one job.
+  dedupeKey String? @unique
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  scheduleId String?
+  schedule   ScheduledJob? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  /// The claim query: eligible rows, best first.
+  @@index([status, runAt, priority])
+  @@index([kind, status])
+  /// Finding jobs abandoned by a dead worker.
+  @@index([lockedAt])
+  @@map("background_jobs")
+}
+
+/// A recurring job definition. The runner enqueues from these.
+model ScheduledJob {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  name        String
+  kind        String
+  payload     Json    @default("{}")
+  /// Standard five-field cron.
+  cron        String
+  isActive    Boolean @default(true)
+  description String?
+
+  lastRunAt  DateTime?
+  nextRunAt  DateTime?
+  lastStatus JobStatus?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobs BackgroundJob[]
+
+  @@index([isActive, nextRunAt])
+  @@map("scheduled_jobs")
+}
+
+/// A saved field mapping for one supplier's feed.
+///
+/// Suppliers do not agree on column names and never will. A template is the
+/// translation from their vocabulary to ours, saved once so the second import
+/// from the same supplier is a click rather than a re-derivation.
+model ImportTemplate {
+  id         String           @id @default(cuid())
+  name       String
+  sourceType ImportSourceType
+  /// `{ ourField: "their column" }`, plus per-field transforms.
+  mapping    Json
+  /// Defaults applied to every row (currency, brand, category).
+  defaults   Json?
+  /// Feed URL, auth reference, delimiter, encoding. Never a secret itself.
+  config     Json?
+  isActive   Boolean          @default(true)
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User?       @relation("ImportTemplateAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  jobs      ImportJob[]
+
+  @@unique([name, sourceType])
+  @@map("import_templates")
+}
+
+enum ImportRowOutcome {
+  CREATED
+  UPDATED
+  SKIPPED
+  FAILED
+  /// Matched an existing product but the values conflicted.
+  CONFLICT
+}
+
+/// One row of one import.
+///
+/// The unit of "what actually happened", and the unit of rollback. Storing the
+/// before-image per row is what makes an import reversible: undoing a bad
+/// price feed means replaying these backwards, which is impossible if all you
+/// kept was a success count.
+model ImportRow {
+  id         String           @id @default(cuid())
+  jobId      String
+  rowNumber  Int
+  outcome    ImportRowOutcome
+  /// Supplier's identifier for this row, for matching on re-import.
+  externalId String?
+  sku        String?
+  productId  String?
+  /// The product's values before this row touched it. Null on create.
+  before     Json?
+  /// What the row asked for, after mapping and normalisation.
+  after      Json?
+  message    String?          @db.Text
+
+  createdAt DateTime @default(now())
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, outcome])
+  @@index([jobId, rowNumber])
+  @@index([externalId])
+  @@map("import_rows")
+}
+
+/// Server-side analytics.
+///
+/// Deliberately first-party and deliberately not personal. There is a session
+/// id and an optional user id, no fingerprint, no cross-site identifier: this
+/// exists to answer "which products sell and where do people drop out", not to
+/// follow anyone around. GA4 and the pixels are configured separately and
+/// consent-gated; this table works when they are all switched off.
+model AnalyticsEvent {
+  id        String  @id @default(cuid())
+  /// `page_view`, `product_view`, `search`, `add_to_cart`, `purchase`, ...
+  name      String
+  sessionId String
+  userId    String?
+
+  path       String?
+  productId  String?
+  variantId  String?
+  orderId    String?
+  searchTerm String?
+
+  /// Money in cents, so revenue reporting needs no float arithmetic.
+  valueCents Int?
+  quantity   Int?
+
+  /// utm_source / utm_medium / utm_campaign, and the referring host.
+  source   String?
+  medium   String?
+  campaign String?
+  referrer String?
+
+  /// `mobile` | `tablet` | `desktop`, derived from the user agent at write time.
+  device  String?
+  country String?
+
+  /// Anything event-specific that does not deserve a column.
+  meta Json?
+
+  createdAt DateTime @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  /// The three shapes every dashboard query takes.
+  @@index([name, createdAt])
+  @@index([sessionId, createdAt])
+  @@index([productId, name, createdAt])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+/// Pre-aggregated daily rollups.
+///
+/// A dashboard that scans the raw event table works at ten thousand rows and
+/// falls over at ten million. The rollup job writes one row per day per metric;
+/// the dashboard reads those. Raw events stay for drill-down and pruning.
+model AnalyticsDaily {
+  id         String   @id @default(cuid())
+  day        DateTime @db.Date
+  metric     String
+  /// Optional breakdown: a product id, a source, a device.
+  dimension  String?
+  value      Int      @default(0)
+  valueCents Int      @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([day, metric, dimension])
+  @@index([metric, day])
+  @@map("analytics_daily")
+}
+
+enum SeoIssueSeverity {
+  CRITICAL
+  WARNING
+  NOTICE
+}
+
+/// A run of the SEO health check.
+model SeoAudit {
+  id         String    @id @default(cuid())
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  /// Pages examined.
+  checked    Int       @default(0)
+  critical   Int       @default(0)
+  warnings   Int       @default(0)
+  notices    Int       @default(0)
+  summary    Json?
+
+  issues SeoIssue[]
+
+  @@index([startedAt])
+  @@map("seo_audits")
+}
+
+/// One finding: a missing title, a duplicate description, a broken link.
+model SeoIssue {
+  id         String           @id @default(cuid())
+  auditId    String
+  severity   SeoIssueSeverity
+  /// `missing_title`, `duplicate_description`, `broken_link`, `orphan_page`, ...
+  code       String
+  url        String
+  message    String
+  /// The offending value, so a fix does not require re-finding it.
+  detail     String?
+  entityType String?
+  entityId   String?
+
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  audit SeoAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  @@index([auditId, severity])
+  @@index([code, resolvedAt])
+  @@map("seo_issues")
+}
+
+enum MarketingProvider {
+  GA4
+  GTM
+  GOOGLE_ADS
+  GOOGLE_MERCHANT
+  GOOGLE_SEARCH_CONSOLE
+  META_PIXEL
+  TIKTOK_PIXEL
+  PINTEREST_TAG
+  MICROSOFT_UET
+  LINKEDIN_INSIGHT
+}
+
+/// A marketing tag's configuration.
+///
+/// Only the public identifier lives here — a GA4 measurement id or a pixel id
+/// is emitted into the page anyway, so it is not a secret. API secrets stay in
+/// the environment; this table exists so switching a pixel on is a setting
+/// rather than a deploy, and so consent can gate the whole set at once.
+model MarketingIntegration {
+  id              String            @id @default(cuid())
+  provider        MarketingProvider @unique
+  isEnabled       Boolean           @default(false)
+  /// Measurement id, pixel id, container id. Public by design.
+  publicId        String?
+  /// Non-secret extras: conversion labels, feed options.
+  config          Json?
+  /// Whether this tag waits for analytics consent. Advertising tags must.
+  requiresConsent Boolean           @default(true)
+  notes           String?
+
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  updatedBy User? @relation("MarketingIntegrationEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("marketing_integrations")
+}
+
+/// Query rewriting for search: synonyms, and one-way expansions.
+///
+/// "Bullet" and "mini vibrator" are the same intent to a customer and different
+/// strings to Postgres. Curated by merchandisers, applied at query time.
+model SearchSynonym {
+  id        String   @id @default(cuid())
+  term      String
+  synonyms  String[] @default([])
+  /// One-way: `term` expands to `synonyms`, but not the reverse.
+  isOneWay  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([term])
+  @@map("search_synonyms")
+}
+
+/// What the image pipeline did to an asset, and what it saved.
+///
+/// Kept because "why is this page slow" is usually answered by a 4MB hero, and
+/// because a compression step that silently stopped running is invisible
+/// without a record of it having run.
+model MediaOptimizationLog {
+  id             String  @id @default(cuid())
+  mediaId        String
+  /// `upload`, `resize`, `webp`, `avif`, `dedupe`.
+  operation      String
+  originalBytes  Int?
+  optimizedBytes Int?
+  format         String?
+  width          Int?
+  height         Int?
+  durationMs     Int?
+  message        String?
+
+  createdAt DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId, createdAt])
+  @@map("media_optimization_logs")
 }

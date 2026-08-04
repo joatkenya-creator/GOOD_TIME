@@ -31,7 +31,7 @@ export default async function AdminCategoriesPage() {
         pathname="/admin/categories"
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <AdminCard title="The tree">
           {categories.length === 0 ? (
             <p className="py-8 text-center text-body-sm text-foreground-subtle">

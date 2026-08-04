@@ -1,4 +1,9 @@
 import {
+  LineChart,
+  Radio,
+  SearchCheck,
+  Timer,
+  Upload,
   BarChart3,
   BookOpen,
   Boxes,
@@ -44,4 +49,9 @@ export const ADMIN_ICONS: Record<AdminIconName, LucideIcon> = {
   staff: ShieldCheck,
   audit: ClipboardList,
   settings: Settings,
+  imports: Upload,
+  jobs: Timer,
+  analytics: LineChart,
+  search: SearchCheck,
+  marketing: Radio,
 };

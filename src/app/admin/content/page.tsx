@@ -52,7 +52,7 @@ export default async function AdminContentPage() {
         pathname="/admin/content"
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="space-y-6">
           <AdminCard title="Pages" description={`${pages.length} standalone pages`}>
             {pages.length === 0 ? (

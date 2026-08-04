@@ -67,7 +67,26 @@ export const PERMISSIONS = {
   roleAssign: 'role:assign',
   /** Creating or editing roles themselves — the keys to the kingdom. */
   roleManage: 'role:manage',
+
+  // --- Ingestion and operations (phase 7) --------------------------------
+  importRead: 'import:read',
   importRun: 'import:run',
+  /**
+   * Reversing an import.
+   *
+   * Separate from running one because a rollback rewrites hundreds of products
+   * at once, using a before-image that may be weeks old. Running an import is
+   * routine; undoing one is a decision.
+   */
+  importRollback: 'import:rollback',
+  /** Editing the field mappings every future import from a supplier will use. */
+  importTemplateManage: 'import:template',
+  jobsRead: 'jobs:read',
+  /** Requeuing, cancelling and editing schedules. */
+  jobsManage: 'jobs:manage',
+  searchManage: 'search:manage',
+  /** Enabling tracking pixels — a privacy decision, not a settings tweak. */
+  marketingManage: 'marketing:manage',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -188,7 +207,28 @@ export const PERMISSION_GROUPS: {
         label: 'Create and edit roles',
         hint: 'Whoever holds this can grant themselves anything else.',
       },
-      { key: PERMISSIONS.importRun, label: 'Run imports' },
+    ],
+  },
+  {
+    group: 'Ingestion and operations',
+    description: 'Product feeds, background work and search tuning.',
+    permissions: [
+      { key: PERMISSIONS.importRead, label: 'View imports and their history' },
+      { key: PERMISSIONS.importRun, label: 'Run an import' },
+      {
+        key: PERMISSIONS.importRollback,
+        label: 'Roll back an import',
+        hint: 'Rewrites every product the import touched, from a stored before-image.',
+      },
+      { key: PERMISSIONS.importTemplateManage, label: 'Edit import templates' },
+      { key: PERMISSIONS.jobsRead, label: 'View background jobs' },
+      { key: PERMISSIONS.jobsManage, label: 'Requeue jobs and edit schedules' },
+      { key: PERMISSIONS.searchManage, label: 'Tune search: synonyms and reindexing' },
+      {
+        key: PERMISSIONS.marketingManage,
+        label: 'Enable marketing pixels',
+        hint: 'Controls which third parties can watch customers browse.',
+      },
     ],
   },
 ];
@@ -233,6 +273,21 @@ const CATALOGUE_EDIT = [
 ] as const;
 
 const ORDER_DESK = [P.orderRead, P.orderWrite, P.orderFulfil, P.customerRead] as const;
+
+/**
+ * Running feeds and watching the queue.
+ *
+ * `importRollback` is deliberately not in here. Reversing an import rewrites
+ * hundreds of products from a stored before-image, and whoever runs the
+ * nightly sync should not be able to undo last month's catalogue by reflex.
+ */
+const OPERATIONS = [
+  P.importRead,
+  P.importRun,
+  P.importTemplateManage,
+  P.jobsRead,
+  P.searchManage,
+] as const;
 
 const CONTENT_DESK = [
   P.contentRead,
@@ -287,6 +342,10 @@ export const ROLE_DEFINITIONS: Record<
       P.reviewModerate,
       P.analyticsRead,
       P.reportExport,
+      ...OPERATIONS,
+      P.importRollback,
+      P.jobsManage,
+      P.marketingManage,
       P.settingsRead,
       P.auditRead,
     ],
@@ -338,6 +397,7 @@ export const ROLE_DEFINITIONS: Record<
       P.productRead,
       P.inventoryRead,
       P.analyticsRead,
+      ...OPERATIONS,
     ],
   },
 

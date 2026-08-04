@@ -87,7 +87,11 @@ export default async function AdminReportsPage({
               className={cn(
                 'rounded-lg px-2.5 py-1.5 text-body-xs font-medium',
                 option === days
-                  ? 'bg-surface-inverse text-foreground-inverse'
+                  // Was `bg-surface-inverse text-foreground-inverse`, which is
+                  // white on white once the ink ramp inverts — 1.07:1. The
+                  // report tabs above already have an active style that works
+                  // in both themes; reusing it is one less thing to get wrong.
+                  ? 'bg-accent-soft text-accent-text'
                   : 'border border-border hover:bg-surface-muted',
               )}
             >

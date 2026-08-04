@@ -36,7 +36,6 @@ export default async function AdminPromotionsPage({
     listReferralCodes(),
   ]);
 
-  const canWrite = can(user, PERMISSIONS.couponWrite);
   const canIssueCredit = can(user, PERMISSIONS.creditIssue);
 
   return (
@@ -45,16 +44,6 @@ export default async function AdminPromotionsPage({
         title="Promotions"
         description="Coupons, gift cards and referrals."
         pathname="/admin/promotions"
-        actions={
-          canWrite ? (
-            <a
-              href="/admin/promotions/new"
-              className="rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white hover:bg-accent-hover"
-            >
-              New coupon
-            </a>
-          ) : null
-        }
       />
 
       {issued ? (

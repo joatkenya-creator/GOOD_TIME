@@ -1,8 +1,14 @@
+import { Suspense } from 'react';
+
 import { WishlistSync } from '@/components/account/wishlist-sync';
+import { AnalyticsTracker } from '@/components/analytics/tracker';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
+import { ConsentBanner } from '@/components/marketing/consent-banner';
+import { MarketingTags } from '@/components/marketing/tag-manager';
 import { getSessionUser } from '@/server/auth/session';
 import { getCartCount } from '@/services/cart.service';
+import { partitioned } from '@/services/marketing/integrations';
 
 /**
  * Storefront shell.
@@ -19,6 +25,15 @@ export default async function StorefrontLayout({ children }: { children: React.R
   const user = await getSessionUser();
   const cartCount = await getCartCount(user?.id);
 
+  /*
+   * The tag split happens on the server.
+   *
+   * A tag that requires consent is never even *described* to the browser until
+   * consent exists — there is no script element to accidentally execute, and a
+   * visitor who declined is never told which trackers the shop would have run.
+   */
+  const tags = await partitioned();
+
   return (
     <div className="flex min-h-dvh flex-col">
       <Header cartCount={cartCount} />
@@ -30,6 +45,31 @@ export default async function StorefrontLayout({ children }: { children: React.R
         {children}
       </main>
       <Footer />
+
+      {/*
+        `useSearchParams` inside the tracker opts its subtree into client-side
+        rendering; the Suspense boundary stops that deopting the whole layout.
+      */}
+      <Suspense fallback={null}>
+        <AnalyticsTracker />
+      </Suspense>
+
+      <MarketingTags
+        immediate={tags.immediate.map((tag) => ({
+          provider: tag.provider,
+          publicId: tag.publicId,
+          config: tag.config,
+        }))}
+        onConsent={tags.onConsent.map((tag) => ({
+          provider: tag.provider,
+          publicId: tag.publicId,
+          config: tag.config,
+        }))}
+      />
+
+      {/* Only shown when a tag actually needs consent — a cookie notice on a
+          site that sets no tracking cookies trains people to dismiss notices. */}
+      <ConsentBanner needed={tags.onConsent.length > 0} />
     </div>
   );
 }
