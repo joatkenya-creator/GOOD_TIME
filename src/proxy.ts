@@ -49,13 +49,36 @@ export default withAuth((request) => {
   }
 
   if (matchesPrefix(pathname, ADMIN_PREFIXES)) {
-    if (!isAuthenticated) return redirectToSignIn(request.url, pathname + search);
+    /*
+     * An API answers in its own language.
+     *
+     * Redirecting `/api/admin/*` to a sign-in page hands an HTML document to
+     * something expecting JSON — the caller sees a parse error rather than
+     * "you are not signed in", which is the least useful way to say no. Pages
+     * get the redirect; APIs get a status code.
+     */
+    const isApi = pathname.startsWith('/api/');
+
+    if (!isAuthenticated) {
+      return isApi
+        ? NextResponse.json(
+            { ok: false, error: { code: 'UNAUTHENTICATED', message: 'Sign in required.' } },
+            { status: 401 },
+          )
+        : redirectToSignIn(request.url, pathname + search);
+    }
 
     const roles = session?.user?.roles ?? [];
     if (!roles.some((role) => ADMIN_ROLES.includes(role))) {
-      // 404 rather than 403: do not confirm that the admin surface exists.
-      return NextResponse.rewrite(new URL('/not-found', request.url));
+      return isApi
+        ? NextResponse.json(
+            { ok: false, error: { code: 'FORBIDDEN', message: 'Not permitted.' } },
+            { status: 403 },
+          )
+        : // 404 rather than 403 for pages: do not confirm the admin exists.
+          NextResponse.rewrite(new URL('/not-found', request.url));
     }
+
     return NextResponse.next();
   }
 

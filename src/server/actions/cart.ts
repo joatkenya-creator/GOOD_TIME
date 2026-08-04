@@ -172,6 +172,36 @@ export async function removeCouponAction(): Promise<ActionResult> {
   }
 }
 
+/**
+ * Attaches a gift card to the basket.
+ *
+ * Only the card's id is stored. The amount is quoted against the live balance
+ * at checkout, exactly like store credit — a basket that claims $500 of gift
+ * card gets whatever the card actually holds.
+ */
+export async function applyGiftCardAction(formData: FormData): Promise<ActionResult> {
+  const code = String(formData.get('code') ?? '').trim();
+  if (!code) return { ok: false, message: 'Enter a gift card code.' };
+
+  try {
+    const result = await cart.applyGiftCard(code, await currentUserId());
+    if (result.ok) refresh();
+    return result;
+  } catch (error) {
+    return toResult(error);
+  }
+}
+
+export async function removeGiftCardAction(): Promise<ActionResult> {
+  try {
+    await cart.removeGiftCard(await currentUserId());
+    refresh();
+    return { ok: true, message: 'Gift card removed.' };
+  } catch (error) {
+    return toResult(error);
+  }
+}
+
 export async function setGiftNoteAction(formData: FormData): Promise<ActionResult> {
   const parsed = giftNoteSchema.safeParse({ note: formData.get('note') ?? '' });
   if (!parsed.success) return { ok: false, message: 'That note is too long.' };

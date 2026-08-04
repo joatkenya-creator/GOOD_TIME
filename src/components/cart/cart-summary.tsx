@@ -14,7 +14,9 @@ import { ROUTES } from '@/constants/routes';
 import { US_STATES } from '@/features/checkout/schemas';
 import {
   applyCouponAction,
+  applyGiftCardAction,
   removeCouponAction,
+  removeGiftCardAction,
   setEstimateAction,
   setGiftNoteAction,
 } from '@/server/actions/cart';
@@ -114,6 +116,7 @@ export function CartSummary({ cart }: { cart: CartView }) {
 
       <RedemptionPanel redemption={cart.redemption} />
       <CouponForm code={cart.couponCode} message={cart.couponMessage} />
+      <GiftCardForm applied={cart.giftCard} />
       <EstimateForm />
       <GiftNoteForm note={cart.giftNote} />
     </div>
@@ -209,6 +212,92 @@ function CouponForm({ code, message }: { code: string | null; message: string | 
 
       {error ? (
         <p id="coupon-error" role="alert" className="mt-2 text-body-xs text-(--color-error)">
+          {error}
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+/**
+ * Gift card entry.
+ *
+ * Separate from the promo code on purpose. A discount and a gift card are
+ * different things — one reduces what is owed, the other pays part of what is
+ * owed — and a customer holding both should not have to guess which box takes
+ * which. It also means the applied states read differently: "SAVE10 applied"
+ * against "$25.00 from card ••••7K2P".
+ */
+function GiftCardForm({
+  applied,
+}: {
+  applied: { last4: string; applicableCents: number } | null;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  if (applied) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3">
+        <span className="flex items-center gap-2 text-body-sm font-medium text-accent-text">
+          <Gift aria-hidden="true" className="size-4" />
+          {formatPrice(applied.applicableCents)} from card ••••{applied.last4}
+        </span>
+
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => startTransition(() => void removeGiftCardAction())}
+          aria-label={`Remove gift card ending ${applied.last4}`}
+          className="flex size-8 items-center justify-center rounded-full text-accent-text hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
+        >
+          <X aria-hidden="true" className="size-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={(formData) =>
+        startTransition(async () => {
+          const result = await applyGiftCardAction(formData);
+          setError(result.ok ? null : result.message);
+          if (result.ok) toast({ variant: 'success', title: result.message });
+        })
+      }
+      className="rounded-xl border border-border bg-surface p-4"
+    >
+      <label htmlFor="gift-card-code" className="text-body-sm font-medium text-foreground">
+        Gift card
+      </label>
+
+      <div className="mt-2 flex gap-2">
+        <Input
+          id="gift-card-code"
+          name="code"
+          placeholder="GT-XXXX-XXXX-XXXX"
+          autoComplete="off"
+          autoCapitalize="characters"
+          className="flex-1 uppercase"
+          {...(error ? { 'aria-invalid': true, 'aria-describedby': 'gift-card-error' } : {})}
+        />
+        {/*
+          "Redeem", not "Apply".
+
+          The promo code button next to this one is already called Apply, and
+          two buttons sharing an accessible name is two identical announcements
+          for a screen-reader user with no way to tell which is which. It is
+          also the more accurate verb: a code is applied, a card is redeemed.
+        */}
+        <Button type="submit" variant="secondary" isLoading={pending}>
+          Redeem
+        </Button>
+      </div>
+
+      {error ? (
+        <p id="gift-card-error" role="alert" className="mt-2 text-body-xs text-(--color-error)">
           {error}
         </p>
       ) : null}

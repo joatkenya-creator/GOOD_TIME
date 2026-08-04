@@ -19,6 +19,11 @@ import {
   redeem,
   reverseForOrder,
 } from '@/services/account/rewards.service';
+import {
+  quoteGiftCardById,
+  redeemGiftCard,
+  refundToGiftCard,
+} from '@/services/gift-card.service';
 import { quoteTax } from '@/services/tax.service';
 
 /**
@@ -224,7 +229,25 @@ export async function placeOrder(input: PlaceOrderInput) {
     useCredit: cart.applyStoreCredit,
   });
 
-  const amountDueCents = totals.totalCents - redemption.totalCents;
+  /*
+   * Gift cards, quoted after loyalty.
+   *
+   * Order matters: loyalty is the customer's own accumulated value and expires,
+   * a gift card does not. Spending the perishable tender first is the choice
+   * that costs the customer least, and it is not one they should have to make
+   * at a checkout.
+   *
+   * Like store credit, this is tender rather than a discount — applied after
+   * tax, so the bill is taxed in full and then partly paid.
+   */
+  const afterLoyaltyCents = totals.totalCents - redemption.totalCents;
+
+  const giftCard = cart.giftCardId
+    ? await quoteGiftCardById(cart.giftCardId, afterLoyaltyCents)
+    : null;
+
+  const giftCardCents = giftCard?.applicableCents ?? 0;
+  const amountDueCents = afterLoyaltyCents - giftCardCents;
 
   // Only guard the amount actually going to the card. A bill fully covered by
   // credit is a legitimate zero, and `assertChargeable` rejects zero by design.
@@ -266,6 +289,7 @@ export async function placeOrder(input: PlaceOrderInput) {
         taxSource,
         creditAppliedCents: redemption.creditCents,
         pointsRedeemed: redemption.points,
+        giftCardAppliedCents: giftCardCents,
         customerNote: input.customerNote ?? null,
         giftNote: cart.giftNote,
         ipAddress: input.ipAddress ?? null,
@@ -314,6 +338,22 @@ export async function placeOrder(input: PlaceOrderInput) {
       });
 
       if (!spent.ok) throw errors.conflict(spent.message);
+    }
+
+    /*
+     * The gift card is debited in the same transaction, for the same reason.
+     *
+     * `redeemGiftCard` deducts with a conditional update guarded on the balance
+     * still being sufficient, so two checkouts racing for the last $20 cannot
+     * both win — the loser throws here and the whole order rolls back rather
+     * than shipping goods paid for with money that was not there.
+     */
+    if (giftCardCents > 0 && cart.giftCardId) {
+      await redeemGiftCard(tx, {
+        giftCardId: cart.giftCardId,
+        amountCents: giftCardCents,
+        orderId: order.id,
+      });
     }
 
     if (couponId) {
@@ -402,9 +442,20 @@ export async function transitionOrder(
     );
   }
 
-  if (to === 'CANCELLED') {
+  if (to === 'CANCELLED' || to === 'REFUNDED') {
     await reverseForOrder(orderId).catch((error: unknown) =>
       logger.error('rewards.reverse_failed', error, { orderId }),
+    );
+
+    /*
+     * Gift card value goes back to the card, not to the payment method.
+     *
+     * The customer never paid money for that portion of the bill, so refunding
+     * it to a card would hand them cash they did not spend. `refundToGiftCard`
+     * is idempotent, so a replayed webhook returns the value once.
+     */
+    await refundToGiftCard(orderId).catch((error: unknown) =>
+      logger.error('giftcard.refund_failed', error, { orderId }),
     );
   }
 

@@ -55,7 +55,16 @@ export function Alert({
       {hideIcon ? null : <Icon aria-hidden="true" className="mt-0.5 size-4.5 shrink-0" />}
       <div className="space-y-1">
         {title ? <p className="font-semibold">{title}</p> : null}
-        {children ? <div className="leading-relaxed opacity-90">{children}</div> : null}
+        {/*
+          No opacity on the body.
+
+          It used to carry `opacity-90`, which reads as gentle de-emphasis and
+          computes as a contrast cut: warning text at #C2410C is 5.18:1 on its
+          surface, and the same colour at 90% blends to #C85322 — 4.09:1, under
+          AA. The hierarchy is already carried by the semibold title, so the
+          opacity bought nothing and cost the one thing an alert cannot spend.
+        */}
+        {children ? <div className="leading-relaxed">{children}</div> : null}
       </div>
     </div>
   );

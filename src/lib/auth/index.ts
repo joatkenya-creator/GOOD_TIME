@@ -152,6 +152,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
+    // `session` comes from `authConfig`, so the edge and the server agree about
+    // what a session looks like. Only `jwt` is added here — it reads the
+    // database, which the edge bundle cannot.
+    ...authConfig.callbacks,
+
     async jwt({ token, user, trigger }) {
       const now = Math.floor(Date.now() / 1000);
 
@@ -193,14 +198,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
 
-    session({ session, token }) {
-      session.user.id = token.id;
-      session.user.sessionId = token.sid ?? null;
-      session.user.roles = token.roles ?? [];
-      session.user.permissions = token.permissions ?? [];
-      session.user.isEmailVerified = token.isEmailVerified ?? false;
-      return session;
-    },
   },
 
   events: {

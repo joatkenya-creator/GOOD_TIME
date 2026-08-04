@@ -32,6 +32,34 @@
 
   /* --- Neutrals --------------------------------------------------------- */
   /* Anchored on dark grey #333333, medium #666666, light #F5F5F5, border #E5E5E5. */
+  /*
+   * The page itself, split out from `--color-white`.
+   *
+   * `--color-white` was doing two unrelated jobs: the colour of the page, and
+   * the colour of text on an accent button. Dark mode has to invert the first
+   * and must never touch the second — white text on pink stays white. One
+   * token cannot be both, so the surface got its own.
+   */
+  --color-canvas: #ffffff;
+
+  /*
+   * Accent link and tint, as their own raw tokens.
+   *
+   * `@theme inline` bakes the *value expression* into every utility, so
+   * `text-accent-text` compiles to `color: var(--color-brand-700)` — overriding
+   * the semantic alias `--color-accent-text` later changes nothing, because
+   * nothing reads it. Only raw tokens are resolved at runtime, and the dark
+   * theme needs these three to differ: #C2185B is 5.85:1 on white and 3.13:1
+   * on the dark canvas, and a near-white tint is unusable as a dark surface.
+   *
+   * They are separate from `--color-brand-700` deliberately: that one is also
+   * the button hover background, where lightening it would put white text on
+   * pale pink.
+   */
+  --color-accent-link: #c2185b;
+  --color-accent-tint: #fdf2f7;
+  --color-accent-tint-strong: #fce4ec;
+
   --color-ink-50: #f5f5f5; /* light grey surface */
   --color-ink-100: #eeeeee;
   --color-ink-200: #e5e5e5; /* default border */
@@ -145,8 +173,8 @@
  * is a change to this block alone.
  */
 @theme inline {
-  --color-background: var(--color-white);
-  --color-surface: var(--color-white);
+  --color-background: var(--color-canvas);
+  --color-surface: var(--color-canvas);
   --color-surface-muted: var(--color-ink-50);
   --color-surface-inverse: var(--color-ink-900);
   --color-foreground: var(--color-ink-700);
@@ -172,13 +200,72 @@
    */
   --color-accent: var(--color-brand-600);
   --color-accent-hover: var(--color-brand-700);
-  --color-accent-soft: var(--color-brand-50);
-  --color-accent-muted: var(--color-brand-100);
+  --color-accent-soft: var(--color-accent-tint);
+  --color-accent-muted: var(--color-accent-tint-strong);
   /*
    * Pink *text* on a white background. #E91E63 is 4.34:1 against white, just
    * under the 4.5:1 that WCAG AA requires for normal-size text, so links and
    * inline accents use the darker step (5.85:1) instead. See docs/design-system.md.
    */
-  --color-accent-text: var(--color-brand-700);
+  --color-accent-text: var(--color-accent-link);
   --color-ring: var(--color-brand-500);
+}
+
+/*
+ * Dark theme, scoped to the admin.
+ *
+ * Every component already reads the semantic aliases above, which resolve to
+ * the ink ramp — so inverting the ramp inside one scope flips the entire admin
+ * without touching a single component. That is the whole reason the semantic
+ * layer exists; this is the first time it has had to prove it.
+ *
+ * The storefront stays light deliberately. Product photography is colour-graded
+ * against white, and a shop that changes its own background because a staff
+ * member toggled something in a different area is a support ticket, not a
+ * feature.
+ *
+ * Contrast was measured, not eyeballed. On the #141414 canvas: body text
+ * 15.9:1, muted 9.8:1, subtle 7.3:1 — all clearing WCAG AA, and subtle still
+ * clears it against the raised #1e1e1e surface it usually sits on (6.6:1).
+ */
+[data-admin-theme='dark'] {
+  --color-canvas: #141414;
+
+  --color-ink-50: #1e1e1e; /* raised surface: cards, table headers */
+  --color-ink-100: #262626;
+  --color-ink-200: #333333; /* default border */
+  --color-ink-300: #454545;
+  --color-ink-400: #6b6b6b; /* decorative only, as in light mode */
+  --color-ink-450: #a3a3a3; /* subtle text — 7.3:1 on canvas */
+  --color-ink-500: #c4c4c4; /* muted text */
+  --color-ink-600: #d8d8d8;
+  --color-ink-700: #ededed; /* body text */
+  --color-ink-800: #f2f2f2;
+  --color-ink-900: #f7f7f7; /* `surface-inverse` inverts too: a light block */
+  --color-ink-950: #ffffff;
+
+  /*
+   * Pink text has to move. #C2185B is 5.85:1 on white and 3.13:1 on this
+   * canvas — the darker step that fixed the light theme fails the dark one for
+   * exactly the same reason, in the opposite direction. #F06292 is 6.0:1 here.
+   */
+  --color-accent-link: #f06292;
+
+  /* Tinted backgrounds invert rather than staying pale pink. */
+  --color-accent-tint: #3b0620;
+  --color-accent-tint-strong: #4d0a2b;
+
+  /* Feedback surfaces: the 50-weights are near-white and unusable on dark. */
+  --color-success-50: #10281a;
+  --color-warning-50: #2e1d0a;
+  --color-danger-50: #2e1414;
+  --color-info-50: #101d33;
+
+  /* And their text weights lighten to clear the canvas. */
+  --color-success-700: #6ee7a0;
+  --color-warning-700: #fbbf6b;
+  --color-danger-700: #f8918c;
+  --color-info-700: #8ab4f8;
+
+  color-scheme: dark;
 }

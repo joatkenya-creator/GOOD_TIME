@@ -27,6 +27,29 @@ export const authConfig = {
     newUser: ROUTES.account.root,
   },
 
+  /*
+   * The session shape lives here, not beside the providers.
+   *
+   * The edge proxy builds its own Auth.js instance from this config alone, and
+   * a config without this callback hands it a session whose `user.roles` is
+   * undefined — so every role check at the edge silently fails closed and the
+   * whole admin 404s for everyone, including a super administrator.
+   *
+   * It is a pure mapping from token to session with no database access, so it
+   * is safe in the edge bundle. `lib/auth/index.ts` spreads these callbacks and
+   * adds the `jwt` one, which is not.
+   */
+  callbacks: {
+    session({ session, token }) {
+      session.user.id = token.id;
+      session.user.sessionId = token.sid ?? null;
+      session.user.roles = token.roles ?? [];
+      session.user.permissions = token.permissions ?? [];
+      session.user.isEmailVerified = token.isEmailVerified ?? false;
+      return session;
+    },
+  },
+
   // Trust the deployment host header; Vercel sets it correctly.
   trustHost: true,
 

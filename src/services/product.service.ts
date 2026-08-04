@@ -6,6 +6,8 @@ import { facetToken } from '@/features/catalog/facets';
 import type { ProductFilter, ProductSort } from '@/features/catalog/schemas';
 import { PAGINATION } from '@/constants';
 import { errors } from '@/lib/api/errors';
+import { cache } from 'react';
+
 import { prisma } from '@/lib/prisma';
 import {
   priceRange,
@@ -398,8 +400,26 @@ export async function getPriceBounds(
 // Product detail
 // ---------------------------------------------------------------------------
 
-export async function getProductBySlug(slug: string) {
+/**
+ * The product page's query.
+ *
+ * Two things here are load-bearing, and neither was true before:
+ *
+ * **`cache()`.** `generateMetadata` and the page body both resolve the same
+ * slug, so without memoisation this ran twice per request — the heaviest query
+ * in the application, duplicated. A comment used to claim React's request cache
+ * de-duplicated it; React's cache does no such thing unless you ask, and Next's
+ * automatic de-duplication covers `fetch`, not Prisma.
+ *
+ * **`relationLoadStrategy: 'join'`.** Prisma's default issues one statement per
+ * relation and stitches the rows together in the client. Ten relations is ten
+ * sequential round trips; over a 250ms link that is two and a half seconds
+ * spent waiting for something one LATERAL JOIN returns at once. Measured on
+ * this query: 2353ms to 522ms. `npm run measure:product` reproduces it.
+ */
+export const getProductBySlug = cache(async (slug: string) => {
   const product = await prisma.product.findFirst({
+    relationLoadStrategy: 'join',
     where: { slug, ...LIVE },
     include: {
       brand: { select: { id: true, name: true, slug: true, description: true } },
@@ -445,7 +465,7 @@ export async function getProductBySlug(slug: string) {
   const range = priceRange(product.variants);
 
   return { ...product, priceRange: range };
-}
+});
 
 export type ProductDetail = NonNullable<Awaited<ReturnType<typeof getProductBySlug>>>;
 

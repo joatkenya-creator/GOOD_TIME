@@ -91,6 +91,44 @@ and reads as a low-quality site.
 The header dropdown linked to `/account/settings`. Phase 5 built `profile`,
 `security` and `notifications` instead.
 
+### The entire admin was unreachable
+
+`authConfig` — the edge-safe config `proxy.ts` builds its own Auth.js instance
+from — had no `session` callback. `request.auth.user.roles` was therefore always
+`undefined`, the edge role check failed closed, and every `/admin/*` request
+rewrote to a 404 for everyone, including a super administrator holding 41
+permissions.
+
+Latent since phase 1, and it could not surface until phase 6 put something
+behind `/admin`. The session callback now lives in the shared config, so the
+edge and the server agree on what a session is; `lib/auth/index.ts` spreads it
+and adds only the `jwt` callback, which reads the database and cannot run on the
+edge.
+
+### A redirect loop that locked two roles out
+
+`requireAdminPermission` sent refused staff to `/admin`, but the dashboard
+required `analytics:read` — which customer support and content editors do not
+hold. Every page they were refused bounced them to a page that refused them
+again, until the browser gave up with `ERR_TOO_MANY_REDIRECTS` and no
+explanation at any point.
+
+A redirect target that can itself refuse the visitor is a loop waiting for the
+right role to walk into it. There is now an `/admin/denied` page that requires
+nothing beyond being staff.
+
+### Dark-mode contrast overrides that did nothing
+
+`@theme inline` bakes the *value expression* into each utility, so
+`text-accent-text` compiles to `color: var(--color-brand-700)` — overriding the
+semantic alias `--color-accent-text` in the dark scope changed nothing, because
+nothing reads it. Only raw tokens resolve at runtime. Pink links sat at 3.13:1
+on the dark canvas and the active nav pill kept a near-white tint.
+
+Fixed by giving the accent link and tint their own raw tokens, kept separate
+from `brand-700` because that one is also the button hover background, where
+lightening it would put white text on pale pink.
+
 ### A loading boundary that duplicated the page shell
 
 `app/loading.tsx` flushed the streamed shell early, so a `notFound()` raised
@@ -181,6 +219,9 @@ npx tsc --noEmit             # 0 errors
 npm run lint                 # 0 errors
 npx vitest run               # 154 unit tests
 npm run verify:quality       # 175 checks — responsive, a11y, navigation, network
+npm run verify:admin         # 112 checks — RBAC enforcement, a11y, dark theme, exports
+npm run verify:gift-cards    # 23 checks — hashing, races, refunds, the ledger
+npm run measure:product      # round trips on the product page, before/after
 npm run verify:phase5        # 49 checks — the account area, in a browser
 npm run verify:account       # 43 checks — account pages, landmarks, forms
 npm run verify:orders        # 41 checks — order service against the database

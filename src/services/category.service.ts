@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { cache } from 'react';
+
 import { prisma } from '@/lib/prisma';
 import type { BreadcrumbEntry } from '@/lib/seo/json-ld';
 
@@ -31,9 +33,14 @@ export function segmentsToPath(segments: string[]): string {
   return `/${segments.join('/')}`;
 }
 
-export async function getCategoryByPath(path: string) {
+/**
+ * Memoised for the same reason as `getProductBySlug`: the shop route resolves
+ * a path in `generateMetadata` and again in the page body, and every product
+ * URL tries this first before falling through to the product lookup.
+ */
+export const getCategoryByPath = cache(async (path: string) => {
   return prisma.category.findFirst({ where: { path, ...LIVE }, select: CATEGORY_SELECT });
-}
+});
 
 export type CategoryView = NonNullable<Awaited<ReturnType<typeof getCategoryByPath>>>;
 

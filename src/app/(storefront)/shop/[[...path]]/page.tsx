@@ -109,8 +109,10 @@ function flatten(raw: Record<string, string | string[] | undefined>): Record<str
 /**
  * Resolves a path to a category, a product, or nothing.
  *
- * Called by both `generateMetadata` and the page body. React's request cache
- * de-duplicates the queries, so this runs once per request despite two callers.
+ * Called by both `generateMetadata` and the page body. The lookups it calls are
+ * wrapped in React's `cache()`, so the work happens once per request despite the
+ * two callers — this comment used to claim that happened automatically, and it
+ * does not. Next de-duplicates `fetch`, not Prisma.
  */
 async function resolve(segments: string[]) {
   if (!segments.length) return { kind: 'shop' as const };

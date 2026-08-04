@@ -11,6 +11,7 @@ import { publicEnv } from '@/lib/env.public';
 import { prisma } from '@/lib/prisma';
 import { productHref } from '@/services/product.service';
 import { toDiscount, validateCoupon } from '@/services/coupon.service';
+import { quoteGiftCard, quoteGiftCardById } from '@/services/gift-card.service';
 import { getCheapestOption, getShippingRate, priceFor } from '@/services/shipping.service';
 import { quoteRedemption } from '@/services/account/rewards.service';
 import { resolveJurisdictions } from '@/services/tax.service';
@@ -150,6 +151,14 @@ export interface CartView {
   totals: Totals;
   couponCode: string | null;
   couponMessage: string | null;
+  /**
+   * The gift card attached to this basket, quoted against its live balance.
+   *
+   * Null when none is attached *or* when the attached one has since been
+   * emptied or cancelled — the cart shows what the card is actually worth now,
+   * not what it was worth when someone typed the code in.
+   */
+  giftCard: { last4: string; applicableCents: number } | null;
   giftNote: string | null;
   shipping: {
     rateId: string | null;
@@ -257,6 +266,15 @@ export async function getCartView(userId?: string | null): Promise<CartView | nu
     else couponMessage = result.message;
   }
 
+  // --- Gift card ---------------------------------------------------------
+  //
+  // Re-quoted on every read, never trusted from the cart row. A card emptied by
+  // another order between adding it and checking out has to stop counting the
+  // moment the customer looks at the basket, not at the moment they pay.
+  const giftCard = cart.giftCardId
+    ? await quoteGiftCardById(cart.giftCardId, subtotalCents)
+    : null;
+
   // --- Shipping ----------------------------------------------------------
   const weightGrams = lines.reduce((sum, line) => sum + line.weightGrams * line.quantity, 0);
 
@@ -315,6 +333,9 @@ export async function getCartView(userId?: string | null): Promise<CartView | nu
     totals,
     couponCode: cart.coupon?.code ?? null,
     couponMessage,
+    giftCard: giftCard
+      ? { last4: giftCard.last4, applicableCents: giftCard.applicableCents }
+      : null,
     giftNote: cart.giftNote,
     shipping: { rateId: cart.shippingRateId, label: shippingLabel, estimated },
     isEmpty: active.length === 0,
@@ -507,6 +528,46 @@ export async function removeCoupon(userId?: string | null): Promise<void> {
   const cart = await getCart(userId, false);
   if (!cart) return;
   await prisma.cart.update({ where: { id: cart.id }, data: { couponId: null } });
+}
+
+/**
+ * Attaches a gift card to the basket by id.
+ *
+ * Validated here so the customer learns the code is wrong at the cart rather
+ * than at the moment of payment, but only the id is stored — the amount is
+ * quoted again from the live balance when the order is placed. A basket is a
+ * statement of intent, never a claim on money.
+ */
+export async function applyGiftCard(
+  code: string,
+  userId?: string | null,
+): Promise<{ ok: boolean; message: string }> {
+  const view = await getCartView(userId);
+  if (!view) return { ok: false, message: 'Your cart is empty.' };
+
+  const result = await quoteGiftCard(code, view.totals.totalCents);
+  if (!result.ok) return { ok: false, message: result.message };
+
+  await prisma.cart.update({
+    where: { id: view.id },
+    data: { giftCardId: result.quote.id },
+  });
+
+  return {
+    ok: true,
+    message: `Gift card ending ${result.quote.last4} applied — ${formatCents(result.quote.applicableCents)} towards this order.`,
+  };
+}
+
+export async function removeGiftCard(userId?: string | null): Promise<void> {
+  const cart = await getCart(userId, false);
+  if (!cart) return;
+  await prisma.cart.update({ where: { id: cart.id }, data: { giftCardId: null } });
+}
+
+/** Dollars from integer cents, for a customer-facing message. */
+function formatCents(cents: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 }
 
 export async function setGiftNote(note: string | null, userId?: string | null): Promise<void> {
