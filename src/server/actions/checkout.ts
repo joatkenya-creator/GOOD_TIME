@@ -10,15 +10,23 @@ import { getSessionUser } from '@/server/auth/session';
 import { getCart } from '@/services/cart.service';
 import { sendNewsletterConfirmation, sendOrderConfirmation } from '@/services/email.service';
 import { placeOrder, transitionOrder } from '@/services/order.service';
-import { createPaymentIntent } from '@/services/payment.service';
+import {
+  authorizePayment,
+  createPaymentSession,
+  type AuthorizeResult,
+} from '@/services/payment.service';
 
 /**
  * The checkout submit.
  *
  * One action does two things that must not be split across requests: create the
- * order and create the payment intent for it. Splitting them leaves orders with
- * no intent whenever the second call fails, and those are indistinguishable from
+ * order and open the Klarna session for it. Splitting them leaves orders with no
+ * session whenever the second call fails, and those are indistinguishable from
  * abandoned checkouts in every report afterwards.
+ *
+ * The session is not the payment. Klarna authorises in the browser, hands back
+ * a single-use token, and `authorizeCheckoutAction` below converts that into a
+ * real Klarna order server-side — see `services/payment.service.ts`.
  */
 
 export type CheckoutResult =
@@ -26,15 +34,20 @@ export type CheckoutResult =
       ok: true;
       orderId: string;
       orderNumber: string;
-      /** Null when store credit covered the whole bill and no card is needed. */
-      clientSecret: string | null;
+      /**
+       * Mounts the Klarna widget in the browser. Null when store credit covered
+       * the whole bill and no payment is needed at all.
+       */
+      clientToken: string | null;
+      /** Which Klarna products this customer is eligible for, in display order. */
+      paymentMethodCategories: { identifier: string; name: string }[];
       /**
        * The amount actually about to be charged.
        *
        * Returned because the cart and checkout summaries show a tax *estimate* —
        * the real figure only exists once an address has been quoted against the
-       * tax provider, which happens here. Sending someone to a card form without
-       * showing them the final number is how a chargeback starts.
+       * tax provider, which happens here. Sending someone to a payment widget
+       * without showing them the final number is how a dispute starts.
        */
       totals: {
         subtotalCents: number;
@@ -43,7 +56,7 @@ export type CheckoutResult =
         totalCents: number;
         /** Paid by loyalty rather than by card. */
         creditAppliedCents: number;
-        /** What the card is actually charged. */
+        /** What Klarna is actually asked to fund. */
         amountDueCents: number;
       };
     }
@@ -112,7 +125,7 @@ export async function submitCheckoutAction(input: CheckoutInput): Promise<Checko
     /*
      * An order fully covered by store credit has nothing to charge.
      *
-     * Stripe rejects a zero-amount intent, and rightly so — there is no payment
+     * Klarna rejects a zero-amount session, and rightly so — there is no payment
      * to make. The order is marked paid directly, which runs the same transition
      * a webhook would: stock is committed, points are awarded, the confirmation
      * is sent.
@@ -131,7 +144,8 @@ export async function submitCheckoutAction(input: CheckoutInput): Promise<Checko
         ok: true,
         orderId: order.id,
         orderNumber: order.orderNumber,
-        clientSecret: null,
+        clientToken: null,
+        paymentMethodCategories: [],
         totals: {
           subtotalCents: order.subtotalCents,
           shippingCents: order.shippingCents,
@@ -143,7 +157,7 @@ export async function submitCheckoutAction(input: CheckoutInput): Promise<Checko
       };
     }
 
-    const { clientSecret } = await createPaymentIntent(order.id);
+    const session = await createPaymentSession(order.id);
 
     if (data.subscribe) {
       // A failed newsletter signup must never fail an order. Double opt-in, so
@@ -164,7 +178,8 @@ export async function submitCheckoutAction(input: CheckoutInput): Promise<Checko
       ok: true,
       orderId: order.id,
       orderNumber: order.orderNumber,
-      clientSecret,
+      clientToken: session.clientToken,
+      paymentMethodCategories: session.paymentMethodCategories,
       totals: {
         subtotalCents: order.subtotalCents,
         shippingCents: order.shippingCents,
@@ -182,16 +197,53 @@ export async function submitCheckoutAction(input: CheckoutInput): Promise<Checko
   }
 }
 
-/** Re-issues a client secret when a customer returns to an unpaid order. */
-export async function resumePaymentAction(
-  orderId: string,
-): Promise<{ ok: true; clientSecret: string } | { ok: false; message: string }> {
+/** Re-opens a Klarna session when a customer returns to an unpaid order. */
+export async function resumePaymentAction(orderId: string): Promise<
+  | {
+      ok: true;
+      clientToken: string;
+      paymentMethodCategories: { identifier: string; name: string }[];
+    }
+  | { ok: false; message: string }
+> {
   try {
-    const { clientSecret } = await createPaymentIntent(orderId);
-    return { ok: true, clientSecret };
+    const session = await createPaymentSession(orderId);
+    return {
+      ok: true,
+      clientToken: session.clientToken,
+      paymentMethodCategories: session.paymentMethodCategories,
+    };
   } catch (error) {
     if (isAppError(error)) return { ok: false, message: error.message };
     return { ok: false, message: 'We could not resume that payment.' };
+  }
+}
+
+/**
+ * Converts the browser's Klarna authorization token into a placed order.
+ *
+ * Deliberately server-side. The token is single-use and placing the order is
+ * the moment the customer becomes liable, so it happens somewhere we control,
+ * can rate-limit and can audit — never from a client-side call to Klarna.
+ */
+export async function authorizeCheckoutAction(
+  orderId: string,
+  authorizationToken: string,
+): Promise<AuthorizeResult | { status: 'error'; message: string }> {
+  if (!authorizationToken || authorizationToken.length > 512) {
+    return { status: 'error', message: 'That payment could not be completed.' };
+  }
+
+  try {
+    return await authorizePayment(orderId, authorizationToken);
+  } catch (error) {
+    if (isAppError(error)) return { status: 'error', message: error.message };
+
+    logger.error('checkout.authorize_failed', error, { orderId });
+    return {
+      status: 'error',
+      message: 'We could not complete that payment. You have not been charged.',
+    };
   }
 }
 

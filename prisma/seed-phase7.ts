@@ -139,7 +139,11 @@ async function seedSynonyms(): Promise<void> {
   console.log('\nSearch synonyms');
 
   const synonyms = [
-    { term: 'bullet', synonyms: ['mini vibrator', 'lipstick vibe', 'pocket vibrator'], isOneWay: false },
+    {
+      term: 'bullet',
+      synonyms: ['mini vibrator', 'lipstick vibe', 'pocket vibrator'],
+      isOneWay: false,
+    },
     { term: 'wand', synonyms: ['massager', 'body wand'], isOneWay: false },
     { term: 'lube', synonyms: ['lubricant', 'gel'], isOneWay: false },
     { term: 'waterproof', synonyms: ['shower safe', 'submersible'], isOneWay: false },
@@ -284,22 +288,42 @@ async function seedSearchHistory(): Promise<void> {
   const random = seeded(778101);
 
   const found = [
-    'wand', 'bullet vibrator', 'silicone', 'waterproof', 'lube', 'beginner kit',
-    'rechargeable', 'quiet vibrator', 'body safe', 'travel lock', 'glass',
-    'couples', 'massage oil', 'storage bag', 'gift set',
+    'wand',
+    'bullet vibrator',
+    'silicone',
+    'waterproof',
+    'lube',
+    'beginner kit',
+    'rechargeable',
+    'quiet vibrator',
+    'body safe',
+    'travel lock',
+    'glass',
+    'couples',
+    'massage oil',
+    'storage bag',
+    'gift set',
   ];
 
   // The commercially interesting half: demand the catalogue cannot serve.
   const notFound = [
-    'app controlled', 'long distance', 'warming lube', 'vegan lube',
-    'stainless steel', 'plus size harness', 'sound machine', 'latex free gloves',
+    'app controlled',
+    'long distance',
+    'warming lube',
+    'vegan lube',
+    'stainless steel',
+    'plus size harness',
+    'sound machine',
+    'latex free gloves',
   ];
 
   const rows: { term: string; resultCount: number; createdAt: Date }[] = [];
 
   for (let index = 0; index < 900; index += 1) {
     const daysAgo = Math.floor(random() * 30);
-    const createdAt = new Date(Date.now() - daysAgo * 86_400_000 - Math.floor(random() * 86_400_000));
+    const createdAt = new Date(
+      Date.now() - daysAgo * 86_400_000 - Math.floor(random() * 86_400_000),
+    );
 
     const isMiss = random() < 0.14;
     const pool = isMiss ? notFound : found;

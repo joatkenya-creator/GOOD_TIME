@@ -35,8 +35,8 @@ export default async function SharedWishlistPage({
   return (
     <Container className="py-10 sm:py-16">
       <header className="text-center">
-        <p className="text-eyebrow uppercase text-accent-text">Shared wishlist</p>
-        <h1 className="mt-3 text-h2 font-bold text-foreground">{wishlist.name}</h1>
+        <p className="text-eyebrow text-accent-text uppercase">Shared wishlist</p>
+        <h1 className="text-h2 mt-3 font-bold text-foreground">{wishlist.name}</h1>
         <p className="mt-2 text-body-sm text-foreground-muted">
           {wishlist.items.length} {wishlist.items.length === 1 ? 'item' : 'items'} · shipped in
           plain, unbranded packaging

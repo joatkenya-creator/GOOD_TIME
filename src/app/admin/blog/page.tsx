@@ -35,9 +35,7 @@ export default async function AdminBlogPage({
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <AdminCard title="Posts">
           {posts.length === 0 ? (
-            <p className="py-8 text-center text-body-sm text-foreground-subtle">
-              No posts yet.
-            </p>
+            <p className="py-8 text-center text-body-sm text-foreground-subtle">No posts yet.</p>
           ) : (
             <ul className="divide-y divide-border">
               {posts.map((post) => (
@@ -45,7 +43,7 @@ export default async function AdminBlogPage({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-body-sm font-medium">{post.title}</p>
-                      <p className="truncate text-body-xs text-foreground-subtle">
+                      <p className="text-body-xs truncate text-foreground-subtle">
                         /guides/{post.slug} · {post.authorName} · {post.readingMinutes} min read
                         {post.publishedAt ? ` · ${formatDate(post.publishedAt)}` : ''}
                       </p>
@@ -129,9 +127,9 @@ export default async function AdminBlogPage({
                   name="content"
                   rows={8}
                   required
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-body-xs"
+                  className="text-body-xs w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono"
                 />
-                <p className="mt-1 text-body-xs text-foreground-subtle">
+                <p className="text-body-xs mt-1 text-foreground-subtle">
                   Reading time is calculated from the word count on save.
                 </p>
               </div>
@@ -146,7 +144,7 @@ export default async function AdminBlogPage({
                   placeholder="materials, beginners"
                   className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-body-sm"
                 />
-                <p className="mt-1 text-body-xs text-foreground-subtle">
+                <p className="text-body-xs mt-1 text-foreground-subtle">
                   Comma separated. New tags are created as you type them.
                 </p>
               </div>
@@ -164,7 +162,7 @@ export default async function AdminBlogPage({
                   {canPublish ? <option value="PUBLISHED">Published</option> : null}
                 </select>
                 {!canPublish ? (
-                  <p className="mt-1 text-body-xs text-foreground-subtle">
+                  <p className="text-body-xs mt-1 text-foreground-subtle">
                     You can write and save drafts. Publishing is a separate permission.
                   </p>
                 ) : null}

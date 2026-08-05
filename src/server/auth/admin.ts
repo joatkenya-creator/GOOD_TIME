@@ -13,7 +13,7 @@ import { type AuditEntry, recordAudit } from '@/services/admin/audit.service';
  *
  * Three layers, and the redundancy is the point:
  *
- *   1. `proxy.ts` blocks unauthenticated requests at the edge — fast, but it
+ *   1. `middleware.ts` blocks unauthenticated requests at the edge — fast, but it
  *      reads a JWT and so cannot see a revoked session or a changed role.
  *   2. The admin layout calls `requireAdminAccess()`, so a page added to the
  *      folder is protected before anyone remembers to protect it.

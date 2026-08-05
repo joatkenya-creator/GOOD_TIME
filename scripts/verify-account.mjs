@@ -46,7 +46,6 @@ function hydrated(page) {
   );
 }
 
-
 /**
  * Horizontal overflow — the defining responsive bug.
  *
@@ -70,7 +69,10 @@ const OVERFLOW_PROBE = (viewportWidth) => {
     let scrollable = false;
     while (node && node !== document.body) {
       const x = getComputedStyle(node).overflowX;
-      if (x === 'auto' || x === 'scroll') { scrollable = true; break; }
+      if (x === 'auto' || x === 'scroll') {
+        scrollable = true;
+        break;
+      }
       node = node.parentElement;
     }
     if (scrollable) continue;
@@ -102,7 +104,7 @@ const LABEL_PROBE = () => {
     const wrapped = Boolean(control.closest('label'));
 
     if (!labelled && !aria && !wrapped) {
-      unlabelled.push((control.getAttribute('name') || control.getAttribute('type') || 'control'));
+      unlabelled.push(control.getAttribute('name') || control.getAttribute('type') || 'control');
     }
   }
 
@@ -144,7 +146,10 @@ async function main() {
     // Form and a shared `FormField`, which owns the label/id association.
     await page.fill('input[type="email"]', EMAIL);
     await page.fill('input[type="password"]', PASSWORD);
-    await page.getByRole('button', { name: /sign in/i }).first().click();
+    await page
+      .getByRole('button', { name: /sign in/i })
+      .first()
+      .click();
 
     const signedIn = await page
       .waitForFunction(() => !window.location.pathname.startsWith('/sign-in'), { timeout: 30_000 })
@@ -268,7 +273,12 @@ async function main() {
     // ------------------------------------------------------ responsive + a11y
     console.log('\nResponsive and accessibility');
 
-    const AUDIT_PAGES = ['/account', '/account/profile', '/account/orders', '/account/notifications'];
+    const AUDIT_PAGES = [
+      '/account',
+      '/account/profile',
+      '/account/orders',
+      '/account/notifications',
+    ];
     const VIEWPORTS = [
       { name: '360', width: 360, height: 800 },
       { name: '768', width: 768, height: 1024 },
@@ -289,7 +299,9 @@ async function main() {
         const { overflow, offenders } = await page.evaluate(OVERFLOW_PROBE, viewport.width);
         if (overflow > 1) {
           overflowFailures += 1;
-          console.log(`        ${path} @${viewport.name}: ${overflow}px overflow — ${offenders.join(', ')}`);
+          console.log(
+            `        ${path} @${viewport.name}: ${overflow}px overflow — ${offenders.join(', ')}`,
+          );
         }
 
         if (viewport.name === '1440') {
@@ -300,7 +312,12 @@ async function main() {
           }
 
           const structure = await page.evaluate(STRUCTURE_PROBE);
-          if (structure.h1 !== 1 || structure.main !== 1 || structure.nestedMain > 0 || structure.skipTargets !== 1) {
+          if (
+            structure.h1 !== 1 ||
+            structure.main !== 1 ||
+            structure.nestedMain > 0 ||
+            structure.skipTargets !== 1
+          ) {
             structureFailures += 1;
             console.log(`        ${path}: ${JSON.stringify(structure)}`);
           }
@@ -308,9 +325,21 @@ async function main() {
       }
     }
 
-    check('no horizontal overflow at any breakpoint', overflowFailures === 0, `${overflowFailures} combinations`);
-    check('every form control has an accessible name', labelFailures === 0, `${labelFailures} pages`);
-    check('one h1 and one main landmark per page', structureFailures === 0, `${structureFailures} pages`);
+    check(
+      'no horizontal overflow at any breakpoint',
+      overflowFailures === 0,
+      `${overflowFailures} combinations`,
+    );
+    check(
+      'every form control has an accessible name',
+      labelFailures === 0,
+      `${labelFailures} pages`,
+    );
+    check(
+      'one h1 and one main landmark per page',
+      structureFailures === 0,
+      `${structureFailures} pages`,
+    );
 
     await page.setViewportSize({ width: 1280, height: 900 });
 

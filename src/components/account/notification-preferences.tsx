@@ -53,13 +53,22 @@ export function NotificationPreferences({ preferences }: { preferences: TopicPre
                 <th scope="col" className="px-5 py-3 text-body-sm font-semibold text-foreground">
                   Topic
                 </th>
-                <th scope="col" className="px-3 py-3 text-center text-body-sm font-semibold text-foreground">
+                <th
+                  scope="col"
+                  className="px-3 py-3 text-center text-body-sm font-semibold text-foreground"
+                >
                   Email
                 </th>
-                <th scope="col" className="px-3 py-3 text-center text-body-sm font-medium text-foreground-subtle">
+                <th
+                  scope="col"
+                  className="px-3 py-3 text-center text-body-sm font-medium text-foreground-subtle"
+                >
                   SMS
                 </th>
-                <th scope="col" className="px-3 py-3 text-center text-body-sm font-medium text-foreground-subtle">
+                <th
+                  scope="col"
+                  className="px-3 py-3 text-center text-body-sm font-medium text-foreground-subtle"
+                >
                   Push
                 </th>
               </tr>
@@ -75,7 +84,7 @@ export function NotificationPreferences({ preferences }: { preferences: TopicPre
                       </span>
                       {preference.essential ? <Badge variant="neutral">Recommended</Badge> : null}
                     </span>
-                    <span className="mt-0.5 block text-body-xs text-foreground-subtle">
+                    <span className="text-body-xs mt-0.5 block text-foreground-subtle">
                       {preference.description}
                     </span>
                   </th>
@@ -111,9 +120,9 @@ export function NotificationPreferences({ preferences }: { preferences: TopicPre
           </table>
         </div>
 
-        <p className="mt-3 text-body-xs text-foreground-subtle">
-          SMS and push notifications are not available yet. Email is the only channel we can
-          deliver on today.
+        <p className="text-body-xs mt-3 text-foreground-subtle">
+          SMS and push notifications are not available yet. Email is the only channel we can deliver
+          on today.
         </p>
 
         {result.message ? (
@@ -127,10 +136,7 @@ export function NotificationPreferences({ preferences }: { preferences: TopicPre
         </Button>
       </form>
 
-      <form
-        action={unsubscribe}
-        className="rounded-2xl border border-border bg-surface-muted p-5"
-      >
+      <form action={unsubscribe} className="rounded-2xl border border-border bg-surface-muted p-5">
         <h2 className="text-body font-semibold text-foreground">Unsubscribe from everything</h2>
         <p className="mt-1 text-body-sm text-foreground-muted">
           Turns off every marketing email in one go. Order, shipping and security messages keep

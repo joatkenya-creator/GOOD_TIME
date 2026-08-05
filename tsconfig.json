@@ -40,5 +40,11 @@
     "src/types/**/*.d.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", "src/generated"]
+  /* `cloudflare/` is checked by its own tsconfig, not this one.
+     `@cloudflare/workers-types` replaces the DOM's `Response`, `fetch` and
+     friends with the Workers runtime's stricter versions — `response.json()`
+     returns `unknown` there rather than `any`. Correct inside the Worker,
+     wrong for every React component in `src/`, so the two are kept apart.
+     `npm run typecheck` runs both. */
+  "exclude": ["node_modules", ".next", "src/generated", "cloudflare"]
 }

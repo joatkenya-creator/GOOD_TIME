@@ -169,7 +169,11 @@ async function verifyImports(): Promise<void> {
   check('every row is logged', rows.length === 4, `${rows.length} logged`);
 
   const outcomes = rows.map((row) => row.outcome);
-  check('two products were created', outcomes.filter((o) => o === 'CREATED').length === 2, outcomes.join(','));
+  check(
+    'two products were created',
+    outcomes.filter((o) => o === 'CREATED').length === 2,
+    outcomes.join(','),
+  );
   check(
     'the duplicate row is skipped, not applied',
     outcomes.filter((o) => o === 'SKIPPED').length === 1,
@@ -182,7 +186,11 @@ async function verifyImports(): Promise<void> {
   );
 
   const failedRow = rows.find((row) => row.outcome === 'FAILED');
-  check('the failure explains itself', Boolean(failedRow?.message), failedRow?.message ?? 'no message');
+  check(
+    'the failure explains itself',
+    Boolean(failedRow?.message),
+    failedRow?.message ?? 'no message',
+  );
 
   const skipped = rows.find((row) => row.outcome === 'SKIPPED');
   check(
@@ -383,7 +391,11 @@ async function verifySearch(): Promise<void> {
   const results = await engine.search({ term: word, pageSize: 24 });
   const elapsed = Date.now() - started;
 
-  check(`a search for "${word}" returns results`, results.items.length > 0, `${results.total} hits`);
+  check(
+    `a search for "${word}" returns results`,
+    results.items.length > 0,
+    `${results.total} hits`,
+  );
 
   const ratio = elapsed / baseline;
   check(
@@ -409,17 +421,18 @@ async function verifySearch(): Promise<void> {
   const synonym = await prisma.searchSynonym.findFirst({ where: { isActive: true } });
   if (synonym) {
     const viaSynonym = await engine.search({ term: synonym.term, pageSize: 10 });
-    check(
-      `the synonym "${synonym.term}" resolves without error`,
-      Array.isArray(viaSynonym.items),
-    );
+    check(`the synonym "${synonym.term}" resolves without error`, Array.isArray(viaSynonym.items));
   }
 
   const suggestions = await engine.suggest(word.slice(0, 3), 5);
   check('autocomplete returns suggestions', Array.isArray(suggestions));
 
   const empty = await engine.search({ term: 'zzzzqqqxxnonexistent', pageSize: 10 });
-  check('a nonsense query returns nothing rather than everything', empty.items.length === 0, `${empty.items.length}`);
+  check(
+    'a nonsense query returns nothing rather than everything',
+    empty.items.length === 0,
+    `${empty.items.length}`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -477,11 +490,7 @@ async function verifyMetadata(): Promise<void> {
 
   const canonical = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']*)["']/i)?.[1];
   check('it declares a canonical URL', Boolean(canonical), canonical ?? 'missing');
-  check(
-    'the canonical is absolute',
-    (canonical ?? '').startsWith('http'),
-    canonical ?? 'missing',
-  );
+  check('the canonical is absolute', (canonical ?? '').startsWith('http'), canonical ?? 'missing');
 
   check('Open Graph title is present', Boolean(metaContent(html, 'og:title')));
   check('Open Graph type is present', Boolean(metaContent(html, 'og:type')));
@@ -543,11 +552,19 @@ async function verifySitemaps(): Promise<void> {
 
   const locs = urls.map((entry) => String((entry as { loc?: string }).loc ?? ''));
   check('every entry has a location', locs.every(Boolean));
-  check('locations are absolute', locs.every((loc) => loc.startsWith('http')), locs[0]);
+  check(
+    'locations are absolute',
+    locs.every((loc) => loc.startsWith('http')),
+    locs[0],
+  );
 
   // A relative URL in a sitemap is silently ignored by crawlers, which is the
   // worst kind of bug: the file validates and the pages never get indexed.
-  check('no duplicate URLs', new Set(locs).size === locs.length, `${locs.length} vs ${new Set(locs).size}`);
+  check(
+    'no duplicate URLs',
+    new Set(locs).size === locs.length,
+    `${locs.length} vs ${new Set(locs).size}`,
+  );
 
   // --- the index -----------------------------------------------------------
   const index = await fetch(`${BASE}/sitemap-index.xml`);
@@ -597,7 +614,11 @@ async function verifySitemaps(): Promise<void> {
 
   if (imageUrls.length > 0) {
     const withImages = imageUrls.filter((entry) => 'image:image' in (entry as object));
-    check('image entries carry images', withImages.length > 0, `${withImages.length}/${imageUrls.length}`);
+    check(
+      'image entries carry images',
+      withImages.length > 0,
+      `${withImages.length}/${imageUrls.length}`,
+    );
   }
 
   // --- video and news ------------------------------------------------------
@@ -660,7 +681,9 @@ async function verifySitemaps(): Promise<void> {
 
 /** Extracts and parses every JSON-LD block from a page. */
 function extractJsonLd(html: string): Record<string, unknown>[] {
-  const blocks = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const blocks = [
+    ...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi),
+  ];
 
   const parsed: Record<string, unknown>[] = [];
 
@@ -732,7 +755,11 @@ async function verifyStructuredData(): Promise<void> {
      * to have valid structured data.
      */
     for (const required of ['name', 'image', 'description']) {
-      check(`Product has ${required}`, required in productSchema, Object.keys(productSchema).join(','));
+      check(
+        `Product has ${required}`,
+        required in productSchema,
+        Object.keys(productSchema).join(','),
+      );
     }
 
     const offers = productSchema.offers as Record<string, unknown> | undefined;
@@ -750,7 +777,11 @@ async function verifyStructuredData(): Promise<void> {
       const hasPrice = 'price' in offers || ('lowPrice' in offers && 'highPrice' in offers);
       check('the Offer names a price', hasPrice, Object.keys(offers).join(','));
       check('the Offer names a currency', 'priceCurrency' in offers, Object.keys(offers).join(','));
-      check('the Offer states availability', 'availability' in offers, Object.keys(offers).join(','));
+      check(
+        'the Offer states availability',
+        'availability' in offers,
+        Object.keys(offers).join(','),
+      );
 
       const availability = String(offers.availability ?? '');
       check(
@@ -764,7 +795,11 @@ async function verifyStructuredData(): Promise<void> {
     const rating = productSchema.aggregateRating as Record<string, unknown> | undefined;
     if (rating) {
       check('a declared rating has a review count', 'reviewCount' in rating);
-      check('the review count is above one', Number(rating.reviewCount ?? 0) > 1, String(rating.reviewCount));
+      check(
+        'the review count is above one',
+        Number(rating.reviewCount ?? 0) > 1,
+        String(rating.reviewCount),
+      );
     }
   }
 
@@ -779,7 +814,11 @@ async function verifyStructuredData(): Promise<void> {
   // Every block must be valid JSON — a broken one silently voids the page's
   // entire structured-data payload.
   const rawBlocks = [...productHtml.matchAll(/type=["']application\/ld\+json["']/gi)].length;
-  check('every JSON-LD block parses', schemas.length >= rawBlocks, `${schemas.length} of ${rawBlocks}`);
+  check(
+    'every JSON-LD block parses',
+    schemas.length >= rawBlocks,
+    `${schemas.length} of ${rawBlocks}`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -862,9 +901,8 @@ async function verifyRedirects(): Promise<void> {
 async function verifyMarketing(): Promise<void> {
   section('Marketing integrations');
 
-  const { saveIntegration, activeIntegrations, partitioned, PROVIDERS } = await import(
-    '../src/services/marketing/integrations'
-  );
+  const { saveIntegration, activeIntegrations, partitioned, PROVIDERS } =
+    await import('../src/services/marketing/integrations');
 
   check('every provider is defined', PROVIDERS.length === 10, String(PROVIDERS.length));
 
@@ -957,14 +995,15 @@ async function verifyMarketing(): Promise<void> {
   // The tag is rendered client-side after hydration, so the id may legitimately
   // be absent from the server HTML either way. What must never happen is the
   // reverse: present without consent. That is what the check above enforces.
-  check(
-    'the consent cookie is accepted without error',
-    consented.length > 0,
-    'empty response',
-  );
+  check('the consent cookie is accepted without error', consented.length > 0, 'empty response');
 
   // --- restore -------------------------------------------------------------
-  await saveIntegration({ provider: 'GA4', isEnabled: false, publicId: null, requiresConsent: true });
+  await saveIntegration({
+    provider: 'GA4',
+    isEnabled: false,
+    publicId: null,
+    requiresConsent: true,
+  });
   await saveIntegration({
     provider: 'GOOGLE_SEARCH_CONSOLE',
     isEnabled: false,

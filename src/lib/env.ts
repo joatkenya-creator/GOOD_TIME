@@ -27,12 +27,29 @@ const serverSchema = z.object({
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),
 
-  // --- Payments (scaffold only) -------------------------------------------
-  STRIPE_SECRET_KEY: z.string().startsWith('sk_').optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().startsWith('whsec_').optional(),
+  // --- Payments: Klarna ----------------------------------------------------
+  /**
+   * API credentials from the Klarna Merchant Portal → Settings → Klarna API
+   * credentials. The username looks like `PK12345_1a2b3c4d`, not an email.
+   * Playground and production are separate accounts with separate credentials.
+   */
+  KLARNA_USERNAME: z.string().optional(),
+  KLARNA_PASSWORD: z.string().optional(),
+  /** Which Klarna API host to talk to. Getting this wrong 404s every request. */
+  KLARNA_REGION: z.enum(['eu', 'na', 'oc']).default('na'),
+  KLARNA_ENVIRONMENT: z.enum(['playground', 'production']).default('playground'),
+  /**
+   * Unguessable secret embedded in the notification URL handed to Klarna.
+   * Klarna does not sign its pushes, so this is the only thing keeping the
+   * endpoint from being an open trigger. Generate with:
+   *   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   */
+  KLARNA_WEBHOOK_SECRET: z.string().min(32).optional(),
 
-  // --- Email (scaffold only) ----------------------------------------------
+  // --- Email --------------------------------------------------------------
   RESEND_API_KEY: z.string().startsWith('re_').optional(),
+  /** Verifies inbound Resend webhooks (bounces, complaints). Svix-signed. */
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
   /**
    * Either `a@b.com` or the display-name form `Name <a@b.com>`. Resend accepts
    * both, and the display-name form is what customers should actually see.
@@ -44,6 +61,8 @@ const serverSchema = z.object({
       'Must be an email address, optionally with a display name: "Name <a@b.com>"',
     )
     .default('GOOD TIME <no-reply@example.com>'),
+  /** Where customer replies land. Never the no-reply sender. */
+  EMAIL_REPLY_TO: z.email().optional(),
 
   // --- Tax ----------------------------------------------------------------
   /**
@@ -88,6 +107,28 @@ const serverSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
   RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+
+  // --- Cache and rate-limit store: Upstash Redis ---------------------------
+  /**
+   * REST endpoint, not a `redis://` URL. The Workers runtime has no raw TCP, so
+   * a redis:// client cannot connect from the edge at all — this is HTTP by
+   * necessity, not preference.
+   */
+  UPSTASH_REDIS_REST_URL: z.url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+  // --- Observability ------------------------------------------------------
+  /** Sentry DSN. Unset disables reporting entirely rather than buffering. */
+  SENTRY_DSN: z.url().optional(),
+  /** Tags every event, so a staging error is never mistaken for a live one. */
+  SENTRY_ENVIRONMENT: z.string().default('development'),
+  /** Deploy identifier — the git SHA in CI. Makes "when did this start" answerable. */
+  SENTRY_RELEASE: z.string().optional(),
+  /** 0–1. Full capture in production is affordable at this traffic level. */
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0.1),
+
+  // --- Bot protection: Cloudflare Turnstile --------------------------------
+  TURNSTILE_SECRET_KEY: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
@@ -131,10 +172,78 @@ export const isTest = env.NODE_ENV === 'test';
 
 /** Integration availability — lets callers degrade gracefully instead of throwing. */
 export const integrations = {
-  stripe: Boolean(env.STRIPE_SECRET_KEY),
+  klarna: Boolean(env.KLARNA_USERNAME && env.KLARNA_PASSWORD),
   resend: Boolean(env.RESEND_API_KEY),
   cloudinary: Boolean(
     env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET,
   ),
   googleOAuth: Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET),
+  upstash: Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN),
+  sentry: Boolean(env.SENTRY_DSN),
+  turnstile: Boolean(env.TURNSTILE_SECRET_KEY),
 } as const;
+
+/**
+ * Things that are optional in development and non-negotiable in production.
+ *
+ * Kept out of the Zod schema deliberately: making them `required` there breaks
+ * `npm run dev` on a fresh clone, and making them optional there means a
+ * production deploy silently boots with no payments and no rate limiting. This
+ * splits the difference — the schema stays developer-friendly and the launch
+ * gate is explicit, enumerated, and testable.
+ *
+ * Called by `/api/health/deep` and by the `verify:production` script rather
+ * than at import time, so a misconfiguration is a red check in CI rather than
+ * a crash loop with no logs.
+ */
+export interface ProductionReadiness {
+  ready: boolean;
+  missing: { key: string; why: string }[];
+}
+
+export function productionReadiness(): ProductionReadiness {
+  const required: { key: string; present: boolean; why: string }[] = [
+    { key: 'KLARNA_USERNAME', present: integrations.klarna, why: 'No payments can be taken.' },
+    {
+      key: 'KLARNA_WEBHOOK_SECRET',
+      present: Boolean(env.KLARNA_WEBHOOK_SECRET),
+      why: 'The Klarna notification endpoint would accept unauthenticated calls.',
+    },
+    {
+      key: 'KLARNA_ENVIRONMENT',
+      present: env.KLARNA_ENVIRONMENT === 'production',
+      why: 'Still pointed at the Klarna playground — real cards will not work.',
+    },
+    { key: 'RESEND_API_KEY', present: integrations.resend, why: 'No receipts would be sent.' },
+    {
+      key: 'CLOUDINARY_API_SECRET',
+      present: integrations.cloudinary,
+      why: 'Product imagery cannot be uploaded or transformed.',
+    },
+    {
+      key: 'UPSTASH_REDIS_REST_URL',
+      present: integrations.upstash,
+      why: 'Rate limits and cache become per-instance, so the effective limit is limit × instances.',
+    },
+    { key: 'SENTRY_DSN', present: integrations.sentry, why: 'Errors go nowhere a human will see.' },
+    {
+      key: 'CRON_SECRET',
+      present: Boolean(env.CRON_SECRET),
+      why: 'Scheduled endpoints refuse every request, so nothing is ever processed.',
+    },
+    {
+      key: 'TAX_PROVIDER',
+      present: env.TAX_PROVIDER !== 'table',
+      why: 'Sales tax is an estimate, not an assessed amount. Do not take real orders on it.',
+    },
+    {
+      key: 'DIRECT_DATABASE_URL',
+      present: Boolean(env.DIRECT_DATABASE_URL),
+      why: 'Migrations run through the pooler, where advisory locks do not survive.',
+    },
+  ];
+
+  const missing = required.filter((item) => !item.present).map(({ key, why }) => ({ key, why }));
+
+  return { ready: missing.length === 0, missing };
+}

@@ -46,7 +46,7 @@ export async function applyRedirect(): Promise<void> {
 
   try {
     const list = await headers();
-    // Set by `proxy.ts` on every request. A Server Component has no other way
+    // Set by `middleware.ts` on every request. A Server Component has no other way
     // to learn which URL was asked for.
     pathname = list.get('x-pathname') ?? '';
   } catch {
@@ -67,8 +67,7 @@ export async function applyRedirect(): Promise<void> {
 export async function redirectFor(pathname: string): Promise<void> {
   // Normalised the same way the admin normalises on save, so `/old/` and
   // `/old` are the same rule rather than two.
-  const normalised =
-    pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  const normalised = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
 
   const match = await prisma.redirect
     .findFirst({

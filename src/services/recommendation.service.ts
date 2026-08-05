@@ -1,11 +1,7 @@
 import 'server-only';
 
 import { prisma } from '@/lib/prisma';
-import {
-  getProductsByIds,
-  listProducts,
-  type ProductCardView,
-} from '@/services/product.service';
+import { getProductsByIds, listProducts, type ProductCardView } from '@/services/product.service';
 
 /**
  * Product recommendations.

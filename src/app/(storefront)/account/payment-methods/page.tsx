@@ -12,16 +12,23 @@ import { requireUser } from '@/server/auth/session';
 export const metadata: Metadata = { title: 'Payment methods' };
 
 /**
- * Saved cards.
+ * Saved payment methods.
  *
- * **No card data is stored, and none ever may be.** Each row is a Stripe
- * PaymentMethod reference plus the display fragments Stripe itself returns —
- * enough to render "Visa ending 4242" and nothing more. Storing a card number,
- * even encrypted, moves this store out of PCI SAQ-A into a scope needing an
- * annual audit.
+ * **No card data is stored, and none ever may be.** Each row is a provider-side
+ * reference plus the display fragments the provider itself returns — enough to
+ * render "Visa ending 4242" and nothing more. Storing a card number, even
+ * encrypted, moves this store into a PCI scope needing an annual audit.
  *
- * Saving a card at checkout needs Stripe SetupIntents, which are not wired up
- * yet; the schema and this page are ready for them.
+ * ## Why this list is usually empty under Klarna
+ *
+ * Klarna holds the payment instrument, not us. A returning customer is
+ * recognised by Klarna in its own widget and picks a saved method there — so
+ * there is nothing for this page to save and nothing for us to store, which is
+ * strictly better for the customer and for our compliance scope.
+ *
+ * The model and this page are retained because they still hold historical rows
+ * from the previous provider, and because a second provider (a direct card
+ * gateway for markets Klarna does not cover) would populate them again.
  */
 export default async function PaymentMethodsPage() {
   const user = await requireUser();
@@ -61,7 +68,7 @@ export default async function PaymentMethodsPage() {
                 </p>
                 {method.isDefault ? <Badge variant="success">Default</Badge> : null}
               </div>
-              <p className="mt-1 text-body-xs text-foreground-subtle">
+              <p className="text-body-xs mt-1 text-foreground-subtle">
                 Expires {String(method.expMonth).padStart(2, '0')}/{method.expYear}
               </p>
             </li>
@@ -75,8 +82,13 @@ export default async function PaymentMethodsPage() {
           How your card is handled
         </h2>
         <ul className="mt-2 space-y-1 text-body-sm text-foreground-muted">
-          <li>Card numbers go straight to Stripe and never reach our servers.</li>
-          <li>We keep only a reference token, the brand, the last four digits and the expiry.</li>
+          <li>
+            Payment details go straight to Klarna and never reach our servers. Klarna holds them, so
+            there is usually nothing for us to save here at all.
+          </li>
+          <li>
+            Where a method is listed, we keep only a reference, the brand and the last four digits.
+          </li>
           <li>Your statement shows a neutral descriptor, never a product name.</li>
         </ul>
       </section>

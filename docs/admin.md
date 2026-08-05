@@ -15,11 +15,11 @@ to deploy.
 
 ### Three layers
 
-| Layer | Where | What it catches |
-|---|---|---|
-| Edge | [`proxy.ts`](../src/proxy.ts) | Unauthenticated requests, before any React runs. Fast, but reads a JWT — it cannot see a revoked session or a role changed a minute ago. |
+| Layer | Where                                             | What it catches                                                                                                                             |
+| ----- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Edge  | [`middleware.ts`](../src/middleware.ts)           | Unauthenticated requests, before any React runs. Fast, but reads a JWT — it cannot see a revoked session or a role changed a minute ago.    |
 | Shell | [`admin/layout.tsx`](../src/app/admin/layout.tsx) | Anyone who is not staff at all. Guarding in the layout means a page added to the folder is protected before anyone remembers to protect it. |
-| Page | every `page.tsx` and every action | The specific capability that screen needs. |
+| Page  | every `page.tsx` and every action                 | The specific capability that screen needs.                                                                                                  |
 
 The third layer is the one that matters. A single gate at the door makes "can
 you open the admin" and "can you refund four thousand dollars" the same
@@ -40,7 +40,7 @@ delete are separated because the interesting mistakes live between them:
 - `customer:pii` gates addresses and phone numbers. Without it they render
   masked, so a marketing manager can segment without reading anyone's address.
 - `role:manage` is separate from `role:assign` — handing out an existing role is
-  an everyday task; editing what a role *means* is the keys to the kingdom.
+  an everyday task; editing what a role _means_ is the keys to the kingdom.
 
 ### Roles
 
@@ -75,7 +75,7 @@ await withAdminAction(
 ```
 
 It checks the permission, runs the work, and writes the audit row — only if the
-work succeeded. An action written this way *cannot* be unpermissioned or
+work succeeded. An action written this way _cannot_ be unpermissioned or
 unlogged, because both are the wrapper's job rather than the author's
 discipline. A server action is a public HTTP endpoint with friendly syntax; the
 fact that only your own form posts to it is a UI detail, not a boundary.
@@ -106,22 +106,22 @@ leaves the building.
 
 ## Modules
 
-| Module | Notes |
-|---|---|
-| **Dashboard** | Every figure computed from live tables, each against the *previous equivalent window* — "this month vs last month" on the 2nd is a lie everyone has learned to ignore. Growth from zero reports "no prior period", not ∞. |
-| **Products** | Filters, sort and page live in the URL, so a filtered view is a link you can send. Bulk actions post row checkboxes to a server action, so the browser owns the selection and nothing can disagree with what is visibly ticked. |
-| **Product editor** | Tabs stay mounted (`hidden`, not unmounted) — unmounting drops every field edited on another tab, which is the worst possible failure for a form. |
-| **Inventory** | The only path that changes a stock number is `adjustStock`, which writes the ledger row and the count in one transaction. There is deliberately no inline "just edit the number" anywhere else. |
-| **Media** | A grid, not a table — the point of the screen is recognising an image. Alt text is edited inline because it is the field most likely to be missing and least likely to be fixed if it needs a second screen. |
-| **Orders** | State changes route through phase 4's `transitionOrder`, which already owns which transitions are legal, when stock releases and which emails fire. A second state machine here would be one that drifts. |
-| **Customers** | Lifetime value is aggregated in one query, not per row — fifty customers each triggering their own `SUM(orders)` is fifty round trips to render one screen. |
-| **Promotions** | Coupons, gift cards and referrals on one screen: they are all "ways value leaves the business", and auditing that should not take four pages. |
-| **Content** | Announcements, banners, FAQs and footer links are one table with a `type`. They differ only in where they render; four near-identical tables would mean four near-identical screens. |
-| **Blog** | The byline is a stored string, not a foreign key — a post keeps its author when the staff account that wrote it is closed, which is what a byline is for. |
-| **SEO** | Per-record metadata is edited on the record's own editor, next to the name it defaults to. Only redirects and the sitemap have no other home. Redirect chains are refused at save. |
-| **Reports** | Six reports, all live. Traffic says "not available" rather than drawing a plausible line — a fabricated conversion rate is the figure most likely to be acted on. |
-| **Staff & roles** | The permission editor. Grants are `set`, not diffed: the checkbox list is the complete intended state. |
-| **Settings** | Editable settings and environment secrets are visibly apart. Secrets show as connected/not and are never editable here — the settings table is readable by every process with a database connection and appears in every backup. |
+| Module             | Notes                                                                                                                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Dashboard**      | Every figure computed from live tables, each against the _previous equivalent window_ — "this month vs last month" on the 2nd is a lie everyone has learned to ignore. Growth from zero reports "no prior period", not ∞.        |
+| **Products**       | Filters, sort and page live in the URL, so a filtered view is a link you can send. Bulk actions post row checkboxes to a server action, so the browser owns the selection and nothing can disagree with what is visibly ticked.  |
+| **Product editor** | Tabs stay mounted (`hidden`, not unmounted) — unmounting drops every field edited on another tab, which is the worst possible failure for a form.                                                                                |
+| **Inventory**      | The only path that changes a stock number is `adjustStock`, which writes the ledger row and the count in one transaction. There is deliberately no inline "just edit the number" anywhere else.                                  |
+| **Media**          | A grid, not a table — the point of the screen is recognising an image. Alt text is edited inline because it is the field most likely to be missing and least likely to be fixed if it needs a second screen.                     |
+| **Orders**         | State changes route through phase 4's `transitionOrder`, which already owns which transitions are legal, when stock releases and which emails fire. A second state machine here would be one that drifts.                        |
+| **Customers**      | Lifetime value is aggregated in one query, not per row — fifty customers each triggering their own `SUM(orders)` is fifty round trips to render one screen.                                                                      |
+| **Promotions**     | Coupons, gift cards and referrals on one screen: they are all "ways value leaves the business", and auditing that should not take four pages.                                                                                    |
+| **Content**        | Announcements, banners, FAQs and footer links are one table with a `type`. They differ only in where they render; four near-identical tables would mean four near-identical screens.                                             |
+| **Blog**           | The byline is a stored string, not a foreign key — a post keeps its author when the staff account that wrote it is closed, which is what a byline is for.                                                                        |
+| **SEO**            | Per-record metadata is edited on the record's own editor, next to the name it defaults to. Only redirects and the sitemap have no other home. Redirect chains are refused at save.                                               |
+| **Reports**        | Six reports, all live. Traffic says "not available" rather than drawing a plausible line — a fabricated conversion rate is the figure most likely to be acted on.                                                                |
+| **Staff & roles**  | The permission editor. Grants are `set`, not diffed: the checkbox list is the complete intended state.                                                                                                                           |
+| **Settings**       | Editable settings and environment secrets are visibly apart. Secrets show as connected/not and are never editable here — the settings table is readable by every process with a database connection and appears in every backup. |
 
 ---
 
@@ -187,18 +187,18 @@ navigation menus, settings, an opening stock ledger, redirects and customer
 segments. All fictional; every address is `@example.test`, a reserved TLD that
 can never receive mail, so a misconfigured mailer cannot reach a real person.
 
-| Account | Role |
-|---|---|
-| `owner.demo@example.test` | Super administrator |
-| `admin.demo@example.test` | Administrator |
-| `manager.demo@example.test` | Store manager |
-| `stock.demo@example.test` | Inventory manager |
-| `orders.demo@example.test` | Order manager |
-| `support.demo@example.test` | Customer support |
-| `marketing.demo@example.test` | Marketing manager |
-| `editor.demo@example.test` | Content editor |
-| `finance.demo@example.test` | Finance manager |
-| `analyst.demo@example.test` | Read-only analyst |
+| Account                       | Role                |
+| ----------------------------- | ------------------- |
+| `owner.demo@example.test`     | Super administrator |
+| `admin.demo@example.test`     | Administrator       |
+| `manager.demo@example.test`   | Store manager       |
+| `stock.demo@example.test`     | Inventory manager   |
+| `orders.demo@example.test`    | Order manager       |
+| `support.demo@example.test`   | Customer support    |
+| `marketing.demo@example.test` | Marketing manager   |
+| `editor.demo@example.test`    | Content editor      |
+| `finance.demo@example.test`   | Finance manager     |
+| `analyst.demo@example.test`   | Read-only analyst   |
 
 Password for all of them: `GoodTimeAdmin2026!`
 
@@ -258,7 +258,7 @@ manual tracking number rather than the flow around it.
 
 Two decisions worth stating:
 
-**Fulfilling is one step, not two.** The form records the shipment *and*
+**Fulfilling is one step, not two.** The form records the shipment _and_
 transitions the order. A bare "mark shipped" button leaves a customer with an
 order claiming to be in transit and a timeline that cannot say where — which is
 the exact moment they contact support.

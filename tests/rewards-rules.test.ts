@@ -63,7 +63,9 @@ describe('pointsForOrder', () => {
 
   it('does not pay on value a coupon already gave away', () => {
     // $100 basket, $20 off — points are earned on the $80 actually paid.
-    expect(pointsForOrder({ subtotalCents: 10_000, discountCents: 2000, tier: 'STANDARD' })).toBe(80);
+    expect(pointsForOrder({ subtotalCents: 10_000, discountCents: 2000, tier: 'STANDARD' })).toBe(
+      80,
+    );
   });
 
   it('applies the tier multiplier', () => {
@@ -172,15 +174,15 @@ describe('birthdayGrantDue', () => {
   const birthday = { birthMonth: 6, birthDay: 14 };
 
   it('is not due before the birthday', () => {
-    expect(
-      birthdayGrantDue({ ...birthday, lastGrantedAt: null, now: new Date(2026, 5, 13) }),
-    ).toBe(false);
+    expect(birthdayGrantDue({ ...birthday, lastGrantedAt: null, now: new Date(2026, 5, 13) })).toBe(
+      false,
+    );
   });
 
   it('is due on the day', () => {
-    expect(
-      birthdayGrantDue({ ...birthday, lastGrantedAt: null, now: new Date(2026, 5, 14) }),
-    ).toBe(true);
+    expect(birthdayGrantDue({ ...birthday, lastGrantedAt: null, now: new Date(2026, 5, 14) })).toBe(
+      true,
+    );
   });
 
   it('is not due twice in one year', () => {
@@ -206,9 +208,9 @@ describe('birthdayGrantDue', () => {
   it('does not wait a year for someone who joins after their birthday', () => {
     // Joined in December, birthday in June: the next grant is the following June,
     // not twelve months from joining.
-    expect(
-      birthdayGrantDue({ ...birthday, lastGrantedAt: null, now: new Date(2027, 5, 20) }),
-    ).toBe(true);
+    expect(birthdayGrantDue({ ...birthday, lastGrantedAt: null, now: new Date(2027, 5, 20) })).toBe(
+      true,
+    );
   });
 
   it('needs a birthday to be set', () => {

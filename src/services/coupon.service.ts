@@ -67,10 +67,7 @@ export function toDiscount(coupon: Coupon): DiscountInput {
  * Codes are matched case-insensitively â€” customers type `save10`, marketing
  * prints `SAVE10`, and rejecting one of them is a self-inflicted support ticket.
  */
-export async function validateCoupon(
-  code: string,
-  context: CouponContext,
-): Promise<CouponResult> {
+export async function validateCoupon(code: string, context: CouponContext): Promise<CouponResult> {
   const normalized = code.trim().toUpperCase();
   if (!normalized) return reject('NOT_FOUND');
 

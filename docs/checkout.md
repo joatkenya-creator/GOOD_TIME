@@ -26,13 +26,13 @@ train.
 Integers, always. Cents for money, basis points for tax rates, grams for weight.
 No floats touch a price anywhere in this codebase, and `0.1 + 0.2` is why.
 
-| Concept | Unit | Example |
-|---|---|---|
-| Money | integer cents | `1999` = $19.99 |
-| Tax rate | basis points | `825` = 8.25% |
-| Weight | grams | `1500` = 1.5 kg |
+| Concept  | Unit          | Example         |
+| -------- | ------------- | --------------- |
+| Money    | integer cents | `1999` = $19.99 |
+| Tax rate | basis points  | `825` = 8.25%   |
+| Weight   | grams         | `1500` = 1.5 kg |
 
-Stripe also works in cents for USD, so there is no conversion at the boundary and
+Klarna also works in cents for USD, so there is no conversion at the boundary and
 nowhere for a factor-of-100 bug to hide.
 
 ### Order of operations
@@ -57,7 +57,7 @@ Three decisions inside that are worth stating:
 - **`FREE_SHIPPING` zeroes shipping without reducing the taxable base.** A waived
   shipping charge is not a discount on goods.
 
-`roundCents` rounds half *away from zero*, because `Math.round(-0.5)` is `-0` and
+`roundCents` rounds half _away from zero_, because `Math.round(-0.5)` is `-0` and
 that quietly loses a cent on every refund.
 
 ### The database enforces it too
@@ -128,13 +128,13 @@ single-use code.
 
 Rates are rows, not code, so operations can add "Free over $75" without a deploy.
 
-| Type | Price |
-|---|---|
-| `FLAT` | `baseCents` |
-| `FREE` | `0` |
+| Type           | Price                                                              |
+| -------------- | ------------------------------------------------------------------ |
+| `FLAT`         | `baseCents`                                                        |
+| `FREE`         | `0`                                                                |
 | `WEIGHT_BASED` | `baseCents + ceil((weight − freeWeightGrams) / 1000) × perKgCents` |
 
-Per *started* kilogram, which is how carriers actually bill. `freeAboveSubtotalCents`
+Per _started_ kilogram, which is how carriers actually bill. `freeAboveSubtotalCents`
 is applied **last**, so an order that qualified for free delivery cannot still be
 charged a weight surcharge.
 
@@ -176,7 +176,7 @@ dozens of states. An Avalara adapter would implement the same
 
 ### Amounts, not rates
 
-A rate table lets us *derive* amounts. A provider hands back **amounts**, and its
+A rate table lets us _derive_ amounts. A provider hands back **amounts**, and its
 figure is what gets remitted - so `computeTotals` takes a `taxLines` input that it
 uses verbatim rather than re-deriving. Re-deriving would only manufacture a
 discrepancy between the receipt and the filing.
@@ -193,11 +193,11 @@ support ticket.
 
 ### Where each is used
 
-| | Implementation | Why |
-|---|---|---|
-| Cart / checkout summary | table | Labelled "estimated". TaxJar bills per call and a cart render is not a sale |
-| `placeOrder` | `quoteTax` | Money is about to move |
-| Payment step | - | Displays the order's authoritative total, so nobody types a card number without seeing the real figure |
+|                         | Implementation | Why                                                                                                    |
+| ----------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| Cart / checkout summary | table          | Labelled "estimated". TaxJar bills per call and a cart render is not a sale                            |
+| `placeOrder`            | `quoteTax`     | Money is about to move                                                                                 |
+| Payment step            | -              | Displays the order's authoritative total, so nobody types a card number without seeing the real figure |
 
 ### When the provider fails
 
@@ -242,11 +242,11 @@ the thing support cannot explain three weeks later.
 
 ### Inventory
 
-| Moment | `quantity` | `reserved` |
-|---|---|---|
-| Order placed | — | `+ qty` |
-| Payment succeeds | `− qty` | `− qty` |
-| Order cancelled | — | `− qty` |
+| Moment           | `quantity` | `reserved` |
+| ---------------- | ---------- | ---------- |
+| Order placed     | —          | `+ qty`    |
+| Payment succeeds | `− qty`    | `− qty`    |
+| Order cancelled  | —          | `− qty`    |
 
 **Reserved on order, decremented on payment.** Decrementing an unpaid order lets
 anyone empty the warehouse by starting checkouts they never finish.
@@ -293,40 +293,43 @@ a query parameter.
 [`payment.service.ts`](../src/services/payment.service.ts)
 
 Payment Intents, not Checkout Sessions: the card form stays on our domain inside a
-Stripe-hosted iframe (`PaymentElement`), so the checkout keeps its own layout and
+Klarna-hosted iframe, so the checkout keeps its own layout and
 analytics while card numbers never reach our JavaScript, servers or logs. That is
 what keeps this store in PCI **SAQ-A**.
 
 ### Idempotency, three layers
 
-1. `idempotencyKey: order_<id>_intent` on the Stripe call — a double-submitted form
+1. `Klarna-Idempotency-Key: order_<id>_authorize` on the Klarna call — a double-submitted form
    returns the same intent instead of charging twice.
 2. `Payment.idempotencyKey` is `@unique` in the database.
 3. `transitionOrder` is a no-op when the order is already in the target status, so
-   a replayed webhook changes nothing. Stripe retries for three days; assume every
+   a replayed push changes nothing. Klarna retries for hours; assume every
    event arrives twice.
 
 ### Events handled
 
-| Event | Effect |
-|---|---|
-| `payment_intent.succeeded` | → `PAID`, commit inventory, clear cart, send confirmation |
-| `payment_intent.payment_failed` | Record the decline. Order **stays** `PENDING` so the customer can retry |
-| `payment_intent.canceled` | → `CANCELLED`, release stock and the coupon redemption |
-| `charge.refunded` | → `REFUNDED` / `PARTIALLY_REFUNDED`, email the customer |
-| `charge.dispute.created` | Internal note only — a customer who just charged back does not need an email |
+| Event                           | Effect                                                                       |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `payment_intent.succeeded`      | → `PAID`, commit inventory, clear cart, send confirmation                    |
+| `payment_intent.payment_failed` | Record the decline. Order **stays** `PENDING` so the customer can retry      |
+| `payment_intent.canceled`       | → `CANCELLED`, release stock and the coupon redemption                       |
+| `charge.refunded`               | → `REFUNDED` / `PARTIALLY_REFUNDED`, email the customer                      |
+| `charge.dispute.created`        | Internal note only — a customer who just charged back does not need an email |
 
-Anything else is acknowledged with 2xx. Returning an error makes Stripe retry an
+Anything else is acknowledged with 2xx. Returning an error makes Klarna retry an
 event we were never going to act on.
 
-A handler that **throws** returns 500 and Stripe *does* retry, which is correct for
+A handler that **throws** returns 500 and Klarna _does_ retry, which is correct for
 a transient database failure.
 
 ### Refunds
 
-`refundOrder` calls Stripe and stops. The database is updated by the
+`refundOrder` calls Klarna and updates the database from the response. Unlike a
+card gateway there is no refund webhook to wait for — Klarna's reply _is_ the
+confirmation. The nightly reconcile re-reads the order anyway, which is what
+catches a refund issued by hand in the Klarna portal. Previously this was the
 `charge.refunded` webhook that follows. Writing both here would leave the two out
-of step whenever Stripe accepts the refund and this process then dies.
+of step whenever the provider accepted the refund and this process then died.
 
 ### Amount mismatch
 
@@ -405,7 +408,7 @@ difference between a 40-second checkout and a 4-second one on a phone.
 npm run db:seed:checkout   # shipping rates, tax rates, demo coupons — idempotent
 npx vitest run             # 115 unit tests, 53 of them on money
 npm run smoke:checkout     # 28 database-level checks, incl. reservation expiry
-npm run verify:orders      # 41 checks: order lifecycle driven by Stripe webhooks
+npm run verify:orders      # order lifecycle driven by Klarna reconciliation
 npm run verify:flow        # 39 checks: cart + checkout in a real browser
 npm run verify:confirmation GT-100013 someone@example.test   # 22 checks
 npm run audit:checkout     # responsive + a11y, Chromium and WebKit, 4 viewports
@@ -425,7 +428,8 @@ layout is observable until something is in the bag. Serve it on the port
 `NEXT_PUBLIC_SITE_URL` names, or Auth.js issues a cross-origin callback URL and
 CSP blocks the session fetch.
 
-`verify:orders` drives `handleStripeEvent` with the payloads Stripe actually
+`verify:orders` drives `syncFromKlarna` against a stubbed Klarna transport, so the
+real request builder, error mapping and every database write are exercised. It uses the shapes Klarna actually
 posts. Test cards need API keys; the webhook they eventually cause does not, and
 the webhook is the only thing this system treats as authoritative — so the real
 path is covered without a network.
@@ -436,11 +440,11 @@ Both were learned by getting them wrong, and both cost an hour of chasing bugs
 that did not exist:
 
 1. **Never retry a mutating click.** Wrapping "click, then check" in a retry loop
-   with a wrong selector clicked *increase quantity* fourteen times and reported
+   with a wrong selector clicked _increase quantity_ fourteen times and reported
    the resulting $1,246 subtotal as a pricing bug. Wait for hydration once with a
    read-only probe, then act.
 2. **Poll for the expected state, not for a duration.** These actions take
-   seconds against a remote database, and the re-render streams in *after* the
+   seconds against a remote database, and the re-render streams in _after_ the
    POST resolves. A fixed `waitForTimeout` turns latency into a phantom failure.
 
 ---
@@ -456,7 +460,7 @@ that did not exist:
    secret.
 3. **Point `NEXT_PUBLIC_SITE_URL` at https.** HSTS, `upgrade-insecure-requests`
    and the cart cookie's `Secure` flag all key off it.
-4. **Verify the statement descriptor** in the Stripe dashboard actually reads as
+4. **Verify the statement descriptor** in the Klarna Merchant Portal actually reads as
    discreet.
 5. **Set the real `EMAIL_FROM` sender name** — it appears in the inbox next to
    every subject line.
@@ -470,14 +474,14 @@ that did not exist:
 
 Six defects, none of which class inspection or unit tests would have surfaced:
 
-| Defect | Why it mattered |
-|---|---|
-| **Guest orders stored no shipping address** | The address priced tax and shipping, then was discarded — a guest order recorded nowhere to ship it. Fixed with `shippingAddressSnapshot` on the order. |
-| **A corrected field swallowed the next click** | Blur cleared the error, the message unmounted, the Continue button moved up 28px, and the mouseup missed. Reachable via autofill. Fixed by reserving the error slot. |
-| **A replayed webhook re-sent the confirmation** | Stripe retries for three days. Stock and status were idempotent; the email and timeline entry were not. Fixed with a `paidAt` guard. |
-| **Undo raced the removal it undid** | The undo toast fired an add while the delete was still in flight; whichever landed second won. Fixed by chaining undo off the removal's promise. |
-| **Two controls shared one accessible name** | At quantity 1 the minus button was also labelled "Remove <product>" — indistinguishable from the real remove, and only one offered an undo. Minus now stops at 1. |
-| **`revalidatePath('/', 'layout')` on every cart tap** | Dropped the router cache for the whole site; add-to-cart took 12s and the badge still lagged. Now client state via `use-cart-count`, and add-to-cart is ~3.5s. |
+| Defect                                                | Why it mattered                                                                                                                                                      |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Guest orders stored no shipping address**           | The address priced tax and shipping, then was discarded — a guest order recorded nowhere to ship it. Fixed with `shippingAddressSnapshot` on the order.              |
+| **A corrected field swallowed the next click**        | Blur cleared the error, the message unmounted, the Continue button moved up 28px, and the mouseup missed. Reachable via autofill. Fixed by reserving the error slot. |
+| **A replayed webhook re-sent the confirmation**       | Klarna retries a push for hours. Stock and status were idempotent; the email and timeline entry were not. Fixed with a `paidAt` guard.                               |
+| **Undo raced the removal it undid**                   | The undo toast fired an add while the delete was still in flight; whichever landed second won. Fixed by chaining undo off the removal's promise.                     |
+| **Two controls shared one accessible name**           | At quantity 1 the minus button was also labelled "Remove <product>" — indistinguishable from the real remove, and only one offered an undo. Minus now stops at 1.    |
+| **`revalidatePath('/', 'layout')` on every cart tap** | Dropped the router cache for the whole site; add-to-cart took 12s and the badge still lagged. Now client state via `use-cart-count`, and add-to-cart is ~3.5s.       |
 
 ## Known gaps
 
@@ -500,7 +504,7 @@ Six defects, none of which class inspection or unit tests would have surfaced:
   becomes a problem.
 - **A failed PaymentIntent leaves a PENDING order.** `placeOrder` and
   `createPaymentIntent` cannot share a transaction — one is a database write, the
-  other a network call. If Stripe is unreachable the order exists with no intent.
+  other a network call. If Klarna is unreachable the order exists with no session.
   The reservation sweep cancels it within the hour.
 - **Cart writes take ~3.5s against a remote database.** Three sequential round
   trips from a development machine to Neon. Same-region on Vercel this is far

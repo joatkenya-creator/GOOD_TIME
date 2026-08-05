@@ -87,7 +87,10 @@ async function signIn(page) {
   await page.goto(`${BASE}/sign-in`, { waitUntil: 'domcontentloaded' });
   await page.fill('input[type="email"]', OWNER);
   await page.fill('input[type="password"]', PASSWORD);
-  await page.getByRole('button', { name: /sign in/i }).first().click();
+  await page
+    .getByRole('button', { name: /sign in/i })
+    .first()
+    .click();
   await page.waitForFunction(() => !window.location.pathname.startsWith('/sign-in'), {
     timeout: 30_000,
   });
@@ -110,7 +113,11 @@ function overflow(page) {
      * sent me looking at the table for an hour.
      */
     const scrolls = (element) => {
-      for (let node = element.parentElement; node && node !== document.body; node = node.parentElement) {
+      for (
+        let node = element.parentElement;
+        node && node !== document.body;
+        node = node.parentElement
+      ) {
         const overflowX = getComputedStyle(node).overflowX;
         if (overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'hidden') return true;
       }
@@ -146,7 +153,9 @@ async function audit(page) {
       .map((violation) => {
         const sample = violation.nodes[0];
         const data = sample?.any?.[0]?.data;
-        const ratio = data?.contrastRatio ? ` ${data.contrastRatio}:1 ${data.fgColor} on ${data.bgColor}` : '';
+        const ratio = data?.contrastRatio
+          ? ` ${data.contrastRatio}:1 ${data.fgColor} on ${data.bgColor}`
+          : '';
         return `${violation.id} (${violation.nodes.length}x${ratio}) e.g. ${sample?.target?.join(' ')?.slice(0, 60)}`;
       });
   });
@@ -312,14 +321,22 @@ async function main() {
 
   // An unknown report key must not 500 — it falls back rather than throwing.
   const unknown = await context.request.get(`${BASE}/api/admin/reports/not-a-report?format=csv`);
-  check('an unknown report key falls back rather than erroring', unknown.status() === 200, `got ${unknown.status()}`);
+  check(
+    'an unknown report key falls back rather than erroring',
+    unknown.status() === 200,
+    `got ${unknown.status()}`,
+  );
 
   await context.close();
 
   // -------------------------------------------------------------- network
   section('Network and console');
 
-  check('no unexpected 4xx/5xx responses', badResponses.length === 0, badResponses.slice(0, 6).join('; '));
+  check(
+    'no unexpected 4xx/5xx responses',
+    badResponses.length === 0,
+    badResponses.slice(0, 6).join('; '),
+  );
   check('no uncaught page errors', pageErrors.length === 0, pageErrors.slice(0, 4).join('; '));
   check('no console errors', consoleErrors.length === 0, consoleErrors.slice(0, 4).join('; '));
 

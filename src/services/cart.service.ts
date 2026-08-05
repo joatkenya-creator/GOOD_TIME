@@ -271,9 +271,7 @@ export async function getCartView(userId?: string | null): Promise<CartView | nu
   // Re-quoted on every read, never trusted from the cart row. A card emptied by
   // another order between adding it and checking out has to stop counting the
   // moment the customer looks at the basket, not at the moment they pay.
-  const giftCard = cart.giftCardId
-    ? await quoteGiftCardById(cart.giftCardId, subtotalCents)
-    : null;
+  const giftCard = cart.giftCardId ? await quoteGiftCardById(cart.giftCardId, subtotalCents) : null;
 
   // --- Shipping ----------------------------------------------------------
   const weightGrams = lines.reduce((sum, line) => sum + line.weightGrams * line.quantity, 0);
@@ -603,7 +601,10 @@ export async function setRedemption(
   });
 }
 
-export async function setShippingRate(rateId: string | null, userId?: string | null): Promise<void> {
+export async function setShippingRate(
+  rateId: string | null,
+  userId?: string | null,
+): Promise<void> {
   const cart = await getCart(userId, false);
   if (!cart) return;
   await prisma.cart.update({ where: { id: cart.id }, data: { shippingRateId: rateId } });

@@ -27,31 +27,45 @@ afterEach(() => {
 describe('server env', () => {
   it('treats a blank optional variable as absent', async () => {
     const env = await loadEnv({
-      STRIPE_SECRET_KEY: '',
-      STRIPE_WEBHOOK_SECRET: '',
+      KLARNA_USERNAME: '',
+      KLARNA_PASSWORD: '',
       RESEND_API_KEY: '',
       CLOUDINARY_CLOUD_NAME: '',
       AUTH_GOOGLE_ID: '',
+      UPSTASH_REDIS_REST_URL: '',
+      SENTRY_DSN: '',
     });
 
-    expect(env.STRIPE_SECRET_KEY).toBeUndefined();
+    expect(env.KLARNA_USERNAME).toBeUndefined();
     expect(env.RESEND_API_KEY).toBeUndefined();
+    // A blank URL must be absent rather than a validation failure — `.env`
+    // files spell "unset" as `FOO=`, and `z.url()` would reject `''`.
+    expect(env.UPSTASH_REDIS_REST_URL).toBeUndefined();
+    expect(env.SENTRY_DSN).toBeUndefined();
   });
 
   it('reports every integration as unconfigured when the keys are blank', async () => {
     vi.resetModules();
-    vi.stubEnv('STRIPE_SECRET_KEY', '');
+    vi.stubEnv('KLARNA_USERNAME', '');
+    vi.stubEnv('KLARNA_PASSWORD', '');
     vi.stubEnv('RESEND_API_KEY', '');
     vi.stubEnv('CLOUDINARY_CLOUD_NAME', '');
     vi.stubEnv('AUTH_GOOGLE_ID', '');
+    vi.stubEnv('UPSTASH_REDIS_REST_URL', '');
+    vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', '');
+    vi.stubEnv('SENTRY_DSN', '');
+    vi.stubEnv('TURNSTILE_SECRET_KEY', '');
 
     const { integrations } = await import('@/lib/env');
 
     expect(integrations).toEqual({
-      stripe: false,
+      klarna: false,
       resend: false,
       cloudinary: false,
       googleOAuth: false,
+      upstash: false,
+      sentry: false,
+      turnstile: false,
     });
   });
 

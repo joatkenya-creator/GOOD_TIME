@@ -22,16 +22,61 @@ const STAFF_PASSWORD = 'GoodTimeAdmin2026!';
 
 /** One account per role, so every permission set can actually be signed into. */
 const STAFF: { email: string; firstName: string; lastName: string; role: RoleKey }[] = [
-  { email: 'owner.demo@example.test', firstName: 'Marguerite', lastName: 'Okonjo', role: ROLES.superAdmin },
+  {
+    email: 'owner.demo@example.test',
+    firstName: 'Marguerite',
+    lastName: 'Okonjo',
+    role: ROLES.superAdmin,
+  },
   { email: 'admin.demo@example.test', firstName: 'Tobias', lastName: 'Fenn', role: ROLES.admin },
-  { email: 'manager.demo@example.test', firstName: 'Priya', lastName: 'Raman', role: ROLES.storeManager },
-  { email: 'stock.demo@example.test', firstName: 'Karol', lastName: 'Nowak', role: ROLES.inventoryManager },
-  { email: 'orders.demo@example.test', firstName: 'Dessa', lastName: 'Whitlock', role: ROLES.orderManager },
-  { email: 'support.demo@example.test', firstName: 'Ines', lastName: 'Baptiste', role: ROLES.customerSupport },
-  { email: 'marketing.demo@example.test', firstName: 'Rowan', lastName: 'Achebe', role: ROLES.marketingManager },
-  { email: 'editor.demo@example.test', firstName: 'Halle', lastName: 'Sorensen', role: ROLES.contentEditor },
-  { email: 'finance.demo@example.test', firstName: 'Yusuf', lastName: 'Demir', role: ROLES.financeManager },
-  { email: 'analyst.demo@example.test', firstName: 'Wren', lastName: 'Castellanos', role: ROLES.analyst },
+  {
+    email: 'manager.demo@example.test',
+    firstName: 'Priya',
+    lastName: 'Raman',
+    role: ROLES.storeManager,
+  },
+  {
+    email: 'stock.demo@example.test',
+    firstName: 'Karol',
+    lastName: 'Nowak',
+    role: ROLES.inventoryManager,
+  },
+  {
+    email: 'orders.demo@example.test',
+    firstName: 'Dessa',
+    lastName: 'Whitlock',
+    role: ROLES.orderManager,
+  },
+  {
+    email: 'support.demo@example.test',
+    firstName: 'Ines',
+    lastName: 'Baptiste',
+    role: ROLES.customerSupport,
+  },
+  {
+    email: 'marketing.demo@example.test',
+    firstName: 'Rowan',
+    lastName: 'Achebe',
+    role: ROLES.marketingManager,
+  },
+  {
+    email: 'editor.demo@example.test',
+    firstName: 'Halle',
+    lastName: 'Sorensen',
+    role: ROLES.contentEditor,
+  },
+  {
+    email: 'finance.demo@example.test',
+    firstName: 'Yusuf',
+    lastName: 'Demir',
+    role: ROLES.financeManager,
+  },
+  {
+    email: 'analyst.demo@example.test',
+    firstName: 'Wren',
+    lastName: 'Castellanos',
+    role: ROLES.analyst,
+  },
 ];
 
 async function seedPermissionsAndRoles(): Promise<void> {

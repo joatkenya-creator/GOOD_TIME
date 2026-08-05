@@ -110,7 +110,7 @@ export default async function AdminAlertsPage() {
                     <input type="hidden" name="alertId" value={alert.id} />
                     <button
                       type="submit"
-                      className="rounded-lg border border-border px-2.5 py-1 text-body-xs font-medium hover:bg-surface-muted"
+                      className="text-body-xs rounded-lg border border-border px-2.5 py-1 font-medium hover:bg-surface-muted"
                     >
                       Mark read
                     </button>

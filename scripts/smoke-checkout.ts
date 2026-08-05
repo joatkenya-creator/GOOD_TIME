@@ -152,7 +152,10 @@ async function main(): Promise<void> {
 
     const reserved = await prisma.inventory.findUnique({ where: { variantId: variant.id } });
     check('reserving stock does not decrement quantity', reserved?.quantity === startingQuantity);
-    check('reserving stock increments reserved', reserved?.reserved === startingReserved + quantity);
+    check(
+      'reserving stock increments reserved',
+      reserved?.reserved === startingReserved + quantity,
+    );
 
     // Payment: reservation becomes a decrement, exactly once.
     await prisma.inventory.update({
@@ -285,7 +288,9 @@ async function main(): Promise<void> {
       data: { quantity: startingQuantity, reserved: startingReserved },
     });
 
-    const leftover = await prisma.order.count({ where: { orderNumber: { startsWith: 'GT-SMOKE-' } } });
+    const leftover = await prisma.order.count({
+      where: { orderNumber: { startsWith: 'GT-SMOKE-' } },
+    });
     check('smoke data cleaned up', leftover === 0);
 
     const restored = await prisma.inventory.findUnique({ where: { variantId: variant.id } });

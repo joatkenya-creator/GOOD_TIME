@@ -11,8 +11,7 @@ import {
 import { authConfig } from '@/lib/auth/config';
 
 /**
- * Edge proxy — the first authorisation gate. (Next 16 renamed this convention
- * from `middleware`; the contract is unchanged.)
+ * Edge middleware — the first authorisation gate.
  *
  * This runs before any React code, so an unauthenticated request to `/admin`
  * never reaches a server component. It reads the session JWT only: the edge
@@ -22,6 +21,26 @@ import { authConfig } from '@/lib/auth/config';
  * Treat it as a fast filter, not the last line of defence. Pages and route
  * handlers re-check with `requireAdmin` / `assertPermission`, which read the
  * authoritative claim set.
+ *
+ * ## Why this is `middleware.ts` and not Next 16's `proxy.ts`
+ *
+ * Do not "modernise" this back. Next 16 renamed the convention to `proxy.ts`
+ * and made the **Node** runtime its default, and a Node proxy cannot be
+ * expressed as an edge one — `export const config = { runtime: 'edge' }` is
+ * rejected outright with "Proxy does not support Edge runtime".
+ *
+ * The OpenNext Cloudflare adapter requires an edge middleware and exits with
+ * "Node.js middleware is not currently supported" when it finds a Node proxy
+ * instead. A Cloudflare Worker *is* the edge runtime, so there is nowhere for a
+ * Node proxy to run.
+ *
+ * The legacy `middleware.ts` filename still compiles to an edge entry in
+ * `middleware-manifest.json`, which is exactly what the adapter looks for. So
+ * the filename is load-bearing until the adapter supports Node proxies.
+ *
+ * Nothing here wants Node anyway: no database, no filesystem, no `node:`
+ * builtin. That constraint predates the rename and is the reason this file is
+ * fast.
  */
 const { auth: withAuth } = NextAuth(authConfig);
 

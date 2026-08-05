@@ -24,8 +24,24 @@ library, header with mega menu, footer, and a twelve-section homepage.
 filtering, Postgres full-text search, reviews, wishlist, compare and recently
 viewed. See [docs/catalog.md](docs/catalog.md).
 
-Cart, checkout, the account area and the admin dashboard are deliberately **not**
-built yet.
+**Phase 4 — shopping and checkout.** Cart, shipping rates, assessed sales tax,
+order placement with transactional stock reservation. See
+[docs/checkout.md](docs/checkout.md).
+
+**Phase 5 — customer accounts.** Order history, addresses, returns, rewards,
+wishlists, sessions. See [docs/account.md](docs/account.md).
+
+**Phase 6 — administration.** Dashboard, catalogue management, fulfilment,
+role-based permissions, audit logging. See [docs/admin.md](docs/admin.md).
+
+**Phase 7 — scale.** Supplier imports, background jobs, media pipeline, SEO
+feeds, analytics. See [docs/platform.md](docs/platform.md).
+
+**Phase 8 — production.** Cloudflare Workers deployment, Klarna payments,
+Upstash-backed cache and rate limiting, Cloudflare Queues, Sentry, an automated
+test suite, CI/CD, and the operational documentation to run it. See
+[docs/production-architecture.md](docs/production-architecture.md) and
+[docs/go-live.md](docs/go-live.md).
 
 ---
 
@@ -77,59 +93,103 @@ Full setup guide: [docs/installation.md](docs/installation.md).
 
 ## Stack
 
-| Layer       | Choice                                 |
-| ----------- | -------------------------------------- |
-| Framework   | Next.js 16 (App Router, React 19)      |
-| Language    | TypeScript, strict                     |
-| Styling     | Tailwind CSS v4 (CSS-first `@theme`)   |
-| Motion      | Framer Motion                          |
-| Forms       | React Hook Form + Zod                  |
-| Client data | TanStack Query                         |
-| Database    | PostgreSQL                             |
-| ORM         | Prisma 7 (`@prisma/adapter-pg`)        |
-| Auth        | Auth.js v5                             |
-| Payments    | Stripe _(configured, not wired)_       |
-| Email       | Resend _(configured, not wired)_       |
-| Media       | Cloudinary _(configured, not wired)_   |
-| Analytics   | GA4, Search Console, Microsoft Clarity |
-| Hosting     | Vercel                                 |
+| Layer          | Choice                                                        |
+| -------------- | ------------------------------------------------------------- |
+| Framework      | Next.js 16 (App Router, React 19)                             |
+| Language       | TypeScript, strict                                            |
+| Styling        | Tailwind CSS v4 (CSS-first `@theme`)                          |
+| Motion         | Framer Motion                                                 |
+| Forms          | React Hook Form + Zod                                         |
+| Client data    | TanStack Query                                                |
+| Database       | Neon PostgreSQL (pooled)                                      |
+| ORM            | Prisma 7 (`@prisma/adapter-pg`)                               |
+| Auth           | Auth.js v5                                                    |
+| **Hosting**    | **Cloudflare Workers** via OpenNext                           |
+| **Payments**   | **Klarna** — authorise at checkout, capture at fulfilment     |
+| **Cache**      | **Upstash Redis** (REST — Workers has no raw TCP)             |
+| **Queues**     | **Cloudflare Queues** + Postgres ledger                       |
+| **ISR cache**  | **R2 + KV + Durable Objects**                                 |
+| Email          | Resend (`yowens@yoassoc.com`)                                 |
+| Media          | Cloudinary                                                    |
+| Tax            | TaxJar                                                        |
+| **Monitoring** | **Sentry**, Cloudflare Analytics                              |
+| Bot protection | Cloudflare WAF, bot management, Turnstile                     |
+| Analytics      | GA4, GTM, Google Ads, Meta, TikTok, Pinterest, Clarity, CF WA |
+| Testing        | Vitest, Playwright, axe-core, Lighthouse                      |
 
 ---
 
 ## Scripts
 
-| Command                   | Does                                              |
-| ------------------------- | ------------------------------------------------- |
-| `npm run dev`             | Development server                                |
-| `npm run build`           | `prisma generate` then a production build         |
-| `npm start`               | Serve the production build                        |
-| `npm run lint`            | ESLint                                            |
-| `npm run format`          | Prettier, write                                   |
-| `npm run typecheck`       | `tsc --noEmit`                                    |
-| `npm test`                | Vitest                                            |
-| `npm run db:migrate`      | Create and apply a migration (development)        |
-| `npm run db:deploy`       | Apply pending migrations (production)             |
-| `npm run db:seed`         | Seed roles, permissions and settings — idempotent |
-| `npm run db:studio`       | Prisma Studio                                     |
-| `npm run db:seed:catalog` | Demo products — development only                  |
-| `npm run db:verify`       | Tables, functional indexes, check constraints     |
-| `npm run smoke:catalog`   | 27 catalogue checks against the database          |
-| `npm run grant-admin`     | `-- you@example.com SUPER_ADMIN`                  |
+| Command                     | Does                                              |
+| --------------------------- | ------------------------------------------------- |
+| `npm run dev`               | Development server                                |
+| `npm run build`             | `prisma generate` then a production build         |
+| `npm start`                 | Serve the production build                        |
+| `npm run lint`              | ESLint                                            |
+| `npm run format`            | Prettier, write                                   |
+| `npm run typecheck`         | `tsc --noEmit`, app and Worker                    |
+| `npm test`                  | Vitest                                            |
+| `npm run test:e2e`          | Playwright, against a production build            |
+| `npm run cf:build`          | `next build` then the OpenNext transform          |
+| `npm run cf:preview`        | Run it locally in workerd with real bindings      |
+| `npm run cf:deploy`         | Build and deploy to production                    |
+| `npm run verify:production` | Refuse to launch a half-configured environment    |
+| `npm run verify:links`      | Broken links, missing images, duplicate metadata  |
+| `npm run lighthouse`        | Performance budgets, as a gate                    |
+| `npm run db:migrate`        | Create and apply a migration (development)        |
+| `npm run db:deploy`         | Apply pending migrations (production)             |
+| `npm run db:seed`           | Seed roles, permissions and settings — idempotent |
+| `npm run db:studio`         | Prisma Studio                                     |
+| `npm run db:seed:catalog`   | Demo products — development only                  |
+| `npm run db:verify`         | Tables, functional indexes, check constraints     |
+| `npm run smoke:catalog`     | 27 catalogue checks against the database          |
+| `npm run grant-admin`       | `-- you@example.com SUPER_ADMIN`                  |
 
 ---
 
 ## Documentation
 
-| Document                                             | Covers                                    |
-| ---------------------------------------------------- | ----------------------------------------- |
-| [docs/installation.md](docs/installation.md)         | Setup, database options, common problems  |
-| [docs/architecture.md](docs/architecture.md)         | Layering, data flow, scaling decisions    |
-| [docs/folder-structure.md](docs/folder-structure.md) | What belongs where, and why               |
-| [docs/environment.md](docs/environment.md)           | Every environment variable                |
-| [docs/design-system.md](docs/design-system.md)       | Tokens, typography, contrast, brand rules |
-| [docs/components.md](docs/components.md)             | Component index and conventions           |
-| [docs/catalog.md](docs/catalog.md)                   | Data model, query strategy, search, SEO   |
-| [src/app/api/README.md](src/app/api/README.md)       | API conventions and route map             |
+**Start here:** [docs/onboarding.md](docs/onboarding.md) — running in half an hour.
+
+### The application
+
+| Document                                             | Covers                                        |
+| ---------------------------------------------------- | --------------------------------------------- |
+| [docs/onboarding.md](docs/onboarding.md)             | Getting set up, conventions, common tasks     |
+| [docs/installation.md](docs/installation.md)         | Setup, database options, common problems      |
+| [docs/architecture.md](docs/architecture.md)         | Layering, data flow, scaling decisions        |
+| [docs/folder-structure.md](docs/folder-structure.md) | What belongs where, and why                   |
+| [docs/design-system.md](docs/design-system.md)       | Tokens, typography, contrast, brand rules     |
+| [docs/components.md](docs/components.md)             | Component index and conventions               |
+| [docs/catalog.md](docs/catalog.md)                   | Data model, query strategy, search, SEO       |
+| [docs/checkout.md](docs/checkout.md)                 | Cart, totals, tax, order placement            |
+| [docs/account.md](docs/account.md)                   | Customer accounts, orders, returns, rewards   |
+| [docs/admin.md](docs/admin.md)                       | Admin dashboard and permissions               |
+| [docs/platform.md](docs/platform.md)                 | Imports, jobs, search, media pipeline         |
+| [docs/quality.md](docs/quality.md)                   | Accessibility and responsiveness verification |
+| [src/app/api/README.md](src/app/api/README.md)       | API conventions and route map                 |
+
+### Production
+
+| Document                                                           | Covers                                                   |
+| ------------------------------------------------------------------ | -------------------------------------------------------- |
+| [docs/production-architecture.md](docs/production-architecture.md) | The deployed system, and why each piece                  |
+| [docs/deployment.md](docs/deployment.md)                           | Cloudflare Workers deployment, first time and every time |
+| [docs/cloudflare.md](docs/cloudflare.md)                           | DNS, SSL, WAF, cache rules, bot protection, queues       |
+| [docs/neon.md](docs/neon.md)                                       | Database setup, pooling, backups, restores               |
+| [docs/prisma.md](docs/prisma.md)                                   | Production migrations, expand-and-contract, rollback     |
+| [docs/upstash.md](docs/upstash.md)                                 | Cache and rate-limit store                               |
+| [docs/cloudinary.md](docs/cloudinary.md)                           | Image upload, transformation, lifecycle                  |
+| [docs/klarna.md](docs/klarna.md)                                   | Payments: authorise, capture, refund, reconcile          |
+| [docs/email.md](docs/email.md)                                     | Deliverability, templates, bounces                       |
+| [docs/queues.md](docs/queues.md)                                   | Background processing and dead letters                   |
+| [docs/environment.md](docs/environment.md)                         | Every environment variable, and rotation                 |
+| [docs/monitoring.md](docs/monitoring.md)                           | Sentry, metrics, logs, health, alerts                    |
+| [docs/troubleshooting.md](docs/troubleshooting.md)                 | Symptom-first, for when it is broken                     |
+| [docs/disaster-recovery.md](docs/disaster-recovery.md)             | Backups, restores, incident response                     |
+| [docs/go-live.md](docs/go-live.md)                                 | The launch checklist                                     |
+| [docs/maintenance.md](docs/maintenance.md)                         | Daily, weekly, monthly, quarterly                        |
 
 ---
 

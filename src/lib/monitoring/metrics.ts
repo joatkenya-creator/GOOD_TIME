@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { logger } from '@/lib/logger';
+import { captureException } from '@/lib/monitoring/sentry';
 
 /**
  * Application metrics and tracing seams.
@@ -185,7 +186,9 @@ export function toPrometheus(data: MetricsSnapshot = snapshot()): string {
   for (const histogram of data.histograms) {
     lines.push(`# TYPE ${histogram.name} summary`);
     lines.push(`${histogram.name}_count${renderLabels(histogram.labels)} ${histogram.count}`);
-    lines.push(`${histogram.name}_sum${renderLabels(histogram.labels)} ${histogram.average * histogram.count}`);
+    lines.push(
+      `${histogram.name}_sum${renderLabels(histogram.labels)} ${histogram.average * histogram.count}`,
+    );
     lines.push(`${histogram.name}_max${renderLabels(histogram.labels)} ${histogram.max}`);
   }
 
@@ -220,15 +223,22 @@ export function startSpan(name: string, attributes: Labels = {}): Span {
 /**
  * Reports an error to whatever is listening.
  *
- * One funnel, so adding Sentry later is one implementation rather than a
- * search for every `catch` in the codebase. Counts by error class as well, so
- * "errors are up" is answerable without a log search.
+ * One funnel, so every `catch` in the codebase reaches the same three places:
+ * a counter (so "errors are up" is answerable without a log search), the log
+ * (so it is in the platform's own tooling), and Sentry (so a human is told).
+ *
+ * Returns Sentry's event id when there is one — error pages surface it as a
+ * reference, which turns "the site broke" into a one-click lookup.
  */
-export function captureError(error: unknown, context: Labels = {}): void {
+export function captureError(error: unknown, context: Labels = {}): string | null {
   const name = error instanceof Error ? error.name : 'UnknownError';
 
   increment('errors.total', { type: name });
   logger.error('error.captured', error, context);
 
-  // Where `Sentry.captureException(error, { extra: context })` goes.
+  return captureException(error, {
+    // Labels are strings and numbers by construction, which is exactly what a
+    // Sentry tag may be; anything richer belongs in `extra` at the call site.
+    tags: Object.fromEntries(Object.entries(context).map(([key, value]) => [key, String(value)])),
+  });
 }

@@ -76,10 +76,7 @@ export async function raiseAlert(input: RaiseAlertInput): Promise<void> {
 /** Alerts this user is allowed to see: unrestricted ones, plus ones they can act on. */
 function visibilityFilter(user: SessionUser): Prisma.AdminAlertWhereInput {
   return {
-    OR: [
-      { permission: null },
-      { permission: { in: user.permissions as string[] } },
-    ],
+    OR: [{ permission: null }, { permission: { in: user.permissions as string[] } }],
   };
 }
 
@@ -143,7 +140,12 @@ export async function syncInventoryAlerts(): Promise<{ low: number; out: number 
       reserved: true,
       lowStockThreshold: true,
       variant: {
-        select: { id: true, sku: true, name: true, product: { select: { name: true, slug: true } } },
+        select: {
+          id: true,
+          sku: true,
+          name: true,
+          product: { select: { name: true, slug: true } },
+        },
       },
     },
     take: 500,

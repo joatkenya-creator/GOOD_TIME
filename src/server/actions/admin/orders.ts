@@ -7,7 +7,7 @@ import { PERMISSIONS } from '@/constants/permissions';
 import type { OrderStatus } from '@/generated/prisma/enums';
 import { withAdminAction } from '@/server/auth/admin';
 import { addStaffNote, setCustomerTags } from '@/services/admin/commerce-admin.service';
-import { createShipment } from '@/services/admin/fulfilment.service';
+import { shipAndCapture } from '@/services/admin/fulfilment.service';
 import { issueGiftCard } from '@/services/gift-card.service';
 import { transitionOrder } from '@/services/order.service';
 
@@ -61,29 +61,32 @@ export async function transitionOrderAction(formData: FormData): Promise<void> {
 /**
  * Records a shipment and moves the order to SHIPPED.
  *
- * Two steps, deliberately in this order: the shipment first, so a customer who
- * gets the "your order has shipped" email can already find the tracking number
- * when they click through. The reverse order sends them to an empty timeline.
+ * Three steps, deliberately in this order: the shipment, then the Klarna
+ * capture, then the status change.
+ *
+ * The shipment goes first so a customer who gets the "your order has shipped"
+ * email can already find the tracking number when they click through — the
+ * reverse order sends them to an empty timeline. The capture is next because
+ * Klarna authorises at checkout and is only permitted to be captured once goods
+ * ship; `shipAndCapture` owns that pairing and never rolls the shipment back
+ * over a capture failure, because the parcel is physically gone by then.
  */
 export async function fulfilOrderAction(formData: FormData): Promise<void> {
   const orderId = String(formData.get('orderId') ?? '');
   if (!orderId) return;
 
   const carrier = String(formData.get('carrier') ?? 'USPS') as
-    | 'USPS'
-    | 'UPS'
-    | 'FEDEX'
-    | 'DHL'
-    | 'OTHER';
+    'USPS' | 'UPS' | 'FEDEX' | 'DHL' | 'OTHER';
 
   await withAdminAction(
     PERMISSIONS.orderFulfil,
     async (actor) => {
-      const shipment = await createShipment({
+      const { shipment } = await shipAndCapture({
         orderId,
         carrier,
         service: String(formData.get('service') ?? '') || null,
         trackingNumber: String(formData.get('trackingNumber') ?? '') || null,
+        actorId: actor.id,
       });
 
       await transitionOrder(orderId, 'SHIPPED', {

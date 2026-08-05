@@ -402,8 +402,8 @@ function UserMenu({ user }: { user: { name: string; email: string; roles: string
         >
           <div className="border-b border-border px-3 py-2">
             <p className="truncate text-body-sm font-medium">{user.name}</p>
-            <p className="truncate text-body-xs text-foreground-subtle">{user.email}</p>
-            <p className="mt-1.5 text-body-xs text-foreground-subtle">
+            <p className="text-body-xs truncate text-foreground-subtle">{user.email}</p>
+            <p className="text-body-xs mt-1.5 text-foreground-subtle">
               {user.roles.map((role) => role.replace(/_/g, ' ').toLowerCase()).join(', ')}
             </p>
           </div>

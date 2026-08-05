@@ -1,0 +1,237 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which environment to deploy
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  # Never two deploys to the same environment at once. Wrangler uploads are not
+  # transactional across queues, routes and Durable Object migrations, and two
+  # overlapping deploys can leave a consumer bound to a Worker version that no
+  # longer exists.
+  group: deploy-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Staging, on every push to main. Nothing reaches production without having
+  # been the exact artifact that ran here first.
+  # ---------------------------------------------------------------------------
+  staging:
+    name: Deploy to staging
+    if: github.event_name == 'push' || github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: staging
+      url: https://staging.example.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # ---- Database first -------------------------------------------------
+      #
+      # Migrations run *before* the code that needs them, and they run through
+      # the unpooled connection. Neon's pooler is PgBouncer in transaction mode,
+      # where a session-level advisory lock does not survive between statements
+      # — so a migration through the pooler can run twice concurrently and
+      # deadlock the deploy.
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DIRECT_DATABASE_URL }}
+
+      - name: Build
+        run: npm run cf:build
+        env:
+          SKIP_ENV_VALIDATION: 'true'
+          NEXT_PUBLIC_SITE_URL: https://staging.example.com
+          NEXT_PUBLIC_KLARNA_ENVIRONMENT: playground
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_PUBLIC_DSN }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.STAGING_TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+          SENTRY_RELEASE: ${{ github.sha }}
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env staging --var SENTRY_RELEASE:${{ github.sha }}
+
+      - name: Smoke test
+        run: |
+          for attempt in 1 2 3 4 5; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' https://staging.example.com/api/health) && break
+            sleep 5
+          done
+          test "$status" = "200" || { echo "::error::Health check returned $status"; exit 1; }
+
+  # ---------------------------------------------------------------------------
+  # Production. Manual only.
+  #
+  # Deliberately not automatic on a green main. A deploy that takes payments
+  # should be a decision somebody made, at a time somebody chose, with somebody
+  # available to roll it back. Configure the `production` GitHub Environment
+  # with required reviewers — that is where the approval gate actually lives.
+  # ---------------------------------------------------------------------------
+  production:
+    name: Deploy to production
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://example.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # ---- Refuse to deploy a half-configured environment ------------------
+      #
+      # Cheap, and it catches the failure that is otherwise found by a customer:
+      # a rotated secret that was never re-added, so the site boots with no
+      # payments and no rate limiting.
+      - name: Production readiness
+        run: npm run verify:production
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.PRODUCTION_AUTH_SECRET }}
+          KLARNA_USERNAME: ${{ secrets.KLARNA_USERNAME }}
+          KLARNA_PASSWORD: ${{ secrets.KLARNA_PASSWORD }}
+          KLARNA_ENVIRONMENT: production
+          KLARNA_WEBHOOK_SECRET: ${{ secrets.KLARNA_WEBHOOK_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TAX_PROVIDER: taxjar
+          TAXJAR_API_KEY: ${{ secrets.TAXJAR_API_KEY }}
+
+      # ---- Back up before touching the schema ------------------------------
+      #
+      # Neon's branching makes this near-instant and near-free, and it is the
+      # difference between a rollback and an incident. The branch is the restore
+      # point; see docs/disaster-recovery.md.
+      - name: Snapshot the database
+        run: |
+          curl -sf -X POST \
+            "https://console.neon.tech/api/v2/projects/${{ secrets.NEON_PROJECT_ID }}/branches" \
+            -H "Authorization: Bearer ${{ secrets.NEON_API_KEY }}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"branch\":{\"name\":\"predeploy-$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}\",\"parent_id\":\"${{ secrets.NEON_PRODUCTION_BRANCH_ID }}\"}}" \
+            > /dev/null
+          echo "Restore point created."
+
+      # Unpooled, for the same advisory-lock reason as staging.
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_DATABASE_URL }}
+
+      - name: Build
+        run: npm run cf:build
+        env:
+          SKIP_ENV_VALIDATION: 'true'
+          NEXT_PUBLIC_SITE_URL: https://example.com
+          NEXT_PUBLIC_KLARNA_ENVIRONMENT: production
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_PUBLIC_DSN }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+          SENTRY_RELEASE: ${{ github.sha }}
+
+      # Source maps go to Sentry, never to the CDN. Shipping them publicly
+      # hands anyone a readable copy of the entire application.
+      - name: Upload source maps to Sentry
+        run: |
+          npx @sentry/cli sourcemaps inject .open-next/assets
+          npx @sentry/cli releases new "${GITHUB_SHA}"
+          npx @sentry/cli sourcemaps upload --release "${GITHUB_SHA}" .open-next/assets
+          npx @sentry/cli releases set-commits "${GITHUB_SHA}" --auto
+          find .open-next/assets -name '*.map' -delete
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+        continue-on-error: true
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env production --var SENTRY_RELEASE:${{ github.sha }}
+
+      # ---- Prove it works before calling it done ---------------------------
+      - name: Smoke test
+        run: |
+          set -e
+          curl -sf https://example.com/api/health > /dev/null
+          curl -sf https://example.com/ -o /dev/null
+          curl -sf https://example.com/robots.txt -o /dev/null
+          curl -sf https://example.com/sitemap-index.xml -o /dev/null
+
+          # Security headers are easy to lose to a config change and hard to
+          # notice, because nothing looks different.
+          headers=$(curl -sI https://example.com/)
+          echo "$headers" | grep -qi 'strict-transport-security' \
+            || { echo '::error::HSTS is missing'; exit 1; }
+          echo "$headers" | grep -qi 'content-security-policy' \
+            || { echo '::error::CSP is missing'; exit 1; }
+
+      - name: Tag the release
+        run: |
+          git tag "deploy-$(date +%Y%m%d-%H%M%S)"
+          git push --tags
+        continue-on-error: true
+
+      # ---- Roll back on a failed smoke test --------------------------------
+      #
+      # `wrangler rollback` reverts the Worker only. A migration that has
+      # already applied is not undone — which is exactly why migrations here are
+      # expand-only and never drop a column in the same release that stops using
+      # it. See docs/prisma.md.
+      - name: Roll back
+        if: failure()
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Quoted, because the message contains `: ` — a colon followed by a
+          # space is a YAML mapping indicator, and unquoted this line is a
+          # parse error rather than a command.
+          command: 'rollback --env production --message "Automatic rollback after a failed smoke test on ${{ github.sha }}"'

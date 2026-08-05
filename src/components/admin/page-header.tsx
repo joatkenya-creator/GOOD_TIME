@@ -31,7 +31,7 @@ export function AdminPageHeader({
   return (
     <header className="mb-6">
       <nav aria-label="Breadcrumb" className="mb-3">
-        <ol className="flex flex-wrap items-center gap-1.5 text-body-xs text-foreground-subtle">
+        <ol className="text-body-xs flex flex-wrap items-center gap-1.5 text-foreground-subtle">
           <li>
             <Link href="/admin" className="hover:text-foreground">
               Admin
@@ -63,7 +63,10 @@ export function AdminPageHeader({
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span aria-current={last ? 'page' : undefined} className={last ? 'text-foreground' : undefined}>
+                  <span
+                    aria-current={last ? 'page' : undefined}
+                    className={last ? 'text-foreground' : undefined}
+                  >
                     {crumb.label}
                   </span>
                 )}
@@ -86,7 +89,9 @@ export function AdminPageHeader({
           ) : null}
         </div>
 
-        {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
     </header>
   );
@@ -113,7 +118,7 @@ export function AdminCard({
           <div className="min-w-0">
             <h2 className="text-body font-semibold text-foreground">{title}</h2>
             {description ? (
-              <p className="mt-0.5 text-body-xs text-foreground-subtle">{description}</p>
+              <p className="text-body-xs mt-0.5 text-foreground-subtle">{description}</p>
             ) : null}
           </div>
           {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}

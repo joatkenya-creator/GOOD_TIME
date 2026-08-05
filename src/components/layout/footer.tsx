@@ -31,7 +31,37 @@ const TRUST_BADGES = [
  * far is deciding whether to trust us — that is the moment the shipping and
  * returns promises need to be visible.
  */
-export function Footer() {
+export interface FooterProps {
+  /**
+   * Slugs under `/pages/` that actually resolve — the legal documents in code
+   * plus every published CMS page.
+   *
+   * Passed in rather than read here because `components/` may not import
+   * `services/`. The storefront layout does the query once for the whole shell.
+   */
+  availablePages: readonly string[];
+}
+
+/**
+ * Links to a page that does not exist are not rendered.
+ *
+ * The footer advertised twelve policy pages — shipping, returns, warranty,
+ * contact and the rest — that had never been written. Every one 404'd, and Next
+ * prefetches visible links, so those 404s fired on every page view before
+ * anyone clicked. A shopper checking whether a retailer is trustworthy reads
+ * exactly these, and a dead "Returns & hygiene policy" link answers that
+ * question the wrong way.
+ *
+ * This is the same rule the sitemap already follows: do not publish a URL that
+ * 404s. Writing the page in the admin makes its link appear, with no deploy —
+ * so the fix stays with whoever owns the content.
+ */
+function isResolvable(href: string, availablePages: readonly string[]): boolean {
+  if (!href.startsWith('/pages/')) return true;
+  return availablePages.includes(href.slice('/pages/'.length));
+}
+
+export function Footer({ availablePages }: FooterProps) {
   return (
     <footer className="mt-24 border-t border-border bg-surface-muted">
       <Container>
@@ -71,29 +101,36 @@ export function Footer() {
           </div>
 
           <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-            {footerNav.map((group) => (
-              <div key={group.title}>
-                <h2 className="text-eyebrow text-foreground uppercase">{group.title}</h2>
-                {/*
-                 * `min-h-6` on each link, with the gap absorbed into the link
-                 * box rather than sitting between two 17px targets. Footer links
-                 * are standalone controls, so WCAG 2.5.8's inline-text exemption
-                 * does not cover them.
-                 */}
-                <ul className="mt-3 space-y-0.5">
-                  {group.items.map((item) => (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className="inline-flex min-h-6 items-center rounded-sm py-1 text-body-sm text-foreground-muted transition-colors duration-(--duration-fast) hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {footerNav.map((group) => {
+              const items = group.items.filter((item) => isResolvable(item.href, availablePages));
+
+              // A heading with nothing under it reads as a rendering failure.
+              if (items.length === 0) return null;
+
+              return (
+                <div key={group.title}>
+                  <h2 className="text-eyebrow text-foreground uppercase">{group.title}</h2>
+                  {/*
+                   * `min-h-6` on each link, with the gap absorbed into the link
+                   * box rather than sitting between two 17px targets. Footer links
+                   * are standalone controls, so WCAG 2.5.8's inline-text exemption
+                   * does not cover them.
+                   */}
+                  <ul className="mt-3 space-y-0.5">
+                    {items.map((item) => (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          className="inline-flex min-h-6 items-center rounded-sm py-1 text-body-sm text-foreground-muted transition-colors duration-(--duration-fast) hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </nav>
         </div>
 
@@ -132,13 +169,19 @@ export function Footer() {
             &copy; {new Date().getFullYear()} {siteConfig.legalName}. All rights reserved.
           </p>
           <p>
-            You must be {siteConfig.minimumAge} or older to purchase.{' '}
-            <Link
-              href={ROUTES.page('accessibility')}
-              className="underline underline-offset-4 hover:text-foreground"
-            >
-              Accessibility
-            </Link>
+            You must be {siteConfig.minimumAge} or older to purchase.
+            {/* Same rule as the nav links above: shown only if it resolves. */}
+            {isResolvable(ROUTES.page('accessibility'), availablePages) ? (
+              <>
+                {' '}
+                <Link
+                  href={ROUTES.page('accessibility')}
+                  className="underline underline-offset-4 hover:text-foreground"
+                >
+                  Accessibility
+                </Link>
+              </>
+            ) : null}
           </p>
         </div>
       </Container>

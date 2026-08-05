@@ -101,7 +101,10 @@ async function reset(): Promise<void> {
   if (existing.length === 0) return;
 
   const ids = existing.map((user) => user.id);
-  const orders = await prisma.order.findMany({ where: { userId: { in: ids } }, select: { id: true } });
+  const orders = await prisma.order.findMany({
+    where: { userId: { in: ids } },
+    select: { id: true },
+  });
   const orderIds = orders.map((order) => order.id);
 
   await prisma.returnItem.deleteMany({ where: { returnRequest: { userId: { in: ids } } } });
@@ -206,8 +209,7 @@ async function main(): Promise<void> {
       data: TOPICS.map((topic) => ({
         userId: user.id,
         topic,
-        email:
-          topic === 'PROMOTIONS' || topic === 'NEWSLETTER' ? customer.marketing : true,
+        email: topic === 'PROMOTIONS' || topic === 'NEWSLETTER' ? customer.marketing : true,
         sms: false,
         push: false,
       })),
@@ -248,7 +250,8 @@ async function main(): Promise<void> {
           email: customer.email,
           outcome: 'SUCCESS',
           ipAddress: '203.0.113.24',
-          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0',
+          userAgent:
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0',
           createdAt: daysAgo(1),
         },
         {
@@ -381,7 +384,10 @@ async function main(): Promise<void> {
                   create: {
                     carrier: 'USPS' as const,
                     service: 'Ground Advantage',
-                    status: spec.status === 'DELIVERED' ? ('DELIVERED' as const) : ('IN_TRANSIT' as const),
+                    status:
+                      spec.status === 'DELIVERED'
+                        ? ('DELIVERED' as const)
+                        : ('IN_TRANSIT' as const),
                     trackingNumber: `9400${String(Math.abs(spec.ago)).padStart(4, '0')}5551234567`,
                     shippedAt: new Date(placedAt.getTime() + 2 * 24 * 60 * 60 * 1000),
                   },

@@ -63,8 +63,7 @@ export async function upsertPage(input: {
     content: input.content,
     status: input.status,
     // Stamped on first publication only, so an edit does not reorder the list.
-    publishedAt:
-      input.publishedAt ?? (input.status === 'PUBLISHED' ? new Date() : null),
+    publishedAt: input.publishedAt ?? (input.status === 'PUBLISHED' ? new Date() : null),
   };
 
   return input.id

@@ -76,7 +76,11 @@ export async function updatePreferences(
     birthDay: input.birthDay ?? null,
   };
 
-  await prisma.userPreferences.upsert({ where: { userId }, update: data, create: { userId, ...data } });
+  await prisma.userPreferences.upsert({
+    where: { userId },
+    update: data,
+    create: { userId, ...data },
+  });
 }
 
 /**
@@ -113,7 +117,10 @@ export async function changeEmail(
     return { ok: false, message: 'That is already your email address.' };
   }
 
-  const taken = await prisma.user.findUnique({ where: { email: normalized }, select: { id: true } });
+  const taken = await prisma.user.findUnique({
+    where: { email: normalized },
+    select: { id: true },
+  });
   if (taken) {
     // Deliberately the same wording a free address would get. Confirming which
     // addresses have accounts is an enumeration oracle.
@@ -288,7 +295,11 @@ export function profileCompletion(input: {
   addressCount: number;
 }): { percent: number; missing: { label: string; href: string }[] } {
   const steps = [
-    { done: Boolean(input.firstName && input.lastName), label: 'Add your name', href: '/account/profile' },
+    {
+      done: Boolean(input.firstName && input.lastName),
+      label: 'Add your name',
+      href: '/account/profile',
+    },
     { done: input.emailVerified !== null, label: 'Verify your email', href: '/account/security' },
     { done: input.addressCount > 0, label: 'Save an address', href: '/account/addresses' },
     { done: Boolean(input.phone), label: 'Add a phone number', href: '/account/profile' },

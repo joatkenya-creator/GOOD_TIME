@@ -148,11 +148,7 @@ export function Label({ htmlFor, children }: { htmlFor: string; children: React.
  */
 export function FieldError({ message, id }: { message?: string; id: string }) {
   return (
-    <p
-      id={id}
-      role="alert"
-      className="mt-1 min-h-4 text-body-xs leading-4 text-(--color-error)"
-    >
+    <p id={id} role="alert" className="text-body-xs mt-1 min-h-4 leading-4 text-(--color-error)">
       {message ?? ''}
     </p>
   );
@@ -200,7 +196,7 @@ export const Field = function Field({
       />
 
       {hint ? (
-        <p id={`${id}-hint`} className="mt-1 text-body-xs text-foreground-subtle">
+        <p id={`${id}-hint`} className="text-body-xs mt-1 text-foreground-subtle">
           {hint}
         </p>
       ) : null}

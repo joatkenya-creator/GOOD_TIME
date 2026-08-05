@@ -81,11 +81,11 @@ export function RegisterForm() {
           <Checkbox name="acceptsTerms" className="mt-0.5" />
           <span>
             I am 18 or older and agree to the{' '}
-            <Link href="/pages/terms" className="text-accent hover:underline">
+            <Link href="/pages/terms" className="text-accent underline underline-offset-2">
               terms of service
             </Link>{' '}
             and{' '}
-            <Link href="/pages/privacy" className="text-accent hover:underline">
+            <Link href="/pages/privacy" className="text-accent underline underline-offset-2">
               privacy policy
             </Link>
             .

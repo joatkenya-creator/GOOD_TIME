@@ -265,7 +265,7 @@ export async function recalculateTier(userId: string, now = new Date()): Promise
  *
  * Called once, when an order becomes `PAID`. Idempotent by construction: the
  * ledger is checked for an existing `EARNED_PURCHASE` against this order, so a
- * replayed Stripe webhook cannot pay twice.
+ * replayed Klarna push cannot pay twice.
  *
  * The tier is read *before* awarding and recalculated *after*, so an order that
  * promotes someone earns at the rate they had when they placed it. Earning at the

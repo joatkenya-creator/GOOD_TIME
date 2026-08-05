@@ -61,7 +61,7 @@ export function CheckoutProgress({
 
                 <span
                   className={cn(
-                    'flex items-center gap-1 text-body-xs font-medium',
+                    'text-body-xs flex items-center gap-1 font-medium',
                     isCurrent
                       ? 'text-accent-text'
                       : isDone

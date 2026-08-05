@@ -148,10 +148,30 @@ export async function quote(input: TaxQuoteInput): Promise<TaxQuote> {
 
   const lines = reconcile(
     [
-      component('State', jurisdictions.state, breakdown.state_tax_rate, breakdown.state_tax_collectable),
-      component('County', jurisdictions.county, breakdown.county_tax_rate, breakdown.county_tax_collectable),
-      component('City', jurisdictions.city, breakdown.city_tax_rate, breakdown.city_tax_collectable),
-      component('Special district', undefined, breakdown.special_tax_rate, breakdown.special_district_tax_collectable),
+      component(
+        'State',
+        jurisdictions.state,
+        breakdown.state_tax_rate,
+        breakdown.state_tax_collectable,
+      ),
+      component(
+        'County',
+        jurisdictions.county,
+        breakdown.county_tax_rate,
+        breakdown.county_tax_collectable,
+      ),
+      component(
+        'City',
+        jurisdictions.city,
+        breakdown.city_tax_rate,
+        breakdown.city_tax_collectable,
+      ),
+      component(
+        'Special district',
+        undefined,
+        breakdown.special_tax_rate,
+        breakdown.special_district_tax_collectable,
+      ),
     ].filter((line): line is TaxLine => line !== null),
     totalCents,
   );

@@ -46,14 +46,11 @@ export function useWishlist() {
 
   return {
     ...list,
-    toggle: useCallback(
-      (id: string) => {
-        const saved = wishlistStore.toggle(id);
-        void syncWishlistAction(id, saved);
-        return saved;
-      },
-      [],
-    ),
+    toggle: useCallback((id: string) => {
+      const saved = wishlistStore.toggle(id);
+      void syncWishlistAction(id, saved);
+      return saved;
+    }, []),
   };
 }
 

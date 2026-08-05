@@ -4,22 +4,23 @@ One folder per bounded context. Every handler is wrapped in `withRoute`, which
 supplies origin checking, rate limiting, error shaping and logging — see
 [`src/lib/api/handler.ts`](../../lib/api/handler.ts).
 
-| Route                     | Purpose                                    | Auth              |
-| ------------------------- | ------------------------------------------ | ----------------- |
-| `/api/health`             | Liveness + database reachability           | public            |
-| `/api/auth/[...nextauth]` | Auth.js sign-in, callbacks, session        | public            |
-| `/api/auth/register`      | Account creation                           | public            |
-| `/api/products`           | Catalogue listing, filtering, facets       | public            |
-| `/api/products/[slug]`    | Single product with variants and inventory | public            |
-| `/api/search`             | Full-text and faceted search               | public            |
-| `/api/blog`               | Published posts                            | public            |
-| `/api/cart`               | Cart read and mutation                     | session or cookie |
-| `/api/checkout`           | Payment intent, order placement            | session or cookie |
-| `/api/orders`             | Order history for the signed-in customer   | customer          |
-| `/api/users/me`           | Profile read and update                    | customer          |
-| `/api/admin/*`            | Back-office operations                     | admin permission  |
-| `/api/analytics`          | Server-side event ingestion                | public, throttled |
-| `/api/webhooks/stripe`    | Payment provider callbacks                 | signature         |
+| Route                          | Purpose                                    | Auth                 |
+| ------------------------------ | ------------------------------------------ | -------------------- |
+| `/api/health`                  | Liveness + database reachability           | public               |
+| `/api/auth/[...nextauth]`      | Auth.js sign-in, callbacks, session        | public               |
+| `/api/auth/register`           | Account creation                           | public               |
+| `/api/products`                | Catalogue listing, filtering, facets       | public               |
+| `/api/products/[slug]`         | Single product with variants and inventory | public               |
+| `/api/search`                  | Full-text and faceted search               | public               |
+| `/api/blog`                    | Published posts                            | public               |
+| `/api/cart`                    | Cart read and mutation                     | session or cookie    |
+| `/api/checkout`                | Payment intent, order placement            | session or cookie    |
+| `/api/orders`                  | Order history for the signed-in customer   | customer             |
+| `/api/users/me`                | Profile read and update                    | customer             |
+| `/api/admin/*`                 | Back-office operations                     | admin permission     |
+| `/api/analytics`               | Server-side event ingestion                | public, throttled    |
+| `/api/webhooks/klarna/[token]` | Klarna push notifications                  | URL secret + re-read |
+| `/api/webhooks/resend`         | Bounces and complaints                     | Svix signature       |
 
 ## Conventions
 

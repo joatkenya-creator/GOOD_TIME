@@ -1,12 +1,4 @@
-import {
-  CheckCircle2,
-  Clock,
-  CreditCard,
-  Package,
-  Printer,
-  Truck,
-  XCircle,
-} from 'lucide-react';
+import { CheckCircle2, Clock, CreditCard, Package, Printer, Truck, XCircle } from 'lucide-react';
 
 import { MediaPlaceholder } from '@/components/common/media-placeholder';
 import { Badge } from '@/components/ui/badge';
@@ -111,20 +103,19 @@ export function OrderDetail({ order, isNew = false }: { order: Order; isNew?: bo
   return (
     <div className="space-y-8">
       <header className="text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent-subtle">
+        <div className="bg-accent-subtle mx-auto flex size-14 items-center justify-center rounded-full">
           <StatusIcon aria-hidden="true" className="size-7 text-accent-text" />
         </div>
 
-        <h1 className="mt-4 text-h2 font-bold text-foreground">
+        <h1 className="text-h2 mt-4 font-bold text-foreground">
           {isNew ? 'Thank you — your order is in' : `Order ${order.orderNumber}`}
         </h1>
 
         <p className="mt-2 text-body text-foreground-muted">{status.description}</p>
 
         <p className="mt-4 text-body-sm text-foreground-subtle">
-          Order number{' '}
-          <strong className="font-mono text-foreground">{order.orderNumber}</strong> · Confirmation
-          sent to {order.email}
+          Order number <strong className="font-mono text-foreground">{order.orderNumber}</strong> ·
+          Confirmation sent to {order.email}
         </p>
       </header>
 
@@ -184,7 +175,7 @@ export function OrderDetail({ order, isNew = false }: { order: Order; isNew?: bo
                 </p>
               </div>
 
-              <span className="shrink-0 text-body-sm tabular-nums text-foreground">
+              <span className="shrink-0 text-body-sm text-foreground tabular-nums">
                 {formatPrice(item.totalCents)}
               </span>
             </li>
@@ -208,7 +199,7 @@ export function OrderDetail({ order, isNew = false }: { order: Order; isNew?: bo
 
           <div className="flex items-baseline justify-between border-t border-border pt-3">
             <dt className="text-body font-semibold text-foreground">Total</dt>
-            <dd className="text-h5 font-bold tabular-nums text-foreground">
+            <dd className="text-h5 font-bold text-foreground tabular-nums">
               {formatPrice(order.totalCents)}
             </dd>
           </div>
@@ -241,9 +232,7 @@ export function OrderDetail({ order, isNew = false }: { order: Order; isNew?: bo
         </Panel>
       </div>
 
-      {order.giftNote ? (
-        <Panel title="Gift note">{order.giftNote}</Panel>
-      ) : null}
+      {order.giftNote ? <Panel title="Gift note">{order.giftNote}</Panel> : null}
 
       <OrderTimeline events={order.events.filter((event) => event.isCustomerVisible)} />
 
@@ -311,7 +300,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   return (
     <div className="flex items-baseline justify-between gap-3">
       <dt className="text-foreground-muted">{label}</dt>
-      <dd className="tabular-nums text-foreground">{children}</dd>
+      <dd className="text-foreground tabular-nums">{children}</dd>
     </div>
   );
 }

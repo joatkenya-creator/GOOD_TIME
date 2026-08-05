@@ -60,8 +60,16 @@ export default async function AdminDashboardPage() {
 
   const quickActions = [
     { label: 'New product', href: '/admin/products/new', permission: PERMISSIONS.productWrite },
-    { label: 'Orders to fulfil', href: '/admin/orders?status=PAID', permission: PERMISSIONS.orderRead },
-    { label: 'Low stock', href: '/admin/inventory?status=low', permission: PERMISSIONS.inventoryRead },
+    {
+      label: 'Orders to fulfil',
+      href: '/admin/orders?status=PAID',
+      permission: PERMISSIONS.orderRead,
+    },
+    {
+      label: 'Low stock',
+      href: '/admin/inventory?status=low',
+      permission: PERMISSIONS.inventoryRead,
+    },
   ].filter((action) => can(user, action.permission));
 
   return (
@@ -82,36 +90,36 @@ export default async function AdminDashboardPage() {
       />
 
       {seeMetrics ? (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Revenue, 30 days"
-          value={formatMoney(metrics.revenue30)}
-          changePercent={percentChange(metrics.revenue30, metrics.revenuePrevious30)}
-          hint="vs previous 30"
-          href="/admin/reports"
-        />
-        <StatCard
-          label="Orders, 30 days"
-          value={String(metrics.orders30)}
-          changePercent={percentChange(metrics.orders30, metrics.ordersPrevious30)}
-          hint="vs previous 30"
-          href="/admin/orders"
-        />
-        <StatCard
-          label="Orders today"
-          value={String(metrics.ordersToday)}
-          hint={formatMoney(metrics.revenueToday)}
-          changePercent={null}
-          href="/admin/orders"
-        />
-        <StatCard
-          label="New customers, 30 days"
-          value={String(metrics.customers30)}
-          changePercent={percentChange(metrics.customers30, metrics.customersPrevious30)}
-          hint="vs previous 30"
-          href="/admin/customers"
-        />
-      </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Revenue, 30 days"
+            value={formatMoney(metrics.revenue30)}
+            changePercent={percentChange(metrics.revenue30, metrics.revenuePrevious30)}
+            hint="vs previous 30"
+            href="/admin/reports"
+          />
+          <StatCard
+            label="Orders, 30 days"
+            value={String(metrics.orders30)}
+            changePercent={percentChange(metrics.orders30, metrics.ordersPrevious30)}
+            hint="vs previous 30"
+            href="/admin/orders"
+          />
+          <StatCard
+            label="Orders today"
+            value={String(metrics.ordersToday)}
+            hint={formatMoney(metrics.revenueToday)}
+            changePercent={null}
+            href="/admin/orders"
+          />
+          <StatCard
+            label="New customers, 30 days"
+            value={String(metrics.customers30)}
+            changePercent={percentChange(metrics.customers30, metrics.customersPrevious30)}
+            hint="vs previous 30"
+            href="/admin/customers"
+          />
+        </div>
       ) : null}
 
       {/* Things that need a human. Kept above the charts on purpose. */}
@@ -166,8 +174,8 @@ export default async function AdminDashboardPage() {
             />
             <HealthRow
               label="Payments"
-              value={health.stripeConfigured ? 'Stripe connected' : 'Not configured'}
-              tone={health.stripeConfigured ? 'success' : 'warning'}
+              value={health.klarnaConfigured ? 'Klarna connected' : 'Not configured'}
+              tone={health.klarnaConfigured ? 'success' : 'warning'}
             />
             <HealthRow
               label="Email"
@@ -195,119 +203,134 @@ export default async function AdminDashboardPage() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {can(user, PERMISSIONS.orderRead) ? (
-        <AdminCard
-          title="Recent orders"
-          actions={
-            <Link href="/admin/orders" className="text-body-xs font-medium text-accent-text hover:underline">
-              View all
-            </Link>
-          }
-        >
-          {recentOrders.length === 0 ? (
-            <p className="py-6 text-center text-body-sm text-foreground-subtle">No orders yet.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {recentOrders.map((order) => (
-                <li key={order.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                  <div className="min-w-0">
-                    <Link
-                      href={`/admin/orders/${order.orderNumber}`}
-                      className="block truncate text-body-sm font-medium hover:text-accent-text"
-                    >
-                      {order.orderNumber}
-                    </Link>
-                    <p className="truncate text-body-xs text-foreground-subtle">
-                      {[order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') ||
-                        order.email}
-                      {' · '}
-                      {formatRelative(order.createdAt)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <StatusPill label={order.status} tone={ORDER_STATUS_TONE[order.status]} />
-                    <span className="text-body-sm font-medium tabular-nums">
-                      {formatMoney(order.totalCents)}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </AdminCard>
+          <AdminCard
+            title="Recent orders"
+            actions={
+              <Link
+                href="/admin/orders"
+                className="text-body-xs font-medium text-accent-text hover:underline"
+              >
+                View all
+              </Link>
+            }
+          >
+            {recentOrders.length === 0 ? (
+              <p className="py-6 text-center text-body-sm text-foreground-subtle">No orders yet.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {recentOrders.map((order) => (
+                  <li
+                    key={order.id}
+                    className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/orders/${order.orderNumber}`}
+                        className="block truncate text-body-sm font-medium hover:text-accent-text"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                      <p className="text-body-xs truncate text-foreground-subtle">
+                        {[order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') ||
+                          order.email}
+                        {' · '}
+                        {formatRelative(order.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <StatusPill label={order.status} tone={ORDER_STATUS_TONE[order.status]} />
+                      <span className="text-body-sm font-medium tabular-nums">
+                        {formatMoney(order.totalCents)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </AdminCard>
         ) : null}
 
         {seeMetrics ? (
-        <AdminCard title="Top products" description="By revenue, last 30 days">
-          {topProducts.length === 0 ? (
-            <p className="py-6 text-center text-body-sm text-foreground-subtle">
-              Nothing sold in this window.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {topProducts.map((product) => (
-                <li key={product.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                  <div className="min-w-0">
-                    <Link
-                      href={`/admin/products/${product.id}`}
-                      className="block truncate text-body-sm font-medium hover:text-accent-text"
-                    >
-                      {product.name}
-                    </Link>
-                    <p className="text-body-xs text-foreground-subtle">{product.units} sold</p>
-                  </div>
-                  <span className="shrink-0 text-body-sm font-medium tabular-nums">
-                    {formatMoney(product.revenueCents)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </AdminCard>
+          <AdminCard title="Top products" description="By revenue, last 30 days">
+            {topProducts.length === 0 ? (
+              <p className="py-6 text-center text-body-sm text-foreground-subtle">
+                Nothing sold in this window.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {topProducts.map((product) => (
+                  <li
+                    key={product.id}
+                    className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/products/${product.id}`}
+                        className="block truncate text-body-sm font-medium hover:text-accent-text"
+                      >
+                        {product.name}
+                      </Link>
+                      <p className="text-body-xs text-foreground-subtle">{product.units} sold</p>
+                    </div>
+                    <span className="shrink-0 text-body-sm font-medium tabular-nums">
+                      {formatMoney(product.revenueCents)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </AdminCard>
         ) : null}
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {seeMetrics ? (
-        <AdminCard title="Top categories" description="By revenue, last 30 days">
-          {topCategories.length === 0 ? (
-            <p className="py-6 text-center text-body-sm text-foreground-subtle">
-              Nothing sold in this window.
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {topCategories.map((category) => {
-                const share = Math.round(
-                  (category.revenueCents / Math.max(1, topCategories[0]!.revenueCents)) * 100,
-                );
+          <AdminCard title="Top categories" description="By revenue, last 30 days">
+            {topCategories.length === 0 ? (
+              <p className="py-6 text-center text-body-sm text-foreground-subtle">
+                Nothing sold in this window.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {topCategories.map((category) => {
+                  const share = Math.round(
+                    (category.revenueCents / Math.max(1, topCategories[0]!.revenueCents)) * 100,
+                  );
 
-                return (
-                  <li key={category.name}>
-                    <div className="flex items-baseline justify-between gap-3 text-body-sm">
-                      <span className="truncate font-medium">{category.name}</span>
-                      <span className="shrink-0 tabular-nums">
-                        {formatMoney(category.revenueCents)}
-                      </span>
-                    </div>
-                    {/*
+                  return (
+                    <li key={category.name}>
+                      <div className="flex items-baseline justify-between gap-3 text-body-sm">
+                        <span className="truncate font-medium">{category.name}</span>
+                        <span className="shrink-0 tabular-nums">
+                          {formatMoney(category.revenueCents)}
+                        </span>
+                      </div>
+                      {/*
                       A bar, not a pie. Comparing lengths on a shared baseline is
                       something people do accurately; comparing angles is not.
                     */}
-                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
-                      <div className="h-full rounded-full bg-accent" style={{ width: `${share}%` }} />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </AdminCard>
+                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
+                        <div
+                          className="h-full rounded-full bg-accent"
+                          style={{ width: `${share}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </AdminCard>
         ) : null}
 
         {can(user, PERMISSIONS.auditRead) ? (
           <AdminCard
             title="Recent activity"
             actions={
-              <Link href="/admin/audit" className="text-body-xs font-medium text-accent-text hover:underline">
+              <Link
+                href="/admin/audit"
+                className="text-body-xs font-medium text-accent-text hover:underline"
+              >
                 Full log
               </Link>
             }

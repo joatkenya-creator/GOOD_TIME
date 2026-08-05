@@ -54,7 +54,7 @@ export default async function AdminInventoryPage({
       cell: (row: InventoryRow) => (
         <span className="block">
           <span className="block truncate">{row.variant.product.name}</span>
-          <span className="block truncate text-body-xs font-normal text-foreground-subtle">
+          <span className="text-body-xs block truncate font-normal text-foreground-subtle">
             {row.variant.name} · {row.variant.sku}
           </span>
         </span>
@@ -72,7 +72,7 @@ export default async function AdminInventoryPage({
       align: 'right' as const,
       secondary: true,
       cell: (row: InventoryRow) => (
-        <span className="tabular-nums text-foreground-subtle">{row.reserved}</span>
+        <span className="text-foreground-subtle tabular-nums">{row.reserved}</span>
       ),
     },
     {
@@ -129,7 +129,7 @@ export default async function AdminInventoryPage({
               step={1}
               placeholder="±0"
               required
-              className="h-8 w-16 rounded-lg border border-border bg-surface px-2 text-body-xs tabular-nums"
+              className="text-body-xs h-8 w-16 rounded-lg border border-border bg-surface px-2 tabular-nums"
             />
             <label htmlFor={`reason-${row.id}`} className="sr-only">
               Reason for {row.variant.sku}
@@ -139,7 +139,7 @@ export default async function AdminInventoryPage({
               name="reason"
               required
               defaultValue="RECEIVED"
-              className="h-8 rounded-lg border border-border bg-surface px-1.5 text-body-xs"
+              className="text-body-xs h-8 rounded-lg border border-border bg-surface px-1.5"
             >
               {ADJUSTMENT_REASONS.map((reason) => (
                 <option key={reason.value} value={reason.value}>
@@ -159,7 +159,7 @@ export default async function AdminInventoryPage({
             <button
               type="submit"
               aria-label={`Adjust stock for ${row.variant.sku}`}
-              className="h-8 rounded-lg border border-border bg-surface px-2.5 text-body-xs font-medium hover:bg-surface-muted"
+              className="text-body-xs h-8 rounded-lg border border-border bg-surface px-2.5 font-medium hover:bg-surface-muted"
             >
               Adjust
             </button>
@@ -221,13 +221,16 @@ export default async function AdminInventoryPage({
         ) : (
           <ul className="divide-y divide-border">
             {recent.map((entry) => (
-              <li key={entry.id} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+              <li
+                key={entry.id}
+                className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+              >
                 <div className="min-w-0">
                   <p className="truncate text-body-sm">
                     <span className="font-medium">{entry.variant.product.name}</span>
                     <span className="text-foreground-subtle"> · {entry.variant.sku}</span>
                   </p>
-                  <p className="truncate text-body-xs text-foreground-subtle">
+                  <p className="text-body-xs truncate text-foreground-subtle">
                     {entry.reason.toLowerCase().replace(/_/g, ' ')}
                     {entry.note ? ` — ${entry.note}` : ''} ·{' '}
                     {entry.actor?.firstName ?? entry.actor?.email ?? 'System'} ·{' '}
@@ -241,7 +244,7 @@ export default async function AdminInventoryPage({
                 >
                   {entry.delta > 0 ? '+' : ''}
                   {entry.delta}
-                  <span className="ml-1.5 text-body-xs font-normal text-foreground-subtle">
+                  <span className="text-body-xs ml-1.5 font-normal text-foreground-subtle">
                     → {entry.quantityAfter}
                   </span>
                 </span>
@@ -251,7 +254,7 @@ export default async function AdminInventoryPage({
         )}
       </AdminCard>
 
-      <p className="mt-4 text-body-xs text-foreground-subtle">
+      <p className="text-body-xs mt-4 text-foreground-subtle">
         Locations are recorded on every adjustment but there is one warehouse today. Multi-warehouse
         allocation is a later phase — see{' '}
         <Link href="/admin/settings" className="text-accent-text underline">

@@ -16,13 +16,7 @@ import { prisma } from '@/lib/prisma';
  */
 
 /** Statuses that represent money actually earned. */
-const EARNING_STATUSES: OrderStatus[] = [
-  'PAID',
-  'CONFIRMED',
-  'PROCESSING',
-  'SHIPPED',
-  'DELIVERED',
-];
+const EARNING_STATUSES: OrderStatus[] = ['PAID', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 
 function startOfDay(date: Date): Date {
   const copy = new Date(date);
@@ -71,7 +65,10 @@ export async function getDashboardMetrics() {
     lowStock,
     outOfStock,
   ] = await Promise.all([
-    prisma.order.aggregate({ _sum: { totalCents: true }, where: { ...paid, placedAt: { gte: last30 } } }),
+    prisma.order.aggregate({
+      _sum: { totalCents: true },
+      where: { ...paid, placedAt: { gte: last30 } },
+    }),
     prisma.order.aggregate({
       _sum: { totalCents: true },
       where: { ...paid, placedAt: { gte: previous30, lt: last30 } },
@@ -79,7 +76,10 @@ export async function getDashboardMetrics() {
     prisma.order.count({ where: { placedAt: { gte: last30 } } }),
     prisma.order.count({ where: { placedAt: { gte: previous30, lt: last30 } } }),
     prisma.order.count({ where: { placedAt: { gte: today } } }),
-    prisma.order.aggregate({ _sum: { totalCents: true }, where: { ...paid, placedAt: { gte: today } } }),
+    prisma.order.aggregate({
+      _sum: { totalCents: true },
+      where: { ...paid, placedAt: { gte: today } },
+    }),
     prisma.user.count({ where: { createdAt: { gte: last30 } } }),
     prisma.user.count({ where: { createdAt: { gte: previous30, lt: last30 } } }),
     prisma.order.count({ where: { status: 'PENDING' } }),
@@ -258,7 +258,7 @@ export async function getSystemHealth() {
     stuckPending,
     failedPayments,
     unreadCritical,
-    stripeConfigured: Boolean(process.env.STRIPE_SECRET_KEY),
+    klarnaConfigured: Boolean(process.env.KLARNA_USERNAME),
     emailConfigured: Boolean(process.env.RESEND_API_KEY),
     taxProviderConfigured: Boolean(process.env.TAXJAR_API_KEY),
     mediaConfigured: Boolean(process.env.CLOUDINARY_API_KEY),

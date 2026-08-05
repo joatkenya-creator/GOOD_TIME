@@ -35,10 +35,7 @@ export default async function AdminSeoPage() {
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="space-y-6">
-          <AdminCard
-            title="Redirects"
-            description={`${active} active of ${redirects.length}`}
-          >
+          <AdminCard title="Redirects" description={`${active} active of ${redirects.length}`}>
             {redirects.length === 0 ? (
               <p className="py-8 text-center text-body-sm text-foreground-subtle">
                 No redirects. Add one whenever you change a slug — the old URL keeps its inbound
@@ -48,11 +45,19 @@ export default async function AdminSeoPage() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[36rem] text-left text-body-sm">
                   <thead>
-                    <tr className="border-b border-border text-body-xs tracking-wide text-foreground-subtle uppercase">
-                      <th scope="col" className="py-2 pr-3">From</th>
-                      <th scope="col" className="py-2 pr-3">To</th>
-                      <th scope="col" className="py-2 pr-3">Type</th>
-                      <th scope="col" className="py-2 pr-3 text-right">Hits</th>
+                    <tr className="text-body-xs border-b border-border tracking-wide text-foreground-subtle uppercase">
+                      <th scope="col" className="py-2 pr-3">
+                        From
+                      </th>
+                      <th scope="col" className="py-2 pr-3">
+                        To
+                      </th>
+                      <th scope="col" className="py-2 pr-3">
+                        Type
+                      </th>
+                      <th scope="col" className="py-2 pr-3 text-right">
+                        Hits
+                      </th>
                       <th scope="col" className="py-2 text-right">
                         <span className="sr-only">Actions</span>
                       </th>
@@ -61,8 +66,8 @@ export default async function AdminSeoPage() {
                   <tbody>
                     {redirects.map((redirect) => (
                       <tr key={redirect.id} className="border-b border-border last:border-0">
-                        <td className="py-2.5 pr-3 font-mono text-body-xs">{redirect.source}</td>
-                        <td className="py-2.5 pr-3 font-mono text-body-xs text-foreground-muted">
+                        <td className="text-body-xs py-2.5 pr-3 font-mono">{redirect.source}</td>
+                        <td className="text-body-xs py-2.5 pr-3 font-mono text-foreground-muted">
                           {redirect.destination}
                         </td>
                         <td className="py-2.5 pr-3">
@@ -74,7 +79,7 @@ export default async function AdminSeoPage() {
                         <td className="py-2.5 pr-3 text-right tabular-nums">
                           {redirect.hits}
                           {redirect.lastHitAt ? (
-                            <span className="block text-body-xs text-foreground-subtle">
+                            <span className="text-body-xs block text-foreground-subtle">
                               {formatDate(redirect.lastHitAt)}
                             </span>
                           ) : null}
@@ -84,7 +89,7 @@ export default async function AdminSeoPage() {
                             <input type="hidden" name="id" value={redirect.id} />
                             <button
                               type="submit"
-                              className="rounded-lg border border-border px-2 py-1 text-body-xs text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
+                              className="text-body-xs rounded-lg border border-border px-2 py-1 text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
                             >
                               Delete
                             </button>
@@ -128,7 +133,7 @@ export default async function AdminSeoPage() {
               </div>
             </dl>
 
-            <p className="mt-4 text-body-xs text-foreground-subtle">
+            <p className="text-body-xs mt-4 text-foreground-subtle">
               The sitemap is generated from live categories, products and legal pages on request —
               there is nothing to regenerate. Every URL it publishes is fetched by{' '}
               <code className="rounded bg-surface-muted px-1">npm run verify:quality</code>, because
@@ -148,12 +153,15 @@ export default async function AdminSeoPage() {
                 name="source"
                 required
                 placeholder="/old-path"
-                className="h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono text-body-xs"
+                className="text-body-xs h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono"
               />
             </div>
 
             <div>
-              <label htmlFor="redirect-destination" className="mb-1.5 block text-body-sm font-medium">
+              <label
+                htmlFor="redirect-destination"
+                className="mb-1.5 block text-body-sm font-medium"
+              >
                 To
               </label>
               <input
@@ -161,7 +169,7 @@ export default async function AdminSeoPage() {
                 name="destination"
                 required
                 placeholder="/shop/new-path"
-                className="h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono text-body-xs"
+                className="text-body-xs h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono"
               />
             </div>
 
@@ -177,7 +185,7 @@ export default async function AdminSeoPage() {
                 <option value="301">Permanent (308)</option>
                 <option value="302">Temporary (307)</option>
               </select>
-              <p className="mt-1 text-body-xs text-foreground-subtle">
+              <p className="text-body-xs mt-1 text-foreground-subtle">
                 Permanent redirects are cached by browsers for months — use temporary if you might
                 change your mind. Served as 308 and 307, which Google treats identically to 301 and
                 302 and which additionally preserve the request method.

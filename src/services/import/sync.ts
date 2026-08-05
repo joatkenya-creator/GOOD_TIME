@@ -50,7 +50,10 @@ async function activeTemplates(templateId?: string) {
  * month closes. So a price that moves by more than a threshold is *not* applied
  * silently; it raises an alert and is left for a human.
  */
-export async function syncPrices(options: SyncOptions = {}, context?: JobContext): Promise<SyncResult> {
+export async function syncPrices(
+  options: SyncOptions = {},
+  context?: JobContext,
+): Promise<SyncResult> {
   const templates = await activeTemplates(options.templateId);
 
   const result: SyncResult = {
@@ -63,7 +66,11 @@ export async function syncPrices(options: SyncOptions = {}, context?: JobContext
   };
 
   for (const [index, template] of templates.entries()) {
-    const config = (template.config ?? {}) as { url?: string; headers?: Record<string, string>; delimiter?: string };
+    const config = (template.config ?? {}) as {
+      url?: string;
+      headers?: Record<string, string>;
+      delimiter?: string;
+    };
 
     if (!config.url) {
       // A template with no URL is a manual-upload template. Not an error.
@@ -81,7 +88,11 @@ export async function syncPrices(options: SyncOptions = {}, context?: JobContext
       result.rowsRead += parsed.rows.length;
 
       for (const raw of parsed.rows) {
-        const mapped = mapRow(raw, template.mapping as TemplateMapping, (template.defaults ?? {}) as Record<string, unknown>);
+        const mapped = mapRow(
+          raw,
+          template.mapping as TemplateMapping,
+          (template.defaults ?? {}) as Record<string, unknown>,
+        );
 
         const externalId = String(mapped.data.externalId ?? '');
         const sku = String(mapped.data.sku ?? '');
@@ -91,10 +102,7 @@ export async function syncPrices(options: SyncOptions = {}, context?: JobContext
 
         const variant = await prisma.variant.findFirst({
           where: {
-            OR: [
-              ...(sku ? [{ sku }] : []),
-              ...(externalId ? [{ product: { externalId } }] : []),
-            ],
+            OR: [...(sku ? [{ sku }] : []), ...(externalId ? [{ product: { externalId } }] : [])],
           },
           select: { id: true, priceCents: true, sku: true, productId: true },
         });
@@ -173,7 +181,10 @@ export async function syncPrices(options: SyncOptions = {}, context?: JobContext
  * inventory changed with no record of why, which is precisely the hole the
  * ledger exists to close.
  */
-export async function syncInventory(options: SyncOptions = {}, context?: JobContext): Promise<SyncResult> {
+export async function syncInventory(
+  options: SyncOptions = {},
+  context?: JobContext,
+): Promise<SyncResult> {
   const templates = await activeTemplates(options.templateId);
 
   const result: SyncResult = {
@@ -186,7 +197,11 @@ export async function syncInventory(options: SyncOptions = {}, context?: JobCont
   };
 
   for (const [index, template] of templates.entries()) {
-    const config = (template.config ?? {}) as { url?: string; headers?: Record<string, string>; delimiter?: string };
+    const config = (template.config ?? {}) as {
+      url?: string;
+      headers?: Record<string, string>;
+      delimiter?: string;
+    };
     if (!config.url) continue;
 
     try {
@@ -200,7 +215,11 @@ export async function syncInventory(options: SyncOptions = {}, context?: JobCont
       result.rowsRead += parsed.rows.length;
 
       for (const raw of parsed.rows) {
-        const mapped = mapRow(raw, template.mapping as TemplateMapping, (template.defaults ?? {}) as Record<string, unknown>);
+        const mapped = mapRow(
+          raw,
+          template.mapping as TemplateMapping,
+          (template.defaults ?? {}) as Record<string, unknown>,
+        );
 
         const sku = String(mapped.data.sku ?? '');
         const quantity = Number(mapped.data.quantity);

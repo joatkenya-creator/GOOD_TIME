@@ -28,10 +28,22 @@
 │   ├── styles/            Global CSS and design tokens
 │   ├── types/             Shared types and module augmentation
 │   ├── utils/             Pure, dependency-light helpers
-│   └── proxy.ts           Edge auth filter (Next 16's `middleware`)
-├── tests/                 Vitest suites
-└── [config files]         next, tsconfig, eslint, prettier, postcss, vitest
+│   └── middleware.ts      Edge auth filter — see below on the filename
+├── tests/                 Vitest unit suites, fixtures and mocks
+├── e2e/                   Playwright specs
+├── cloudflare/            Worker entrypoint: fetch, queue, scheduled
+├── scripts/               Verification and QA scripts
+└── [config files]         next, wrangler, open-next, tsconfig, eslint,
+                           prettier, postcss, vitest, playwright
 ```
+
+**`middleware.ts`, not `proxy.ts`.** Next 16 renamed the convention and made the
+Node runtime its default. The OpenNext Cloudflare adapter requires an _edge_
+middleware — a Cloudflare Worker is the edge runtime, so a Node proxy has
+nowhere to run — and a proxy cannot be declared as edge. The legacy filename is
+the only one that still compiles to an edge entry, so it is load-bearing. The
+full explanation is at the top of
+[`src/middleware.ts`](../src/middleware.ts).
 
 ---
 
@@ -102,7 +114,7 @@ that reaches for the database is a build error, not a runtime surprise.
 | `seo/`          | Metadata, JSON-LD, breadcrumbs, URLs                                 |
 | `cache/`        | Cache tags and the two caching layers                                |
 | `performance/`  | Fonts, images, dynamic imports                                       |
-| `integrations/` | Stripe, Resend, Cloudinary                                           |
+| `integrations/` | Klarna, Resend, Cloudinary                                           |
 | `analytics/`    | Typed GA4 event contract                                             |
 
 The `auth/` split is not cosmetic. `middleware`/`proxy` runs on the Edge runtime

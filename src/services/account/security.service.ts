@@ -74,8 +74,7 @@ export async function isSessionLive(sessionId: string): Promise<boolean> {
 
   if (!session || session.revokedAt !== null) return false;
 
-  const stale =
-    Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_SECONDS * 1000;
+  const stale = Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_SECONDS * 1000;
 
   // Fire and forget: an activity stamp must never delay a page.
   if (stale) void touchSession(sessionId);
@@ -114,10 +113,7 @@ export async function revokeSession(userId: string, sessionId: string): Promise<
  * changed either because it was weak or because it was exposed, and in the second
  * case leaving other sessions alive defeats the point.
  */
-export async function revokeAllSessions(
-  userId: string,
-  exceptSessionId?: string,
-): Promise<number> {
+export async function revokeAllSessions(userId: string, exceptSessionId?: string): Promise<number> {
   const result = await prisma.userSession.updateMany({
     where: {
       userId,
@@ -195,21 +191,29 @@ export async function recentFailureCount(userId: string, withinMinutes = 60): Pr
 export function describeDevice(userAgent: string | null): string {
   if (!userAgent) return 'Unknown device';
 
-  const browser =
-    /Edg\//.test(userAgent) ? 'Edge'
-    : /OPR\//.test(userAgent) ? 'Opera'
-    : /Chrome\//.test(userAgent) ? 'Chrome'
-    : /Safari\//.test(userAgent) ? 'Safari'
-    : /Firefox\//.test(userAgent) ? 'Firefox'
-    : 'Browser';
+  const browser = /Edg\//.test(userAgent)
+    ? 'Edge'
+    : /OPR\//.test(userAgent)
+      ? 'Opera'
+      : /Chrome\//.test(userAgent)
+        ? 'Chrome'
+        : /Safari\//.test(userAgent)
+          ? 'Safari'
+          : /Firefox\//.test(userAgent)
+            ? 'Firefox'
+            : 'Browser';
 
-  const platform =
-    /iPhone|iPad/.test(userAgent) ? 'iOS'
-    : /Android/.test(userAgent) ? 'Android'
-    : /Mac OS X/.test(userAgent) ? 'macOS'
-    : /Windows/.test(userAgent) ? 'Windows'
-    : /Linux/.test(userAgent) ? 'Linux'
-    : 'Unknown';
+  const platform = /iPhone|iPad/.test(userAgent)
+    ? 'iOS'
+    : /Android/.test(userAgent)
+      ? 'Android'
+      : /Mac OS X/.test(userAgent)
+        ? 'macOS'
+        : /Windows/.test(userAgent)
+          ? 'Windows'
+          : /Linux/.test(userAgent)
+            ? 'Linux'
+            : 'Unknown';
 
   return `${browser} on ${platform}`;
 }

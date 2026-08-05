@@ -112,7 +112,10 @@ export function totalWeightOf(lines: TotalsLine[]): number {
  * Returns cents off the *subtotal*. `FREE_SHIPPING` returns zero here by design —
  * it is applied to the shipping component so the taxable base is unaffected.
  */
-export function discountAmountCents(subtotalCents: number, discount?: DiscountInput | null): number {
+export function discountAmountCents(
+  subtotalCents: number,
+  discount?: DiscountInput | null,
+): number {
   if (!discount || subtotalCents <= 0) return 0;
 
   let amount = 0;
@@ -191,7 +194,9 @@ export function assertChargeable(totals: Totals): void {
   if (totals.totalCents <= 0) {
     throw new Error(`Refusing to charge a non-positive total (${totals.totalCents}c)`);
   }
-  // Stripe's own ceiling for a single card charge in USD.
+  // A sanity ceiling for a single order in USD. Klarna underwrites per
+  // customer rather than per transaction, so this is our limit, not theirs:
+  // an order past it is far more likely to be a bug than a real basket.
   if (totals.totalCents > 99_999_999) {
     throw new Error(`Total ${totals.totalCents}c exceeds the maximum single charge`);
   }

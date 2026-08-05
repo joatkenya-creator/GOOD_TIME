@@ -85,11 +85,8 @@ export function AccountNav() {
   return (
     <>
       {/* Mobile: a scroller, so eleven destinations do not become a wall. */}
-      <nav
-        aria-label="Account sections"
-        className="-mx-4 border-b border-border px-4 lg:hidden"
-      >
-        <ul className="flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav aria-label="Account sections" className="-mx-4 border-b border-border px-4 lg:hidden">
+        <ul className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-3 [&::-webkit-scrollbar]:hidden">
           {FLAT.map((item) => (
             <li key={item.href} className="shrink-0">
               <Link
@@ -98,7 +95,7 @@ export function AccountNav() {
                 className={cn(
                   'flex min-h-11 items-center gap-2 rounded-full border px-4 text-body-sm whitespace-nowrap transition-colors',
                   active === item.href
-                    ? 'border-accent bg-accent-subtle font-medium text-accent-text'
+                    ? 'bg-accent-subtle border-accent font-medium text-accent-text'
                     : 'border-border text-foreground-muted hover:border-foreground-subtle',
                 )}
               >
@@ -113,7 +110,7 @@ export function AccountNav() {
       <nav aria-label="Account sections" className="hidden lg:block">
         {SECTIONS.map((section) => (
           <div key={section.heading} className="mb-6">
-            <h2 className="mb-2 px-3 text-body-xs font-medium tracking-wide text-foreground-subtle uppercase">
+            <h2 className="text-body-xs mb-2 px-3 font-medium tracking-wide text-foreground-subtle uppercase">
               {section.heading}
             </h2>
 

@@ -42,7 +42,12 @@ export type TemplateMapping = Record<string, FieldMapping | string>;
 
 /** Everything the pipeline can be asked to fill. */
 export const MAPPABLE_FIELDS = [
-  { key: 'externalId', label: 'Supplier ID', required: true, hint: 'Stable identifier used to match on re-import' },
+  {
+    key: 'externalId',
+    label: 'Supplier ID',
+    required: true,
+    hint: 'Stable identifier used to match on re-import',
+  },
   { key: 'sku', label: 'SKU', required: true },
   { key: 'name', label: 'Product name', required: true },
   { key: 'description', label: 'Description' },
@@ -136,8 +141,18 @@ const TRANSFORMS: Record<TransformName, (value: string) => string> = {
     const parsed = Number.parseInt(digits, 10);
     return Number.isFinite(parsed) ? String(parsed) : '';
   },
-  split_pipe: (value) => value.split('|').map((part) => part.trim()).filter(Boolean).join('|'),
-  split_comma: (value) => value.split(',').map((part) => part.trim()).filter(Boolean).join('|'),
+  split_pipe: (value) =>
+    value
+      .split('|')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join('|'),
+  split_comma: (value) =>
+    value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join('|'),
   strip_html: (value) =>
     value
       .replace(/<[^>]*>/g, ' ')
@@ -270,10 +285,17 @@ export function suggestMapping(columns: string[]): TemplateMapping {
    * matches price and `description` does not match `desc`.
    */
   const patterns: { field: string; match: RegExp; transform?: TransformName }[] = [
-    { field: 'externalId', match: /(^|[_\s-])(g_)?(id|item_?(id|no|number)|external_?id|artikel)/i },
+    {
+      field: 'externalId',
+      match: /(^|[_\s-])(g_)?(id|item_?(id|no|number)|external_?id|artikel)/i,
+    },
     { field: 'sku', match: /(^|[_\s-])(sku|mpn|article|item_?code|part_?number)/i },
     { field: 'name', match: /(^|[_\s-])(name|title|product_?name)/i },
-    { field: 'description', match: /(^|[_\s-])(description|body|long_?desc)/i, transform: 'strip_html' },
+    {
+      field: 'description',
+      match: /(^|[_\s-])(description|body|long_?desc)/i,
+      transform: 'strip_html',
+    },
     { field: 'brandName', match: /(^|[_\s-])(brand|manufacturer|vendor)/i },
     { field: 'categoryPath', match: /(^|[_\s-])(category|categories|product_?type|taxonomy)/i },
     {
@@ -291,7 +313,11 @@ export function suggestMapping(columns: string[]): TemplateMapping {
     { field: 'weightGrams', match: /(^|[_\s-])(weight|shipping_?weight)/i, transform: 'integer' },
     { field: 'material', match: /(^|[_\s-])(material|composition)/i },
     { field: 'color', match: /(^|[_\s-])colou?r/i },
-    { field: 'isActive', match: /(^|[_\s-])(active|enabled|status|availability)/i, transform: 'boolean' },
+    {
+      field: 'isActive',
+      match: /(^|[_\s-])(active|enabled|status|availability)/i,
+      transform: 'boolean',
+    },
   ];
 
   const mapping: TemplateMapping = {};

@@ -26,7 +26,10 @@ export interface ProductListQuery {
   pageSize?: number;
 }
 
-const SORTABLE: Record<string, (direction: 'asc' | 'desc') => Prisma.ProductOrderByWithRelationInput> = {
+const SORTABLE: Record<
+  string,
+  (direction: 'asc' | 'desc') => Prisma.ProductOrderByWithRelationInput
+> = {
   name: (direction) => ({ name: direction }),
   price: (direction) => ({ minPriceCents: direction }),
   sold: (direction) => ({ soldCount: direction }),
@@ -82,7 +85,9 @@ export async function listAdminProducts(query: ProductListQuery = {}) {
         brand: { select: { name: true } },
         categories: { select: { category: { select: { name: true } } }, take: 2 },
         // Enough to show a stock column without a second round trip per row.
-        variants: { select: { id: true, inventory: { select: { quantity: true, reserved: true } } } },
+        variants: {
+          select: { id: true, inventory: { select: { quantity: true, reserved: true } } },
+        },
       },
     }),
     prisma.product.count({ where }),
@@ -93,7 +98,8 @@ export async function listAdminProducts(query: ProductListQuery = {}) {
       ...product,
       stock: product.variants.reduce(
         (sum, variant) =>
-          sum + Math.max(0, (variant.inventory?.quantity ?? 0) - (variant.inventory?.reserved ?? 0)),
+          sum +
+          Math.max(0, (variant.inventory?.quantity ?? 0) - (variant.inventory?.reserved ?? 0)),
         0,
       ),
       variantCount: product.variants.length,
@@ -348,7 +354,9 @@ export async function duplicateProduct(id: string) {
       minPriceCents: source.minPriceCents,
       maxPriceCents: source.maxPriceCents,
       categories: { create: source.categories.map((row) => ({ categoryId: row.categoryId })) },
-      collections: { create: source.collections.map((row) => ({ collectionId: row.collectionId })) },
+      collections: {
+        create: source.collections.map((row) => ({ collectionId: row.collectionId })),
+      },
       media: {
         create: source.media.map((row) => ({ mediaId: row.mediaId, position: row.position })),
       },
@@ -377,7 +385,8 @@ export async function duplicateProduct(id: string) {
  * a timeout, and a partial loop leaves half the selection changed with no
  * record of where it stopped.
  */
-export type BulkAction = 'publish' | 'draft' | 'archive' | 'restore' | 'feature' | 'unfeature' | 'delete';
+export type BulkAction =
+  'publish' | 'draft' | 'archive' | 'restore' | 'feature' | 'unfeature' | 'delete';
 
 export async function bulkUpdateProducts(ids: string[], action: BulkAction): Promise<number> {
   if (ids.length === 0) return 0;

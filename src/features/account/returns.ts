@@ -32,7 +32,11 @@ export const RETURN_STATUS_COPY: Record<
     tone: 'info',
     description: 'We are waiting for it to arrive.',
   },
-  RECEIVED: { label: 'Received', tone: 'info', description: 'We have it and are checking it over.' },
+  RECEIVED: {
+    label: 'Received',
+    tone: 'info',
+    description: 'We have it and are checking it over.',
+  },
   REFUNDED: { label: 'Refunded', tone: 'success', description: 'Your refund is on its way.' },
   CANCELLED: { label: 'Cancelled', tone: 'info', description: 'This return was cancelled.' },
 };

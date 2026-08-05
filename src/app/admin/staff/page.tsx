@@ -59,7 +59,7 @@ export default async function AdminStaffPage() {
                         {[member.firstName, member.lastName].filter(Boolean).join(' ') ||
                           member.email}
                       </p>
-                      <p className="truncate text-body-xs text-foreground-subtle">
+                      <p className="text-body-xs truncate text-foreground-subtle">
                         {member.email} · last seen{' '}
                         {member.lastLoginAt ? formatDateTime(member.lastLoginAt) : 'never'}
                       </p>
@@ -78,7 +78,7 @@ export default async function AdminStaffPage() {
                             <button
                               type="submit"
                               aria-label={`Remove ${entry.role.name} from ${member.email}`}
-                              className="rounded px-1 text-body-xs text-foreground-subtle hover:text-danger-700"
+                              className="text-body-xs rounded px-1 text-foreground-subtle hover:text-danger-700"
                             >
                               ×
                             </button>
@@ -89,7 +89,7 @@ export default async function AdminStaffPage() {
                   </div>
 
                   {member.roles.some((entry) => entry.assigner) ? (
-                    <p className="mt-1 text-body-xs text-foreground-subtle">
+                    <p className="text-body-xs mt-1 text-foreground-subtle">
                       {member.roles
                         .filter((entry) => entry.assigner)
                         .map(
@@ -104,16 +104,19 @@ export default async function AdminStaffPage() {
             </ul>
           )}
 
-          <form action={assignRoleAction} className="mt-4 flex flex-wrap items-end gap-2 border-t border-border pt-4">
+          <form
+            action={assignRoleAction}
+            className="mt-4 flex flex-wrap items-end gap-2 border-t border-border pt-4"
+          >
             <div className="min-w-0 flex-1">
-              <label htmlFor="assign-user" className="mb-1.5 block text-body-xs font-medium">
+              <label htmlFor="assign-user" className="text-body-xs mb-1.5 block font-medium">
                 Person
               </label>
               <select
                 id="assign-user"
                 name="userId"
                 required
-                className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
               >
                 <option value="">Choose…</option>
                 {assignable.map((candidate) => (
@@ -127,14 +130,14 @@ export default async function AdminStaffPage() {
             </div>
 
             <div className="min-w-0 flex-1">
-              <label htmlFor="assign-role" className="mb-1.5 block text-body-xs font-medium">
+              <label htmlFor="assign-role" className="text-body-xs mb-1.5 block font-medium">
                 Role
               </label>
               <select
                 id="assign-role"
                 name="roleId"
                 required
-                className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
               >
                 <option value="">Choose…</option>
                 {roles.map((role) => (
@@ -147,7 +150,7 @@ export default async function AdminStaffPage() {
 
             <button
               type="submit"
-              className="h-9 rounded-lg bg-accent px-4 text-body-xs font-medium text-white hover:bg-accent-hover"
+              className="text-body-xs h-9 rounded-lg bg-accent px-4 font-medium text-white hover:bg-accent-hover"
             >
               Grant
             </button>
@@ -167,7 +170,7 @@ export default async function AdminStaffPage() {
                     <input type="hidden" name="roleId" value={role.id} />
                     <button
                       type="submit"
-                      className="rounded-lg border border-border px-2.5 py-1 text-body-xs text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
+                      className="text-body-xs rounded-lg border border-border px-2.5 py-1 text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
                     >
                       Delete
                     </button>
@@ -204,7 +207,7 @@ export default async function AdminStaffPage() {
                             <span>
                               {permission.label}
                               {permission.hint ? (
-                                <span className="block text-body-xs text-warning-700">
+                                <span className="text-body-xs block text-warning-700">
                                   {permission.hint}
                                 </span>
                               ) : null}
@@ -233,7 +236,7 @@ export default async function AdminStaffPage() {
                   ))
                 )}
                 {role.key === 'SUPER_ADMIN' ? (
-                  <p className="mt-2 w-full text-body-xs text-foreground-subtle">
+                  <p className="text-body-xs mt-2 w-full text-foreground-subtle">
                     Deliberately not editable. Reducing it is how an organisation locks itself out
                     of its own store, and there is no second door.
                   </p>
@@ -244,7 +247,10 @@ export default async function AdminStaffPage() {
         ))}
 
         {canManageRoles ? (
-          <AdminCard title="New role" description="Custom roles work exactly like the built-in ones.">
+          <AdminCard
+            title="New role"
+            description="Custom roles work exactly like the built-in ones."
+          >
             <form action={createRoleAction} className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -267,7 +273,7 @@ export default async function AdminStaffPage() {
                     name="key"
                     required
                     placeholder="WAREHOUSE_LEAD"
-                    className="h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono text-body-xs"
+                    className="text-body-xs h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono"
                   />
                 </div>
               </div>

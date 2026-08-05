@@ -106,7 +106,7 @@ export default async function AdminMediaPage({
                 </p>
                 <button
                   type="submit"
-                  className="ml-auto rounded-lg border border-danger-700/30 px-3 py-1.5 text-body-xs font-medium text-danger-700 hover:bg-danger-50"
+                  className="text-body-xs ml-auto rounded-lg border border-danger-700/30 px-3 py-1.5 font-medium text-danger-700 hover:bg-danger-50"
                 >
                   Delete selected
                 </button>
@@ -138,7 +138,7 @@ export default async function AdminMediaPage({
                         loading="lazy"
                       />
                     ) : (
-                      <div className="grid aspect-square w-full place-items-center bg-surface-muted text-body-xs text-foreground-subtle">
+                      <div className="text-body-xs grid aspect-square w-full place-items-center bg-surface-muted text-foreground-subtle">
                         {asset.format?.toUpperCase() ?? asset.type}
                       </div>
                     )}
@@ -161,18 +161,18 @@ export default async function AdminMediaPage({
                           name="alt"
                           defaultValue={asset.alt ?? ''}
                           placeholder="Describe this image"
-                          className={`h-8 w-full rounded border px-2 text-body-xs ${
+                          className={`text-body-xs h-8 w-full rounded border px-2 ${
                             asset.alt ? 'border-border' : 'border-warning-700/40 bg-warning-50'
                           }`}
                         />
                       </>
                     ) : (
-                      <p className="truncate text-body-xs text-foreground-subtle">
+                      <p className="text-body-xs truncate text-foreground-subtle">
                         {asset.alt ?? 'No alt text'}
                       </p>
                     )}
 
-                    <p className="mt-1.5 truncate text-body-xs text-foreground-subtle">
+                    <p className="text-body-xs mt-1.5 truncate text-foreground-subtle">
                       {asset.width && asset.height ? `${asset.width}×${asset.height}` : asset.type}
                       {asset._count.productMedia > 0
                         ? ` · used ${asset._count.productMedia}×`

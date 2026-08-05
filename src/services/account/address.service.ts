@@ -108,10 +108,7 @@ export async function deleteAddress(userId: string, addressId: string): Promise<
   });
 }
 
-export async function setDefaultAddress(
-  userId: string,
-  addressId: string,
-): Promise<void> {
+export async function setDefaultAddress(userId: string, addressId: string): Promise<void> {
   const owned = await getAddress(userId, addressId);
   if (!owned) throw errors.notFound('Address');
 

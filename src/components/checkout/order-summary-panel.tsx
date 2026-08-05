@@ -39,7 +39,7 @@ export function CartSummaryPanel({ cart }: { cart: CartView }) {
           />
         </span>
 
-        <span className="text-h5 font-bold tabular-nums text-foreground">
+        <span className="text-h5 font-bold text-foreground tabular-nums">
           {formatPrice(totals.totalCents)}
         </span>
       </button>
@@ -52,7 +52,11 @@ export function CartSummaryPanel({ cart }: { cart: CartView }) {
           {cart.lines.map((line) => (
             <li key={line.id} className="flex items-start gap-3">
               <div className="relative shrink-0">
-                <MediaPlaceholder seed={line.imageSeed} ratio="square" className="size-14 rounded-lg" />
+                <MediaPlaceholder
+                  seed={line.imageSeed}
+                  ratio="square"
+                  className="size-14 rounded-lg"
+                />
                 <span className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-[0.625rem] font-semibold text-surface">
                   {line.quantity}
                   <span className="sr-only"> of this item</span>
@@ -66,7 +70,7 @@ export function CartSummaryPanel({ cart }: { cart: CartView }) {
                 <p className="text-body-xs text-foreground-subtle">{line.variantName}</p>
               </div>
 
-              <span className="shrink-0 text-body-sm tabular-nums text-foreground">
+              <span className="shrink-0 text-body-sm text-foreground tabular-nums">
                 {formatPrice(line.lineTotalCents)}
               </span>
             </li>
@@ -92,14 +96,14 @@ export function CartSummaryPanel({ cart }: { cart: CartView }) {
 
           <div className="flex items-baseline justify-between border-t border-border pt-3">
             <dt className="text-body font-semibold text-foreground">Total</dt>
-            <dd className="text-h5 font-bold tabular-nums text-foreground">
+            <dd className="text-h5 font-bold text-foreground tabular-nums">
               {formatPrice(totals.totalCents)}
             </dd>
           </div>
         </dl>
 
         {cart.giftNote ? (
-          <p className="mt-4 rounded-lg bg-surface-muted p-3 text-body-xs text-foreground-muted">
+          <p className="text-body-xs mt-4 rounded-lg bg-surface-muted p-3 text-foreground-muted">
             <span className="font-medium text-foreground">Gift note:</span> {cart.giftNote}
           </p>
         ) : null}
@@ -120,7 +124,9 @@ function Row({
   return (
     <div className="flex items-baseline justify-between gap-3">
       <dt className="text-foreground-muted">{label}</dt>
-      <dd className={cn('tabular-nums', accent ? 'font-medium text-accent-text' : 'text-foreground')}>
+      <dd
+        className={cn('tabular-nums', accent ? 'font-medium text-accent-text' : 'text-foreground')}
+      >
         {children}
       </dd>
     </div>

@@ -66,7 +66,12 @@ function cloudName(): string | null {
  */
 export function transformUrl(
   url: string,
-  options: { width?: number; height?: number; crop?: 'fill' | 'fit' | 'limit'; quality?: 'auto' | number } = {},
+  options: {
+    width?: number;
+    height?: number;
+    crop?: 'fill' | 'fit' | 'limit';
+    quality?: 'auto' | number;
+  } = {},
 ): string {
   if (!url.includes('/upload/')) return url;
 
@@ -200,7 +205,9 @@ export async function optimizeMedia(mediaId: string): Promise<OptimizeResult> {
   }
 
   const savedBytes =
-    media.bytes && optimizedBytes > 0 ? Math.max(0, media.bytes * IMAGE_WIDTHS.length - optimizedBytes) : null;
+    media.bytes && optimizedBytes > 0
+      ? Math.max(0, media.bytes * IMAGE_WIDTHS.length - optimizedBytes)
+      : null;
 
   await prisma.mediaOptimizationLog.create({
     data: {
@@ -228,9 +235,9 @@ export async function optimizeMedia(mediaId: string): Promise<OptimizeResult> {
  * everyone who does not need it. It never surfaces in review, never breaks a
  * build, and is only noticed by the person it excludes.
  */
-export async function missingAltText(limit = 100): Promise<
-  { id: string; url: string; usedBy: string | null }[]
-> {
+export async function missingAltText(
+  limit = 100,
+): Promise<{ id: string; url: string; usedBy: string | null }[]> {
   const rows = await prisma.media.findMany({
     where: {
       type: 'IMAGE',

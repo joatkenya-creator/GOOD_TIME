@@ -141,11 +141,23 @@ async function main(): Promise<void> {
       ]);
 
       const winners = results.filter((result) => result.status === 'fulfilled').length;
-      check('two checkouts racing for the last balance: exactly one wins', winners === 1, `${winners} won`);
+      check(
+        'two checkouts racing for the last balance: exactly one wins',
+        winners === 1,
+        `${winners} won`,
+      );
 
       const afterRace = await prisma.giftCard.findUniqueOrThrow({ where: { id: issued.id } });
-      check('the balance never goes negative', afterRace.balanceCents >= 0, String(afterRace.balanceCents));
-      check('an emptied card is marked redeemed', afterRace.status === 'REDEEMED', afterRace.status);
+      check(
+        'the balance never goes negative',
+        afterRace.balanceCents >= 0,
+        String(afterRace.balanceCents),
+      );
+      check(
+        'an emptied card is marked redeemed',
+        afterRace.status === 'REDEEMED',
+        afterRace.status,
+      );
 
       // ------------------------------------------------------- refunding
       console.log('\nRefunding');

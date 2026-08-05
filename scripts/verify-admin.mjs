@@ -77,7 +77,10 @@ async function signIn(page, email) {
   await page.goto(`${BASE}/sign-in`, { waitUntil: 'domcontentloaded' });
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', PASSWORD);
-  await page.getByRole('button', { name: /sign in/i }).first().click();
+  await page
+    .getByRole('button', { name: /sign in/i })
+    .first()
+    .click();
   return page
     .waitForFunction(() => !window.location.pathname.startsWith('/sign-in'), { timeout: 30_000 })
     .then(() => true)
@@ -196,9 +199,7 @@ async function main() {
   // --------------------------------------------------------- dark theme
   section('Dark theme');
 
-  await ownerContext.addCookies([
-    { name: 'gt.admin_theme', value: 'dark', url: BASE },
-  ]);
+  await ownerContext.addCookies([{ name: 'gt.admin_theme', value: 'dark', url: BASE }]);
   await ownerPage.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded' });
   await ownerPage.waitForTimeout(500);
 
@@ -256,7 +257,9 @@ async function main() {
   for (const scenario of cases) {
     const context = await contextFor(browser);
     const page = await context.newPage();
-    page.on('pageerror', (error) => pageErrors.push(`${scenario.label}: ${String(error).slice(0, 140)}`));
+    page.on('pageerror', (error) =>
+      pageErrors.push(`${scenario.label}: ${String(error).slice(0, 140)}`),
+    );
 
     check(`${scenario.label} can sign in`, await signIn(page, scenario.email));
 
@@ -273,10 +276,16 @@ async function main() {
     await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded' }).catch(() => null);
     await page.waitForTimeout(400);
     const menuLinks = await page.evaluate(() =>
-      [...document.querySelectorAll('nav[aria-label="Admin"] a')].map((a) => a.getAttribute('href')),
+      [...document.querySelectorAll('nav[aria-label="Admin"] a')].map((a) =>
+        a.getAttribute('href'),
+      ),
     );
     const leaked = scenario.denied.filter((path) => menuLinks.includes(path));
-    check(`${scenario.label}'s menu hides what they cannot open`, leaked.length === 0, leaked.join(', '));
+    check(
+      `${scenario.label}'s menu hides what they cannot open`,
+      leaked.length === 0,
+      leaked.join(', '),
+    );
 
     await context.close();
   }
@@ -313,7 +322,8 @@ async function main() {
   await ownerContext.request.get(`${BASE}/api/admin/reports/sales?format=csv`);
   await ownerPage.goto(`${BASE}/admin/audit?status=EXPORT`, { waitUntil: 'domcontentloaded' });
   await ownerPage.waitForTimeout(500);
-  const after = ((await ownerPage.locator('main').textContent()) ?? '').match(/EXPORT/g)?.length ?? 0;
+  const after =
+    ((await ownerPage.locator('main').textContent()) ?? '').match(/EXPORT/g)?.length ?? 0;
   check('an export is recorded in the audit log', after > 0, `${before} → ${after}`);
 
   // ------------------------------------------------------------ exports
@@ -323,10 +333,16 @@ async function main() {
     const response = await ownerContext.request.get(
       `${BASE}/api/admin/reports/sales?format=${format}`,
     );
-    check(`the ${format} export returns 200`, response.status() === 200, `got ${response.status()}`);
+    check(
+      `the ${format} export returns 200`,
+      response.status() === 200,
+      `got ${response.status()}`,
+    );
   }
 
-  const csv = await (await ownerContext.request.get(`${BASE}/api/admin/reports/inventory?format=csv`)).text();
+  const csv = await (
+    await ownerContext.request.get(`${BASE}/api/admin/reports/inventory?format=csv`)
+  ).text();
   check('the CSV has a header row', csv.split('\r\n')[0]?.includes('SKU') ?? false);
   check(
     'money is exported as a decimal, not as cents',

@@ -70,8 +70,10 @@ const terms: LegalDocument = {
     {
       heading: 'Payment',
       paragraphs: [
-        // payment.service.ts — Stripe Payment Intents; no PAN ever reaches our servers.
-        'Card payments are processed by Stripe. Your card number never reaches our servers: we hold only a token that lets us charge the card you chose, and the last four digits and expiry so you can recognise it.',
+        // payment.service.ts — Klarna authorise-then-capture; no payment
+        // credential of any kind reaches our servers.
+        "Payments are processed by Klarna. Your card or bank details never reach our servers — you enter them in Klarna's own secure form, and we receive only a reference to the order Klarna has approved.",
+        'Klarna is the data controller for the payment details you give it, and its own privacy notice governs how it handles them. We share with Klarna only what it needs to approve and bill the purchase: the amount, the items, and your billing and delivery address.',
         `Your statement will show a discreet descriptor, not the name of any product. We do not print product names on anything that leaves our building.`,
       ],
     },
@@ -152,7 +154,7 @@ const privacy: LegalDocument = {
         'Your name, email address and phone number, if you give it',
         'Delivery and billing addresses, stored as a snapshot on each order so a later edit cannot rewrite your history',
         'Order contents, totals and status',
-        'A payment token from Stripe, plus the card brand, last four digits and expiry — never the full card number',
+        'A reference to the Klarna order that paid for your purchase — never a card number, and never your bank details',
         'Your wishlist, recently viewed products and loyalty balance, if you have an account',
         'Sign-in records: date, IP address and browser, for every attempt, successful or not',
         'Marketing and notification preferences',
@@ -167,12 +169,10 @@ const privacy: LegalDocument = {
     },
     {
       heading: 'Discretion',
-      paragraphs: [
-        'This is the part that matters most in this category, so it is specific:',
-      ],
+      paragraphs: ['This is the part that matters most in this category, so it is specific:'],
       bullets: [
         'Outer packaging is plain and unbranded, with a neutral sender name',
-        'Your card statement shows a discreet descriptor, never a product name',
+        'Your statement, and anything Klarna shows you, uses a discreet descriptor rather than a product name',
         'Emails we send use neutral subject lines',
         'We do not sell or rent your personal information, and we never have',
         'We do not share purchase history with advertising networks',
@@ -184,7 +184,7 @@ const privacy: LegalDocument = {
         'Only the companies needed to complete your order, and only the data they need:',
       ],
       bullets: [
-        'Stripe, to take payment',
+        'Klarna, to approve and take payment — you enter your details with Klarna directly, and we never see them',
         'Our delivery carrier, to get the parcel to you — they receive a name and address, not an order description',
         'Our email provider, to send order confirmations and any newsletter you asked for',
         'Our hosting and database providers, who store the data on our behalf',

@@ -157,6 +157,46 @@ export async function listCollections() {
   });
 }
 
+/**
+ * One brand, for its landing page.
+ *
+ * `websiteUrl` comes back because a brand page that cannot link to the maker is
+ * a dead end for the shopper researching them — which is most of the reason
+ * anyone lands on a brand page at all.
+ */
+export async function getBrandBySlug(slug: string) {
+  return prisma.brand.findFirst({
+    where: { slug, ...LIVE },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      description: true,
+      websiteUrl: true,
+      seo: true,
+      _count: { select: { products: true } },
+    },
+  });
+}
+
+/**
+ * Every collection and brand slug, for `generateStaticParams`.
+ *
+ * Prerendering these matters more than it looks: they are linked from the
+ * global navigation, so a crawler reaches them on its first visit to any page.
+ */
+export async function listCollectionSlugs() {
+  return prisma.collection.findMany({
+    where: { isActive: true },
+    select: { slug: true },
+    orderBy: { position: 'asc' },
+  });
+}
+
+export async function listBrandSlugs() {
+  return prisma.brand.findMany({ where: LIVE, select: { slug: true }, orderBy: { name: 'asc' } });
+}
+
 export async function listBrands() {
   return prisma.brand.findMany({
     where: { isActive: true, deletedAt: null },

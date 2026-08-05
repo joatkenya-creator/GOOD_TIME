@@ -62,27 +62,27 @@ export default async function RewardsPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-border bg-surface p-5">
-          <span className="flex items-center gap-1.5 text-body-xs font-medium tracking-wide text-foreground-subtle uppercase">
+          <span className="text-body-xs flex items-center gap-1.5 font-medium tracking-wide text-foreground-subtle uppercase">
             <Sparkles aria-hidden="true" className="size-4" />
             Points
           </span>
-          <p className="mt-2 text-h3 font-bold tabular-nums text-foreground">
+          <p className="text-h3 mt-2 font-bold text-foreground tabular-nums">
             {account.pointsBalance}
           </p>
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-5">
-          <span className="flex items-center gap-1.5 text-body-xs font-medium tracking-wide text-foreground-subtle uppercase">
+          <span className="text-body-xs flex items-center gap-1.5 font-medium tracking-wide text-foreground-subtle uppercase">
             <Wallet aria-hidden="true" className="size-4" />
             Store credit
           </span>
-          <p className="mt-2 text-h3 font-bold tabular-nums text-foreground">
+          <p className="text-h3 mt-2 font-bold text-foreground tabular-nums">
             {formatPrice(account.storeCreditCents)}
           </p>
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-5">
-          <span className="flex items-center gap-1.5 text-body-xs font-medium tracking-wide text-foreground-subtle uppercase">
+          <span className="text-body-xs flex items-center gap-1.5 font-medium tracking-wide text-foreground-subtle uppercase">
             <Gift aria-hidden="true" className="size-4" />
             Tier
           </span>
@@ -195,9 +195,8 @@ export default async function RewardsPage() {
           Refer a friend
         </h2>
         <p className="mt-1 text-body-sm text-foreground-muted">
-          When someone you refer places a first order of{' '}
-          {formatPrice(REFERRAL_MIN_ORDER_CENTS)} or more, you get{' '}
-          {formatPrice(REFERRAL_REWARD_CENTS)} in store credit.
+          When someone you refer places a first order of {formatPrice(REFERRAL_MIN_ORDER_CENTS)} or
+          more, you get {formatPrice(REFERRAL_REWARD_CENTS)} in store credit.
         </p>
 
         <ReferralCodeBlock code={referral.code} uses={referral.uses} />
@@ -227,13 +226,13 @@ export default async function RewardsPage() {
 
                 <div className="text-right">
                   {transaction.points !== 0 ? (
-                    <p className="text-body-sm font-medium tabular-nums text-foreground">
+                    <p className="text-body-sm font-medium text-foreground tabular-nums">
                       {transaction.points > 0 ? '+' : ''}
                       {transaction.points} pts
                     </p>
                   ) : null}
                   {transaction.amountCents !== 0 ? (
-                    <p className="text-body-sm font-medium tabular-nums text-foreground">
+                    <p className="text-body-sm font-medium text-foreground tabular-nums">
                       {transaction.amountCents > 0 ? '+' : '-'}
                       {formatPrice(Math.abs(transaction.amountCents))}
                     </p>

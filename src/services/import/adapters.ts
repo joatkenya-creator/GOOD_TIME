@@ -107,7 +107,8 @@ export function parseCsv(text: string, delimiter = ','): ParseResult {
     rows.push(record);
   }
 
-  if (inQuotes) warnings.push('The file ended inside a quoted field — the last row may be truncated.');
+  if (inQuotes)
+    warnings.push('The file ended inside a quoted field — the last row may be truncated.');
 
   const [header, ...body] = rows;
   if (!header) return { rows: [], columns: [], warnings: ['The file is empty.'] };
@@ -221,7 +222,11 @@ function cellToString(value: unknown): string {
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   if (typeof value === 'object') {
     const cell = value as { result?: unknown; text?: unknown; richText?: { text: string }[] };
-    if (Array.isArray(cell.richText)) return cell.richText.map((part) => part.text).join('').trim();
+    if (Array.isArray(cell.richText))
+      return cell.richText
+        .map((part) => part.text)
+        .join('')
+        .trim();
     if (cell.result !== undefined) return String(cell.result).trim();
     if (cell.text !== undefined) return String(cell.text).trim();
     return '';
@@ -267,7 +272,11 @@ export function parseXml(text: string): ParseResult {
 
   const items = findItems(document);
   if (!items) {
-    return { rows: [], columns: [], warnings: ['No repeating element looked like a product list.'] };
+    return {
+      rows: [],
+      columns: [],
+      warnings: ['No repeating element looked like a product list.'],
+    };
   }
 
   const rows = items.slice(0, MAX_ROWS).map((item) => flatten(item));
@@ -326,7 +335,10 @@ function flatten(node: unknown, prefix = '', depth = 0): RawRow {
     if (Array.isArray(value)) {
       // Repeated elements (extra images, several categories) join with a pipe,
       // which the mapper splits back out.
-      out[name] = value.map((entry) => (typeof entry === 'object' ? '' : String(entry))).filter(Boolean).join('|');
+      out[name] = value
+        .map((entry) => (typeof entry === 'object' ? '' : String(entry)))
+        .filter(Boolean)
+        .join('|');
     } else if (value !== null && typeof value === 'object') {
       Object.assign(out, flatten(value, name, depth + 1));
     } else if (value !== undefined) {

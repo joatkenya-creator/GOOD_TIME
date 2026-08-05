@@ -54,7 +54,7 @@ export default async function AdminCustomersPage({
           <span className="block truncate">
             {[row.firstName, row.lastName].filter(Boolean).join(' ') || 'No name'}
           </span>
-          <span className="block truncate text-body-xs font-normal text-foreground-subtle">
+          <span className="text-body-xs block truncate font-normal text-foreground-subtle">
             {maskEmail(row.email, seePii)}
           </span>
         </span>
@@ -66,7 +66,9 @@ export default async function AdminCustomersPage({
       cell: (row: AdminCustomerRow) => (
         <StatusPill
           label={humaniseEnum(row.status)}
-          tone={row.status === 'ACTIVE' ? 'success' : row.status === 'SUSPENDED' ? 'danger' : 'neutral'}
+          tone={
+            row.status === 'ACTIVE' ? 'success' : row.status === 'SUSPENDED' ? 'danger' : 'neutral'
+          }
         />
       ),
     },

@@ -37,8 +37,8 @@ export default async function StorefrontNotFound() {
       <p className="text-eyebrow text-accent uppercase">404</p>
       <h1 className="mt-4 text-display-lg text-foreground">We can&apos;t find that page</h1>
       <p className="mt-4 text-base leading-relaxed text-foreground-muted">
-        The link may be broken, or the page may have moved. If you followed a link from an email,
-        it may have expired.
+        The link may be broken, or the page may have moved. If you followed a link from an email, it
+        may have expired.
       </p>
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">

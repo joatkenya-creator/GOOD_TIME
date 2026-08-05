@@ -15,10 +15,11 @@ import { submitCheckoutAction } from '@/server/actions/checkout';
  *      writes themselves. (`placeOrder` → `computeTotals`)
  *   2. Inventory is reserved inside the same transaction that creates the order.
  *      (`placeOrder`)
- *   3. An idempotency key goes to Stripe and onto `Payment`, so a double-submitted
- *      form cannot charge twice. (`createPaymentIntent`)
- *   4. The webhook is the source of truth for `PaymentStatus`. The response
- *      below is a client secret, not a confirmation. (`handleStripeEvent`)
+ *   3. An idempotency key goes to Klarna and onto `Payment`, so a double-submitted
+ *      form cannot authorise twice. (`createPaymentSession`, `authorizePayment`)
+ *   4. Klarna's own record is the source of truth for `PaymentStatus`. The
+ *      response below is a client token for the widget, not a confirmation.
+ *      (`syncFromKlarna`)
  */
 export const POST = withRoute(
   async ({ request }) => {
@@ -35,7 +36,8 @@ export const POST = withRoute(
       {
         orderId: result.orderId,
         orderNumber: result.orderNumber,
-        clientSecret: result.clientSecret,
+        clientToken: result.clientToken,
+        paymentMethodCategories: result.paymentMethodCategories,
       },
       { status: 201 },
     );

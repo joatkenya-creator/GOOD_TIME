@@ -90,7 +90,11 @@ export default async function AdminAnalyticsPage({
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <AdminCard title="Sessions" description={`Daily, last ${days} days`} className="lg:col-span-2">
+        <AdminCard
+          title="Sessions"
+          description={`Daily, last ${days} days`}
+          className="lg:col-span-2"
+        >
           <Sparkline
             label={`Daily sessions over the last ${days} days`}
             points={sessions.map((point) => ({ date: new Date(point.date), value: point.value }))}
@@ -118,14 +122,18 @@ export default async function AdminAnalyticsPage({
             </div>
           </dl>
 
-          <p className="mt-3 text-body-xs text-foreground-subtle">
+          <p className="text-body-xs mt-3 text-foreground-subtle">
             Median as well as average, because one wholesale-sized order drags a mean somewhere no
             real customer lives.
           </p>
         </AdminCard>
       </div>
 
-      <AdminCard title="Checkout funnel" description="Counted in sessions, not events" className="mt-6">
+      <AdminCard
+        title="Checkout funnel"
+        description="Counted in sessions, not events"
+        className="mt-6"
+      >
         <ol className="space-y-2">
           {steps.map((step) => {
             const width = steps[0]!.count > 0 ? (step.count / steps[0]!.count) * 100 : 0;
@@ -139,7 +147,7 @@ export default async function AdminAnalyticsPage({
                     {step.conversionFromPrevious !== null ? (
                       <span
                         className={cn(
-                          'ml-2 text-body-xs',
+                          'text-body-xs ml-2',
                           step.conversionFromPrevious < 40
                             ? 'text-danger-700'
                             : 'text-foreground-subtle',
@@ -161,10 +169,10 @@ export default async function AdminAnalyticsPage({
           })}
         </ol>
 
-        <p className="mt-3 text-body-xs text-foreground-subtle">
+        <p className="text-body-xs mt-3 text-foreground-subtle">
           Someone who views four products and adds two to their cart is one session at each step.
-          Counting events instead reports conversion above 100% and teaches everyone to distrust
-          the dashboard.
+          Counting events instead reports conversion above 100% and teaches everyone to distrust the
+          dashboard.
         </p>
       </AdminCard>
 
@@ -194,7 +202,7 @@ function Breakdown({ rows }: { rows: { label: string; value: number; share: numb
             <span className="capitalize">{row.label}</span>
             <span className="tabular-nums">
               {row.value.toLocaleString()}
-              <span className="ml-2 text-body-xs text-foreground-subtle">{row.share}%</span>
+              <span className="text-body-xs ml-2 text-foreground-subtle">{row.share}%</span>
             </span>
           </div>
           <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted">

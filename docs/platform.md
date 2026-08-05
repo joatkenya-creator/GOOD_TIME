@@ -15,8 +15,8 @@ several workers race for it. Postgres solves that in one statement —
 already backed up, already monitored, and already transactional with the data
 the jobs are about.
 
-That last point is the one that decides it. Enqueuing a reindex *in the same
-transaction* as the product write is impossible with an external broker and
+That last point is the one that decides it. Enqueuing a reindex _in the same
+transaction_ as the product write is impossible with an external broker and
 free here: either the product saved and its reindex is queued, or neither
 happened. With Redis there is always a window where one succeeded and the other
 did not.
@@ -28,10 +28,10 @@ numbers change, that is where SQS or BullMQ slots in without touching a handler.
 
 ### Two ways to run it
 
-| | Command | When |
-|---|---|---|
+|            | Command                                       | When                         |
+| ---------- | --------------------------------------------- | ---------------------------- |
 | Serverless | Cron calls `POST /api/cron/jobs` every minute | Vercel; nothing to keep warm |
-| Container | `npm run worker` | A VM or a container platform |
+| Container  | `npm run worker`                              | A VM or a container platform |
 
 Same handlers, same queue; only the loop differs. Run one or the other — both
 is harmless (the queue claims exactly once) but pays for an idle container
@@ -71,12 +71,12 @@ Only the first two steps differ per source. An adapter's whole job is to turn
 bytes into `Record<string, string>[]`; everything downstream is shared. That
 boundary is what stops the fifth supplier arriving as a fifth bespoke script.
 
-| Source | Parser | Notes |
-|---|---|---|
-| CSV / TSV | Hand-written | RFC 4180 is four rules; a dependency here is 300KB to avoid 40 lines |
-| Excel | ExcelJS | The one format worth a dependency — zip + shared strings + serial dates |
-| XML / Google Merchant | fast-xml-parser | Item element detected, not configured |
-| JSON / Supplier API / Affiliate | Native | Array found under any conventional key |
+| Source                          | Parser          | Notes                                                                   |
+| ------------------------------- | --------------- | ----------------------------------------------------------------------- |
+| CSV / TSV                       | Hand-written    | RFC 4180 is four rules; a dependency here is 300KB to avoid 40 lines    |
+| Excel                           | ExcelJS         | The one format worth a dependency — zip + shared strings + serial dates |
+| XML / Google Merchant           | fast-xml-parser | Item element detected, not configured                                   |
+| JSON / Supplier API / Affiliate | Native          | Array found under any conventional key                                  |
 
 **Why ExcelJS and not SheetJS**: the `xlsx` package on npm is the abandoned
 build — upstream moved distribution to their own CDN and the npm copy carries
@@ -99,11 +99,11 @@ unpatched advisories.
 
 A supplier feed is not automatically more correct than a merchandiser's copy.
 
-| Policy | Behaviour |
-|---|---|
-| `fill_blanks` | Existing values win; only empty fields are filled |
-| `overwrite` | Feed wins for mapped fields |
-| `flag` | Records the difference, changes nothing, leaves it for a human |
+| Policy        | Behaviour                                                      |
+| ------------- | -------------------------------------------------------------- |
+| `fill_blanks` | Existing values win; only empty fields are filled              |
+| `overwrite`   | Feed wins for mapped fields                                    |
+| `flag`        | Records the difference, changes nothing, leaves it for a human |
 
 ### Money never touches a float
 
@@ -148,19 +148,19 @@ A term in the title means far more than the same term buried in a description,
 and Postgres cannot know that alone. Title weight ×4, brand ×2, body ×1, plus a
 bonus for a prefix match on the title. Without it, "silicone" returns three
 hundred products whose care instructions mention silicone, ahead of the one
-called *Silicone Wand*.
+called _Silicone Wand_.
 
 ### Cold start is the real latency, not the query
 
 Measured against Neon from a remote client:
 
-| | |
-|---|---|
-| Query execution (`EXPLAIN ANALYZE`) | **1.9 ms** |
-| Warm round trip to the database | ~230 ms |
-| Warm search, end to end | ~240 ms — **one round trip** |
-| Search with a fresh term (facets uncached) | ~730 ms — three round trips |
-| **First query on a cold connection** | **~2200 ms** |
+|                                            |                              |
+| ------------------------------------------ | ---------------------------- |
+| Query execution (`EXPLAIN ANALYZE`)        | **1.9 ms**                   |
+| Warm round trip to the database            | ~230 ms                      |
+| Warm search, end to end                    | ~240 ms — **one round trip** |
+| Search with a fresh term (facets uncached) | ~730 ms — three round trips  |
+| **First query on a cold connection**       | **~2200 ms**                 |
 
 The query itself is not the cost and never was; the network is, and a cold
 serverless connection dominates everything. In production the pool is warm
@@ -169,7 +169,7 @@ environment, a low-traffic region — pays that ~2.2s on its first request.
 
 That is worth knowing before anyone optimises the query. Chasing an absolute
 latency number here measures the distance to the database, so
-`verify:operations` asserts a *ratio* against a measured round trip instead.
+`verify:operations` asserts a _ratio_ against a measured round trip instead.
 
 ### Typo tolerance runs only on zero results
 
@@ -180,8 +180,8 @@ only when the exact search found nothing costs nothing on the happy path.
 ### Synonyms are curated, and one-way matters
 
 No algorithm knows that this category's shoppers say "wand" and mean one
-specific shape. One-way means searching *vibrator* also finds bullets, without
-searching *bullet* returning every vibrator in the catalogue.
+specific shape. One-way means searching _vibrator_ also finds bullets, without
+searching _bullet_ returning every vibrator in the catalogue.
 
 ---
 
@@ -242,10 +242,10 @@ carry short TTLs and why anything correctness-critical uses the database.
 
 Two layers, easily confused, wrapped with names that say which:
 
-| | What |
-|---|---|
-| `lib/cache/cached.ts` | Next's data cache — page data, tag-invalidated |
-| `lib/cache/store.ts` | Everything else — facet counts, synonym tables, feeds |
+|                       | What                                                  |
+| --------------------- | ----------------------------------------------------- |
+| `lib/cache/cached.ts` | Next's data cache — page data, tag-invalidated        |
+| `lib/cache/store.ts`  | Everything else — facet counts, synonym tables, feeds |
 
 ---
 
@@ -253,13 +253,13 @@ Two layers, easily confused, wrapped with names that say which:
 
 ### Sitemaps
 
-| File | Contents |
-|---|---|
-| `/sitemap.xml` | Pages, categories, products (existing) |
-| `/sitemap-index.xml` | The index to submit to Search Console |
-| `/sitemap-images-N.xml` | Product images, paginated at 45,000 |
-| `/sitemap-videos.xml` | Empty but valid until the library holds video |
-| `/sitemap-news.xml` | Last 48 hours of posts, correct structure |
+| File                    | Contents                                      |
+| ----------------------- | --------------------------------------------- |
+| `/sitemap.xml`          | Pages, categories, products (existing)        |
+| `/sitemap-index.xml`    | The index to submit to Search Console         |
+| `/sitemap-images-N.xml` | Product images, paginated at 45,000           |
+| `/sitemap-videos.xml`   | Empty but valid until the library holds video |
+| `/sitemap-news.xml`     | Last 48 hours of posts, correct structure     |
 
 A sitemap caps at 50,000 URLs. At a hundred thousand products that is three
 files plus an index, which is why pagination exists before it breaks.
@@ -349,13 +349,13 @@ never a product id. One label with a million values is a million series.
 
 ## Security
 
-| Threat | Defence |
-|---|---|
-| Zip bomb | Compression ratio checked before extraction |
-| Formula injection | `=`, `+`, `-`, `@` prefixed on CSV export |
-| Disguised executable | Magic bytes checked against the claimed extension |
-| SSRF via feed URL | HTTPS only; loopback, private ranges and `169.254.169.254` refused |
-| Webhook forgery | HMAC compared with `timingSafeEqual` |
+| Threat               | Defence                                                            |
+| -------------------- | ------------------------------------------------------------------ |
+| Zip bomb             | Compression ratio checked before extraction                        |
+| Formula injection    | `=`, `+`, `-`, `@` prefixed on CSV export                          |
+| Disguised executable | Magic bytes checked against the claimed extension                  |
+| SSRF via feed URL    | HTTPS only; loopback, private ranges and `169.254.169.254` refused |
+| Webhook forgery      | HMAC compared with `timingSafeEqual`                               |
 
 Formula injection deserves emphasis: supplier data flows into our exports, so
 without neutralisation a hostile feed can plant `=cmd|'/c calc'!A1` in a product

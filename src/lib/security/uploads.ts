@@ -73,7 +73,9 @@ export function checkUpload(filename: string, buffer: ArrayBuffer): UploadCheck 
   const extension = extensionOf(filename);
   const bytes = new Uint8Array(buffer.slice(0, 16));
 
-  if (!ALLOWED_IMPORT_EXTENSIONS.includes(extension as (typeof ALLOWED_IMPORT_EXTENSIONS)[number])) {
+  if (
+    !ALLOWED_IMPORT_EXTENSIONS.includes(extension as (typeof ALLOWED_IMPORT_EXTENSIONS)[number])
+  ) {
     return {
       ok: false,
       extension,

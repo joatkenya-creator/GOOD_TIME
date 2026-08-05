@@ -101,12 +101,37 @@ export const primaryNav: PrimaryNavItem[] = [
         ],
       },
       {
+        /*
+         * Material filters, not collections.
+         *
+         * These pointed at `/collections/silicone`, `/collections/glass` and so
+         * on — four collections that have never existed, so every one of them
+         * 404'd from the main navigation of every page. A material is a facet
+         * of a product, not a curated edit, and the listing page already
+         * filters on exactly these tokens.
+         *
+         * The values are the real facet tokens from `Product.facets`. A label
+         * here that does not match a token silently returns an empty listing,
+         * which is why they are spelled out rather than derived from the label.
+         */
         title: 'Materials',
         items: [
-          { label: 'Platinum-cure silicone', href: ROUTES.collection('silicone') },
-          { label: 'Borosilicate glass', href: ROUTES.collection('glass') },
-          { label: 'Stainless steel', href: ROUTES.collection('steel') },
-          { label: 'Non-porous only', href: ROUTES.collection('non-porous') },
+          {
+            label: 'Platinum-cure silicone',
+            href: `${ROUTES.shop}?material=platinum-cure-silicone`,
+          },
+          { label: 'Borosilicate glass', href: `${ROUTES.shop}?material=borosilicate-glass` },
+          { label: 'Stainless steel', href: `${ROUTES.shop}?material=316l-stainless-steel` },
+          {
+            /*
+             * "Non-porous" is a property of three materials rather than a
+             * material itself, and no facet expresses it. The CSV filter ORs
+             * within a namespace, so listing the three is both accurate and
+             * exactly what the label promises.
+             */
+            label: 'Non-porous only',
+            href: `${ROUTES.shop}?material=platinum-cure-silicone,borosilicate-glass,316l-stainless-steel`,
+          },
         ],
       },
     ],

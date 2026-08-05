@@ -1,0 +1,220 @@
+/**
+ * Cloudflare Workers deployment.
+ *
+ * `main` points at `cloudflare/worker.ts`, not at the OpenNext output, because
+ * the application needs `queue` and `scheduled` handlers alongside `fetch` and
+ * those are Worker-level exports. That file imports the OpenNext build and adds
+ * them; see its header.
+ *
+ * ## Secrets are not here
+ *
+ * Nothing in `vars` is a secret. Everything sensitive — the database URL, the
+ * Klarna credentials, `AUTH_SECRET`, the Upstash token — is set with
+ * `wrangler secret put` or in the dashboard, per environment. `vars` is
+ * committed to git; secrets are not, and a value in the wrong one is a leak
+ * that survives in history. The full list is in docs/environment.md.
+ *
+ * ## Environments
+ *
+ * `staging` and `production` are separate Workers with separate bindings,
+ * separate queues and separate databases. They are deliberately not the same
+ * Worker with a flag: a staging deploy must be incapable of writing to the
+ * production database or of charging a real customer.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "good-time",
+  "main": "cloudflare/worker.ts",
+
+  /**
+   * Pin the runtime date. Workers gates behaviour changes behind this, so
+   * leaving it floating means the runtime can change under a deploy that
+   * changed nothing.
+   */
+  "compatibility_date": "2026-07-01",
+
+  /**
+   * `nodejs_compat` is required, not optional: Prisma, the Auth.js crypto
+   * paths and OpenNext's own runtime all reach for `node:` builtins.
+   * `global_fetch_strictly_public` makes a fetch to our own hostname go out to
+   * the internet and back through Cloudflare rather than looping inside the
+   * isolate — which is what makes a self-referential request see the WAF, the
+   * cache rules and the real headers.
+   */
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  "workers_dev": false,
+  "preview_urls": true,
+
+  "observability": {
+    "enabled": true,
+    // Sampling is for saving money on logs nobody reads. At this traffic level
+    // the whole point is that the one broken checkout is in there.
+    "head_sampling_rate": 1,
+  },
+
+  /** Uploads source maps so a Sentry stack trace names our files, not `worker.js:1`. */
+  "upload_source_maps": true,
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+    /**
+     * Static assets are served without ever waking the Worker. That is the
+     * single largest performance lever here: a `.woff2` or a hashed JS chunk
+     * costs zero CPU-ms and is served from the edge cache.
+     */
+    "run_worker_first": false,
+  },
+
+  "vars": {
+    "NODE_ENV": "production",
+    "NEXT_TELEMETRY_DISABLED": "1",
+  },
+
+  /**
+   * Cron Triggers. Each entry must have a matching branch in
+   * `cloudflare/worker.ts`'s `scheduled` handler — one without a branch fires
+   * into the `default` case and reports itself.
+   */
+  "triggers": {
+    "crons": [
+      // The sweep. Picks up anything the push path missed, fires due schedules,
+      // and reclaims jobs from crashed isolates.
+      "* * * * *",
+      // Returns stock held by abandoned checkouts.
+      "*/15 * * * *",
+      // Extends Klarna authorisations approaching expiry.
+      "0 6 * * *",
+    ],
+  },
+
+  /**
+   * Queues.
+   *
+   * `max_batch_timeout` is short because these carry job *ids*, not payloads —
+   * waiting to fill a batch would add latency to a password reset for no
+   * throughput gain worth having.
+   *
+   * `max_retries` is deliberately low. The database already owns retry with
+   * exponential backoff; these retries only cover the case where the consumer
+   * could not reach the database at all, and three attempts is enough to ride
+   * out a blip without turning a real outage into a retry storm.
+   */
+  "queues": {
+    "producers": [
+      { "queue": "good-time-jobs", "binding": "JOB_QUEUE" },
+      { "queue": "good-time-email", "binding": "EMAIL_QUEUE" },
+    ],
+    "consumers": [
+      {
+        "queue": "good-time-jobs",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+        "max_concurrency": 10,
+        "dead_letter_queue": "good-time-jobs-dlq",
+      },
+      {
+        "queue": "good-time-email",
+        "max_batch_size": 20,
+        "max_batch_timeout": 2,
+        "max_retries": 3,
+        "max_concurrency": 5,
+        "dead_letter_queue": "good-time-email-dlq",
+      },
+    ],
+  },
+
+  /**
+   * Incremental cache for Next's ISR and `unstable_cache`.
+   *
+   * R2 rather than KV: KV is eventually consistent with a global write
+   * propagation delay measured in tens of seconds, which for a revalidated
+   * product page means a price change that is live in one region and stale in
+   * another. R2 is strongly consistent for reads-after-write. The KV namespace
+   * below is the *tag* index, where eventual consistency is fine because a tag
+   * lookup that briefly misses only causes an extra revalidation.
+   */
+  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "good-time-cache" }],
+  "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }],
+
+  /**
+   * Deduplicates concurrent revalidations of the same page.
+   *
+   * Without it, a hundred simultaneous requests for an expired product page
+   * each trigger their own regeneration — a hundred identical database reads
+   * for one result. This is the "cache stampede" that turns a popular page into
+   * an outage the moment its cache expires.
+   */
+  "durable_objects": {
+    "bindings": [
+      { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
+      { "name": "NEXT_CACHE_DO_SHARDED_TAG", "class_name": "DOShardedTagCache" },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DOQueueHandler", "DOShardedTagCache"],
+    },
+  ],
+
+  "env": {
+    "staging": {
+      "name": "good-time-staging",
+      "vars": {
+        "NODE_ENV": "production",
+        "SENTRY_ENVIRONMENT": "staging",
+        "KLARNA_ENVIRONMENT": "playground",
+        "NEXT_PUBLIC_KLARNA_ENVIRONMENT": "playground",
+      },
+      "routes": [{ "pattern": "staging.example.com", "custom_domain": true }],
+      "queues": {
+        "producers": [
+          { "queue": "good-time-jobs-staging", "binding": "JOB_QUEUE" },
+          { "queue": "good-time-email-staging", "binding": "EMAIL_QUEUE" },
+        ],
+        "consumers": [
+          {
+            "queue": "good-time-jobs-staging",
+            "max_batch_size": 10,
+            "max_batch_timeout": 5,
+            "max_retries": 3,
+            "dead_letter_queue": "good-time-jobs-dlq",
+          },
+          {
+            "queue": "good-time-email-staging",
+            "max_batch_size": 20,
+            "max_batch_timeout": 2,
+            "max_retries": 3,
+            "dead_letter_queue": "good-time-email-dlq",
+          },
+        ],
+      },
+      "r2_buckets": [
+        { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "good-time-cache-staging" },
+      ],
+      "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "REPLACE_WITH_STAGING_KV_ID" }],
+    },
+
+    "production": {
+      "name": "good-time-production",
+      "vars": {
+        "NODE_ENV": "production",
+        "SENTRY_ENVIRONMENT": "production",
+        "KLARNA_ENVIRONMENT": "production",
+        "NEXT_PUBLIC_KLARNA_ENVIRONMENT": "production",
+      },
+      /**
+       * Both the apex and `www`. The redirect between them is a Cloudflare
+       * Bulk Redirect, not application code — see docs/cloudflare.md — because
+       * a redirect served from the edge never wakes the Worker.
+       */
+      "routes": [
+        { "pattern": "example.com", "custom_domain": true },
+        { "pattern": "www.example.com", "custom_domain": true },
+      ],
+    },
+  },
+}

@@ -35,7 +35,14 @@ function contentSecurityPolicy(isDevelopment: boolean, upgradeInsecure: boolean)
       'https://www.googletagmanager.com',
       'https://www.google-analytics.com',
       'https://www.clarity.ms',
-      'https://js.stripe.com',
+      // Klarna's widget loader and the in-widget experience.
+      'https://x.klarnacdn.net',
+      'https://*.klarna.com',
+      'https://*.klarnaservices.com',
+      // Turnstile's challenge script.
+      'https://challenges.cloudflare.com',
+      // Cloudflare Web Analytics: cookieless, first-party beacon.
+      'https://static.cloudflareinsights.com',
     ],
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': [
@@ -45,8 +52,9 @@ function contentSecurityPolicy(isDevelopment: boolean, upgradeInsecure: boolean)
       'https://res.cloudinary.com',
       'https://www.google-analytics.com',
       'https://c.clarity.ms',
-      // Payment Element renders card-brand and wallet marks from Stripe's CDN.
-      'https://*.stripe.com',
+      // Klarna renders its own brand marks and merchant assets.
+      'https://x.klarnacdn.net',
+      'https://*.klarna.com',
     ],
     'font-src': ["'self'", 'data:'],
     'connect-src': [
@@ -56,19 +64,29 @@ function contentSecurityPolicy(isDevelopment: boolean, upgradeInsecure: boolean)
       'https://www.google-analytics.com',
       'https://analytics.google.com',
       'https://*.clarity.ms',
-      'https://api.stripe.com',
-      // Stripe.js posts fraud signals here. Without it the Payment Element still
-      // renders, but Radar loses the device fingerprint it scores on — a silent
-      // downgrade that only shows up as a worse fraud rate months later.
-      'https://m.stripe.network',
+      // Klarna's widget talks to its own API and posts the device signals it
+      // underwrites on. Without these the widget renders and then fails to
+      // authorise, which looks like a decline rather than a CSP problem.
+      'https://*.klarna.com',
+      'https://*.klarnaservices.com',
+      'https://*.klarnaevt.com',
       'https://maps.googleapis.com',
+      // Cloudflare Web Analytics beacon.
+      'https://cloudflareinsights.com',
+      // Sentry's browser client posts envelopes to the ingest host in the DSN.
+      'https://*.ingest.sentry.io',
+      'https://*.ingest.us.sentry.io',
     ],
     'frame-src': [
       "'self'",
-      'https://js.stripe.com',
-      'https://hooks.stripe.com',
-      // The hidden iframe Stripe uses for fraud detection and for 3DS challenges.
-      'https://m.stripe.network',
+      // Every field a customer types a payment detail into lives in one of
+      // these iframes. Removing them does not tighten anything — it breaks
+      // checkout entirely.
+      'https://*.klarna.com',
+      'https://*.klarnaservices.com',
+      'https://x.klarnacdn.net',
+      // Turnstile's interactive challenge.
+      'https://challenges.cloudflare.com',
     ],
     'frame-ancestors': ["'none'"],
     'form-action': ["'self'"],
@@ -121,5 +139,21 @@ export function securityHeaders(): HeaderEntry[] {
     },
     // Discreet-shipping category: never leak the referrer to third parties.
     { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+    /*
+     * `credentialless` rather than `require-corp`.
+     *
+     * `require-corp` would demand a CORP header from Klarna's and Cloudinary's
+     * assets, which they do not send, and the whole checkout would fail to
+     * load. `credentialless` gets most of the isolation by stripping
+     * credentials from cross-origin loads instead of refusing them.
+     */
+    { key: 'Cross-Origin-Embedder-Policy', value: 'credentialless' },
+    /*
+     * Cloudflare will not compress a response it cannot see the type of, and it
+     * will not cache one whose variance it cannot reason about. Being explicit
+     * here is what makes the Brotli and cache rules in docs/cloudflare.md
+     * actually apply rather than silently no-op.
+     */
+    { key: 'Vary', value: 'Accept-Encoding' },
   ];
 }

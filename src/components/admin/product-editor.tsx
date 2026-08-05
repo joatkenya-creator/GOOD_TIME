@@ -78,7 +78,10 @@ export function ProductEditor({
   ] as const;
 
   return (
-    <form action={formAction} className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+    <form
+      action={formAction}
+      className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start"
+    >
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
       <div className="min-w-0">
@@ -87,7 +90,11 @@ export function ProductEditor({
           native button semantics plus `aria-selected`, so a screen reader
           announces "tab 2 of 5" rather than "button".
         */}
-        <div role="tablist" aria-label="Product sections" className="mb-4 flex flex-wrap gap-1 border-b border-border">
+        <div
+          role="tablist"
+          aria-label="Product sections"
+          className="mb-4 flex flex-wrap gap-1 border-b border-border"
+        >
           {tabs.map((entry) => (
             <button
               key={entry.key}
@@ -169,13 +176,19 @@ export function ProductEditor({
               id="description"
               rows={10}
               defaultValue={values.description}
-              className={cn(inputClass, 'font-mono text-body-xs')}
+              className={cn(inputClass, 'text-body-xs font-mono')}
             />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Parent SKU" name="sku">
-              <input type="text" name="sku" id="sku" defaultValue={values.sku} className={inputClass} />
+              <input
+                type="text"
+                name="sku"
+                id="sku"
+                defaultValue={values.sku}
+                className={inputClass}
+              />
             </Field>
             <Field label="Barcode" name="barcode">
               <input
@@ -201,7 +214,7 @@ export function ProductEditor({
                     className="aspect-square w-full object-cover"
                     loading="lazy"
                   />
-                  <p className="truncate px-2 py-1.5 text-body-xs text-foreground-subtle">
+                  <p className="text-body-xs truncate px-2 py-1.5 text-foreground-subtle">
                     {asset.alt ?? 'No alt text'}
                   </p>
                 </li>
@@ -223,18 +236,26 @@ export function ProductEditor({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-body-sm">
                 <thead>
-                  <tr className="border-b border-border text-body-xs tracking-wide text-foreground-subtle uppercase">
-                    <th scope="col" className="py-2 pr-3">Variant</th>
-                    <th scope="col" className="py-2 pr-3">SKU</th>
-                    <th scope="col" className="py-2 pr-3 text-right">Price</th>
-                    <th scope="col" className="py-2 text-right">Available</th>
+                  <tr className="text-body-xs border-b border-border tracking-wide text-foreground-subtle uppercase">
+                    <th scope="col" className="py-2 pr-3">
+                      Variant
+                    </th>
+                    <th scope="col" className="py-2 pr-3">
+                      SKU
+                    </th>
+                    <th scope="col" className="py-2 pr-3 text-right">
+                      Price
+                    </th>
+                    <th scope="col" className="py-2 text-right">
+                      Available
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {variants.map((variant) => (
                     <tr key={variant.id} className="border-b border-border last:border-0">
                       <td className="py-2.5 pr-3">{variant.name}</td>
-                      <td className="py-2.5 pr-3 font-mono text-body-xs text-foreground-subtle">
+                      <td className="text-body-xs py-2.5 pr-3 font-mono text-foreground-subtle">
                         {variant.sku}
                       </td>
                       <td className="py-2.5 pr-3 text-right tabular-nums">
@@ -253,7 +274,7 @@ export function ProductEditor({
                 </tbody>
               </table>
 
-              <p className="mt-4 text-body-xs text-foreground-subtle">
+              <p className="text-body-xs mt-4 text-foreground-subtle">
                 Prices and stock are edited where they are managed:{' '}
                 <Link href="/admin/inventory" className="text-accent-text underline">
                   Inventory
@@ -381,7 +402,7 @@ export function ProductEditor({
             />
             <span>
               Hide from search engines
-              <span className="block text-body-xs text-foreground-subtle">
+              <span className="text-body-xs block text-foreground-subtle">
                 The product stays buyable; search engines are asked not to index it.
               </span>
             </span>
@@ -449,7 +470,7 @@ export function ProductEditor({
           <p
             aria-live="polite"
             className={cn(
-              'mt-3 text-body-xs',
+              'text-body-xs mt-3',
               state.ok ? 'text-success-700' : 'text-danger-700',
               !state.message && 'sr-only',
             )}
@@ -461,14 +482,14 @@ export function ProductEditor({
         {values.id ? (
           <div className="rounded-xl border border-border bg-surface p-5">
             <h2 className="text-body-sm font-semibold">Preview</h2>
-            <p className="mt-1 text-body-xs text-foreground-subtle">
+            <p className="text-body-xs mt-1 text-foreground-subtle">
               Drafts are not reachable on the storefront, so this link only works once published.
             </p>
             <Link
               href={`/shop/${values.slug}`}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 inline-block rounded-lg border border-border px-3 py-1.5 text-body-xs font-medium hover:bg-surface-muted"
+              className="text-body-xs mt-3 inline-block rounded-lg border border-border px-3 py-1.5 font-medium hover:bg-surface-muted"
             >
               Open on storefront
             </Link>
@@ -537,9 +558,9 @@ function Field({
 
       {children}
 
-      {hint ? <p className="mt-1 text-body-xs text-foreground-subtle">{hint}</p> : null}
+      {hint ? <p className="text-body-xs mt-1 text-foreground-subtle">{hint}</p> : null}
       {error ? (
-        <p className="mt-1 text-body-xs text-danger-700" role="alert">
+        <p className="text-body-xs mt-1 text-danger-700" role="alert">
           {error}
         </p>
       ) : null}

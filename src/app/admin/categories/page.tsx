@@ -50,7 +50,7 @@ export default async function AdminCategoriesPage() {
                       {category.name}
                       {!category.isActive ? <StatusPill label="Hidden" tone="neutral" /> : null}
                     </p>
-                    <p className="truncate text-body-xs text-foreground-subtle">
+                    <p className="text-body-xs truncate text-foreground-subtle">
                       {category.path} · {category._count.products} products
                       {category._count.children > 0
                         ? ` · ${category._count.children} sub-categories`
@@ -63,7 +63,7 @@ export default async function AdminCategoriesPage() {
                       <input type="hidden" name="id" value={category.id} />
                       <button
                         type="submit"
-                        className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-body-xs text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
+                        className="text-body-xs shrink-0 rounded-lg border border-border px-2.5 py-1 text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
                       >
                         Delete
                       </button>
@@ -102,7 +102,7 @@ export default async function AdminCategoriesPage() {
                   maxLength={120}
                   className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-body-sm"
                 />
-                <p className="mt-1 text-body-xs text-foreground-subtle">
+                <p className="text-body-xs mt-1 text-foreground-subtle">
                   The full path is built from the parent, so this is just the last part.
                 </p>
               </div>

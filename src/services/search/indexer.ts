@@ -45,16 +45,13 @@ function buildContent(product: {
     product.primaryCategory?.name,
     ...product.categories.map((entry) => entry.category.name),
     ...product.tags.map((tag) => tag.name),
-    ...product.productAttributes.map((attribute) => `${attribute.definition.label} ${attribute.value}`),
+    ...product.productAttributes.map(
+      (attribute) => `${attribute.definition.label} ${attribute.value}`,
+    ),
     ...product.variants.map((variant) => `${variant.name} ${variant.sku}`),
   ];
 
-  return parts
-    .filter(Boolean)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 20_000);
+  return parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 20_000);
 }
 
 /** Short, high-signal terms for autocomplete and typo matching. */
@@ -99,7 +96,9 @@ const INDEX_SELECT = {
  * than mutating it, so running twice writes the same row. That matters because
  * the queue may deliver a job more than once after a worker crash.
  */
-export async function indexProduct(productId: string): Promise<{ indexed: boolean; reason?: string }> {
+export async function indexProduct(
+  productId: string,
+): Promise<{ indexed: boolean; reason?: string }> {
   if (!productId) return { indexed: false, reason: 'no id' };
 
   const product = await prisma.product.findUnique({

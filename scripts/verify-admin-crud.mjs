@@ -48,7 +48,10 @@ async function signIn(page) {
   await page.goto(`${BASE}/sign-in`, { waitUntil: 'domcontentloaded' });
   await page.fill('input[type="email"]', OWNER);
   await page.fill('input[type="password"]', PASSWORD);
-  await page.getByRole('button', { name: /sign in/i }).first().click();
+  await page
+    .getByRole('button', { name: /sign in/i })
+    .first()
+    .click();
   await page.waitForFunction(() => !window.location.pathname.startsWith('/sign-in'), {
     timeout: 30_000,
   });
@@ -156,7 +159,9 @@ async function main() {
     .waitForFunction(
       () => {
         const id = window.location.pathname.split('/').pop();
-        return Boolean(id) && id !== 'new' && window.location.pathname.startsWith('/admin/products/');
+        return (
+          Boolean(id) && id !== 'new' && window.location.pathname.startsWith('/admin/products/')
+        );
       },
       { timeout: 30_000 },
     )
@@ -295,7 +300,9 @@ async function main() {
         page
           .waitForResponse((response) => response.request().method() === 'POST', { timeout: 40000 })
           .catch(() => undefined),
-        rowFor(sku).getByRole('button', { name: /adjust stock for/i }).click(),
+        rowFor(sku)
+          .getByRole('button', { name: /adjust stock for/i })
+          .click(),
       ]);
       await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
 
@@ -325,7 +332,9 @@ async function main() {
         page
           .waitForResponse((response) => response.request().method() === 'POST', { timeout: 40000 })
           .catch(() => undefined),
-        rowFor(sku).getByRole('button', { name: /adjust stock for/i }).click(),
+        rowFor(sku)
+          .getByRole('button', { name: /adjust stock for/i })
+          .click(),
       ]);
       await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
 
@@ -541,7 +550,10 @@ async function main() {
   await page.waitForLoadState('networkidle').catch(() => undefined);
   const redirectRow = page.locator('tr', { hasText: source });
   if ((await redirectRow.count()) > 0) {
-    await redirectRow.getByRole('button', { name: /delete/i }).first().click();
+    await redirectRow
+      .getByRole('button', { name: /delete/i })
+      .first()
+      .click();
     await page.waitForLoadState('networkidle').catch(() => undefined);
   }
 
@@ -549,7 +561,10 @@ async function main() {
   await page.waitForLoadState('networkidle').catch(() => undefined);
   const blockRow = page.locator('li', { hasText: blockTitle });
   if ((await blockRow.count()) > 0) {
-    await blockRow.getByRole('button', { name: /delete/i }).first().click();
+    await blockRow
+      .getByRole('button', { name: /delete/i })
+      .first()
+      .click();
     await page.waitForLoadState('networkidle').catch(() => undefined);
   }
 

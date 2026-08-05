@@ -108,8 +108,8 @@ export function AddressManager({ addresses }: { addresses: AddressRecord[] }) {
         title="Delete this address?"
       >
         <p className="text-body-sm text-foreground-muted">
-          {confirmDelete?.line1}, {confirmDelete?.city} will be removed. Orders already placed to
-          it are unaffected — they keep their own copy.
+          {confirmDelete?.line1}, {confirmDelete?.city} will be removed. Orders already placed to it
+          are unaffected — they keep their own copy.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -154,7 +154,7 @@ function AddressGroup({
               {address.isDefault ? <Badge variant="success">Default</Badge> : null}
             </div>
 
-            <address className="mt-2 text-body-sm not-italic text-foreground-muted">
+            <address className="mt-2 text-body-sm text-foreground-muted not-italic">
               {address.company ? (
                 <>
                   {address.company}
@@ -223,16 +223,19 @@ function AddressModal({
 }) {
   const { toast } = useToast();
 
-  const [result, action, pending] = useActionState(async (_previous: ActionResult, formData: FormData) => {
-    const outcome = await saveAddressAction(address?.id ?? null, formData);
+  const [result, action, pending] = useActionState(
+    async (_previous: ActionResult, formData: FormData) => {
+      const outcome = await saveAddressAction(address?.id ?? null, formData);
 
-    if (outcome.ok) {
-      toast({ variant: 'success', title: outcome.message });
-      onClose();
-    }
+      if (outcome.ok) {
+        toast({ variant: 'success', title: outcome.message });
+        onClose();
+      }
 
-    return outcome;
-  }, EMPTY);
+      return outcome;
+    },
+    EMPTY,
+  );
 
   const errors = result.fieldErrors ?? {};
 
@@ -300,7 +303,10 @@ function AddressModal({
           />
 
           <div>
-            <label htmlFor="addr-state" className="mb-1.5 block text-body-sm font-medium text-foreground">
+            <label
+              htmlFor="addr-state"
+              className="mb-1.5 block text-body-sm font-medium text-foreground"
+            >
               State
             </label>
             <Select
@@ -343,7 +349,10 @@ function AddressModal({
         />
 
         <div>
-          <label htmlFor="addr-type" className="mb-1.5 block text-body-sm font-medium text-foreground">
+          <label
+            htmlFor="addr-type"
+            className="mb-1.5 block text-body-sm font-medium text-foreground"
+          >
             Use this address for
           </label>
           <Select id="addr-type" name="type" defaultValue={address?.type ?? 'SHIPPING'}>

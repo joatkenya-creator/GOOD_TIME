@@ -25,13 +25,7 @@ import { cn } from '@/utils/cn';
  * interactive-but-dimmed while the server action runs. Disabling the whole row
  * would make a double-tap on a slow connection feel like the app had frozen.
  */
-export function CartLine({
-  line,
-  compact = false,
-}: {
-  line: CartLineView;
-  compact?: boolean;
-}) {
+export function CartLine({ line, compact = false }: { line: CartLineView; compact?: boolean }) {
   const [pending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -97,12 +91,7 @@ export function CartLine({
   }
 
   return (
-    <li
-      className={cn(
-        'flex gap-3 py-4 transition-opacity sm:gap-4',
-        pending && 'opacity-60',
-      )}
-    >
+    <li className={cn('flex gap-3 py-4 transition-opacity sm:gap-4', pending && 'opacity-60')}>
       <Link
         href={line.href}
         className="shrink-0 overflow-hidden rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
@@ -123,7 +112,7 @@ export function CartLine({
             >
               {line.productName}
             </Link>
-            <p className="mt-0.5 text-xs text-muted">{line.variantName}</p>
+            <p className="text-muted mt-0.5 text-xs">{line.variantName}</p>
           </div>
 
           <Price
@@ -176,7 +165,7 @@ export function CartLine({
             size="sm"
             onClick={remove}
             disabled={pending}
-            className="h-9 px-2 text-xs text-muted hover:text-(--color-error)"
+            className="text-muted h-9 px-2 text-xs hover:text-(--color-error)"
           >
             <Trash2 aria-hidden="true" className="size-4" />
             Remove<span className="sr-only"> {line.productName}</span>
@@ -220,7 +209,7 @@ function QuantityStepper({
         onClick={() => onChange(value - 1)}
         disabled={disabled || value <= 1}
         aria-label={`Decrease quantity of ${label}`}
-        className="flex size-11 items-center justify-center rounded-l-full text-foreground transition-colors hover:bg-surface-muted disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
+        className="flex size-11 items-center justify-center rounded-l-full text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring) disabled:opacity-40"
       >
         <Minus aria-hidden="true" className="size-4" />
       </button>
@@ -235,7 +224,7 @@ function QuantityStepper({
         onClick={() => onChange(value + 1)}
         disabled={disabled || value >= max}
         aria-label={`Increase quantity of ${label}`}
-        className="flex size-11 items-center justify-center rounded-r-full text-foreground transition-colors hover:bg-surface-muted disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
+        className="flex size-11 items-center justify-center rounded-r-full text-foreground transition-colors hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring) disabled:opacity-40"
       >
         <Plus aria-hidden="true" className="size-4" />
       </button>

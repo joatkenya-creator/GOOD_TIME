@@ -37,7 +37,12 @@ export function parseListParams(
   const requestedSize = Number.parseInt(first(raw.pageSize), 10) || (defaults.pageSize ?? 25);
   const pageSize = Math.min(Math.max(requestedSize, 10), 100);
 
-  const direction = first(raw.direction) === 'asc' ? 'asc' : first(raw.direction) === 'desc' ? 'desc' : (defaults.direction ?? 'desc');
+  const direction =
+    first(raw.direction) === 'asc'
+      ? 'asc'
+      : first(raw.direction) === 'desc'
+        ? 'desc'
+        : (defaults.direction ?? 'desc');
 
   const known = new Set(['q', 'status', 'sort', 'direction', 'page', 'pageSize']);
   const extra: Record<string, string> = {};

@@ -69,7 +69,7 @@ export function OrderSummaryCard({ order }: { order: OrderSummary }) {
 
         <div className="flex items-center gap-3">
           <Badge variant={status.tone}>{status.label}</Badge>
-          <span className="text-body font-semibold tabular-nums text-foreground">
+          <span className="text-body font-semibold text-foreground tabular-nums">
             {formatPrice(order.totalCents)}
           </span>
           <ChevronRight
@@ -98,11 +98,11 @@ export function OrderSummaryCard({ order }: { order: OrderSummary }) {
       </div>
 
       {tracking?.trackingNumber ? (
-        <p className="mt-3 text-body-xs text-foreground-subtle">
+        <p className="text-body-xs mt-3 text-foreground-subtle">
           {tracking.carrier} · {tracking.trackingNumber}
         </p>
       ) : order.estimatedDeliveryAt && !['CANCELLED', 'REFUNDED'].includes(order.status) ? (
-        <p className="mt-3 text-body-xs text-foreground-subtle">
+        <p className="text-body-xs mt-3 text-foreground-subtle">
           Estimated delivery{' '}
           {order.estimatedDeliveryAt.toLocaleDateString('en-US', {
             weekday: 'short',

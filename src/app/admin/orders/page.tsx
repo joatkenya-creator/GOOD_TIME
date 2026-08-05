@@ -14,7 +14,11 @@ import {
 import { ORDER_STATUS_TONE, PAYMENT_STATUS_TONE, humaniseEnum } from '@/features/admin/status';
 import { maskEmail, requireAdminPermission } from '@/server/auth/admin';
 import { can } from '@/server/auth/session';
-import { type AdminOrderRow, getOrderCounts, listAdminOrders } from '@/services/admin/commerce-admin.service';
+import {
+  type AdminOrderRow,
+  getOrderCounts,
+  listAdminOrders,
+} from '@/services/admin/commerce-admin.service';
 
 export const metadata: Metadata = { title: 'Orders' };
 
@@ -49,7 +53,7 @@ export default async function AdminOrdersPage({
       cell: (row: AdminOrderRow) => (
         <span className="block">
           <span className="block">{row.orderNumber}</span>
-          <span className="block truncate text-body-xs font-normal text-foreground-subtle">
+          <span className="text-body-xs block truncate font-normal text-foreground-subtle">
             {[row.user?.firstName, row.user?.lastName].filter(Boolean).join(' ') ||
               maskEmail(row.email, seePii)}
           </span>
@@ -102,11 +106,7 @@ export default async function AdminOrdersPage({
 
   return (
     <>
-      <AdminPageHeader
-        title="Orders"
-        description={`${result.total} orders.`}
-        pathname={BASE}
-      />
+      <AdminPageHeader title="Orders" description={`${result.total} orders.`} pathname={BASE} />
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         <ListToolbar
@@ -133,7 +133,9 @@ export default async function AdminOrdersPage({
             <div>
               <p className="text-body font-medium">No orders match.</p>
               <p className="mt-1 text-body-sm text-foreground-subtle">
-                {params.q || params.status ? 'Try clearing the filters.' : 'Orders appear here as they are placed.'}
+                {params.q || params.status
+                  ? 'Try clearing the filters.'
+                  : 'Orders appear here as they are placed.'}
               </p>
             </div>
           }

@@ -100,6 +100,9 @@ enum PaymentStatus {
 }
 
 enum PaymentProvider {
+  /// The live provider. Authorise at checkout, capture at fulfilment.
+  KLARNA
+  /// Retained so historical rows keep their meaning. Nothing writes it.
   STRIPE
   PAYPAL
   MANUAL
@@ -1066,11 +1069,11 @@ model OrderItem {
 model Payment {
   id             String          @id @default(cuid())
   orderId        String
-  provider       PaymentProvider @default(STRIPE)
+  provider       PaymentProvider @default(KLARNA)
   status         PaymentStatus   @default(PENDING)
   amountCents    Int
   currency       String          @default("USD")
-  /// Provider-side identifier (Stripe PaymentIntent id, PayPal capture id, ...).
+  /// Provider-side identifier (Klarna order id, PayPal capture id, ...).
   providerRef    String?
   /// Idempotency guard for webhook replays.
   idempotencyKey String?         @unique
@@ -1222,6 +1225,57 @@ model NewsletterSubscriber {
 
   @@index([unsubscribedAt])
   @@map("newsletter_subscribers")
+}
+
+/// Addresses we must stop sending to, and why.
+///
+/// A hard bounce means the mailbox does not exist; a complaint means someone
+/// pressed "report spam". Continuing to send to either is the fastest way to
+/// destroy a sending reputation — and reputation is shared across the whole
+/// domain, so one ignored bounce list degrades password resets too.
+///
+/// Kept as its own table rather than a flag on `users` because most bounces are
+/// for addresses that never became accounts: guest checkouts, newsletter
+/// signups, and typos.
+model EmailSuppression {
+  id     String              @id @default(cuid())
+  email  String              @unique
+  reason EmailSuppressionType
+
+  /// Provider-side message id, so a suppression is traceable to one send.
+  providerMessageId String?
+  /// The provider's own description. Useful when a bounce is not what it looks like.
+  detail            String?
+
+  /// Soft bounces are counted rather than acted on: a full mailbox is temporary,
+  /// and suppressing on the first one loses a customer over a busy inbox.
+  /// Three inside seven days is treated as hard.
+  softBounceCount Int       @default(0)
+  lastBounceAt    DateTime?
+
+  /// Set when an address is deliberately released — a customer who fixed their
+  /// mailbox and asked. Never automatic: an address that bounced once and then
+  /// silently resumed is how a reputation problem returns.
+  releasedAt DateTime?
+  releasedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reason, releasedAt])
+  @@map("email_suppressions")
+}
+
+enum EmailSuppressionType {
+  /// Mailbox does not exist. Permanent.
+  HARD_BOUNCE
+  /// Repeated temporary failures. Promoted from soft after three in a week.
+  SOFT_BOUNCE
+  /// The recipient pressed "report spam". Permanent, and never overridable by
+  /// a preference screen.
+  COMPLAINT
+  /// Added by an operator.
+  MANUAL
 }
 
 model Coupon {
@@ -2637,6 +2691,8 @@ model SeoIssue {
 }
 
 enum MarketingProvider {
+  /// Cookieless first-party beacon. The only tag here that needs no consent.
+  CLOUDFLARE_WEB_ANALYTICS
   GA4
   GTM
   GOOGLE_ADS

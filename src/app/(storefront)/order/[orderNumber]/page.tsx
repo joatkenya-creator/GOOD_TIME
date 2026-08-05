@@ -17,7 +17,7 @@ import { getOrderByNumber } from '@/services/order.service';
  * placed with. Order numbers are sequential by design — readable down a phone
  * line — which makes them guessable, so the number alone is never enough.
  *
- * This is also where Stripe returns a customer after a 3DS redirect. The status
+ * This is also where Klarna returns a customer after a redirect flow. The status
  * shown comes from the database, not from any query parameter, so a customer who
  * edits the URL sees the truth rather than a forged confirmation.
  */

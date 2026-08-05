@@ -92,9 +92,9 @@ export function SessionList({ sessions }: { sessions: SessionRow[] }) {
         </Button>
       ) : null}
 
-      <p className="mt-3 text-body-xs text-foreground-subtle">
-        Signing a device out takes effect immediately — the next thing that device
-        tries to do will ask it to sign in again.
+      <p className="text-body-xs mt-3 text-foreground-subtle">
+        Signing a device out takes effect immediately — the next thing that device tries to do will
+        ask it to sign in again.
       </p>
     </div>
   );

@@ -35,6 +35,17 @@ export default async function CartPage() {
   if (!cart || (cart.isEmpty && cart.savedLines.length === 0)) {
     return (
       <Container className="py-16">
+        {/*
+          The empty branch needs its own h1.
+
+          `EmptyState` renders its title as a `<p>`, which is right for a
+          generic component that also appears inside sections — but this page's
+          entire content is the empty state, so without this the document has no
+          h1 at all and its outline starts at the mobile nav's "Menu". A screen
+          reader announces the page with no name.
+        */}
+        <h1 className="sr-only">Your bag</h1>
+
         <EmptyState
           icon={<ShoppingBag aria-hidden="true" className="size-8" />}
           title="Your bag is empty"

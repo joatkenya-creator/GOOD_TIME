@@ -102,11 +102,13 @@ export async function runImportJob(jobId: string, context?: JobContext): Promise
     await prisma.importJob.update({
       where: { id: jobId },
       data: {
-        status: summary.failed > 0 && summary.created + summary.updated === 0 ? 'FAILED' : 'COMPLETED',
+        status:
+          summary.failed > 0 && summary.created + summary.updated === 0 ? 'FAILED' : 'COMPLETED',
         totalRows: summary.total,
         processedRows: summary.created + summary.updated + summary.skipped,
         failedRows: summary.failed,
-        errors: summary.warnings.length > 0 ? (summary.warnings as Prisma.InputJsonValue) : undefined,
+        errors:
+          summary.warnings.length > 0 ? (summary.warnings as Prisma.InputJsonValue) : undefined,
         finishedAt: new Date(),
       },
     });
@@ -590,7 +592,10 @@ async function updateProduct(
  * Marked on the job so it cannot be applied twice, which would restore a
  * before-image that is no longer the truth.
  */
-export async function rollbackImport(jobId: string, actorId?: string): Promise<{
+export async function rollbackImport(
+  jobId: string,
+  actorId?: string,
+): Promise<{
   archived: number;
   restored: number;
 }> {
@@ -600,7 +605,8 @@ export async function rollbackImport(jobId: string, actorId?: string): Promise<{
   });
 
   if (!job) throw errors.notFound('Import job');
-  if (job.isDryRun) throw errors.badRequest('A dry run changed nothing, so there is nothing to roll back.');
+  if (job.isDryRun)
+    throw errors.badRequest('A dry run changed nothing, so there is nothing to roll back.');
   if (job.rolledBackAt) throw errors.badRequest('This import has already been rolled back.');
 
   const rows = await prisma.importRow.findMany({
@@ -623,7 +629,11 @@ export async function rollbackImport(jobId: string, actorId?: string): Promise<{
       continue;
     }
 
-    const before = row.before as { name?: string; description?: string; priceCents?: number } | null;
+    const before = row.before as {
+      name?: string;
+      description?: string;
+      priceCents?: number;
+    } | null;
     if (!before) continue;
 
     await prisma.product.update({

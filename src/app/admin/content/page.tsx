@@ -62,10 +62,13 @@ export default async function AdminContentPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {pages.map((page) => (
-                  <li key={page.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <li
+                    key={page.id}
+                    className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+                  >
                     <div className="min-w-0">
                       <p className="truncate text-body-sm font-medium">{page.title}</p>
-                      <p className="truncate text-body-xs text-foreground-subtle">
+                      <p className="text-body-xs truncate text-foreground-subtle">
                         /pages/{page.slug} · updated {formatDate(page.updatedAt)}
                       </p>
                     </div>
@@ -80,17 +83,26 @@ export default async function AdminContentPage() {
           </AdminCard>
 
           {grouped.map((group) => (
-            <AdminCard key={group.type} title={group.label} description={`${group.items.length} items`}>
+            <AdminCard
+              key={group.type}
+              title={group.label}
+              description={`${group.items.length} items`}
+            >
               {group.items.length === 0 ? (
                 <p className="py-4 text-center text-body-sm text-foreground-subtle">None yet.</p>
               ) : (
                 <ul className="divide-y divide-border">
                   {group.items.map((block) => (
-                    <li key={block.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <li
+                      key={block.id}
+                      className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-body-sm font-medium">{block.title}</p>
                         {block.body ? (
-                          <p className="truncate text-body-xs text-foreground-subtle">{block.body}</p>
+                          <p className="text-body-xs truncate text-foreground-subtle">
+                            {block.body}
+                          </p>
                         ) : null}
                         {block.startsAt || block.endsAt ? (
                           <p className="text-body-xs text-foreground-subtle">
@@ -110,7 +122,7 @@ export default async function AdminContentPage() {
                             <input type="hidden" name="id" value={block.id} />
                             <button
                               type="submit"
-                              className="rounded-lg border border-border px-2 py-1 text-body-xs text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
+                              className="text-body-xs rounded-lg border border-border px-2 py-1 text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
                             >
                               Delete
                             </button>
@@ -150,7 +162,7 @@ export default async function AdminContentPage() {
                           >
                             <div className="min-w-0">
                               <p className="truncate text-body-sm">{item.label}</p>
-                              <p className="truncate text-body-xs text-foreground-subtle">
+                              <p className="text-body-xs truncate text-foreground-subtle">
                                 {item.url}
                                 {item.isExternal ? ' · opens in a new tab' : ''}
                               </p>
@@ -160,7 +172,7 @@ export default async function AdminContentPage() {
                                 <input type="hidden" name="id" value={item.id} />
                                 <button
                                   type="submit"
-                                  className="shrink-0 rounded-lg border border-border px-2 py-1 text-body-xs text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
+                                  className="text-body-xs shrink-0 rounded-lg border border-border px-2 py-1 text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
                                 >
                                   Remove
                                 </button>
@@ -172,7 +184,10 @@ export default async function AdminContentPage() {
                     )}
 
                     {canWrite ? (
-                      <form action={addMenuItemAction} className="mt-3 flex flex-wrap items-end gap-2">
+                      <form
+                        action={addMenuItemAction}
+                        className="mt-3 flex flex-wrap items-end gap-2"
+                      >
                         <input type="hidden" name="menuId" value={menu.id} />
                         <div className="min-w-0 flex-1">
                           <label htmlFor={`label-${menu.id}`} className="sr-only">
@@ -183,7 +198,7 @@ export default async function AdminContentPage() {
                             name="label"
                             required
                             placeholder="Label"
-                            className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                            className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
                           />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -195,12 +210,12 @@ export default async function AdminContentPage() {
                             name="url"
                             required
                             placeholder="/shop"
-                            className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                            className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
                           />
                         </div>
                         <button
                           type="submit"
-                          className="h-9 rounded-lg border border-border px-3 text-body-xs font-medium hover:bg-surface-muted"
+                          className="text-body-xs h-9 rounded-lg border border-border px-3 font-medium hover:bg-surface-muted"
                         >
                           Add
                         </button>
@@ -260,61 +275,64 @@ export default async function AdminContentPage() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label htmlFor="block-link" className="mb-1.5 block text-body-xs font-medium">
+                    <label htmlFor="block-link" className="text-body-xs mb-1.5 block font-medium">
                       Link URL
                     </label>
                     <input
                       id="block-link"
                       name="linkUrl"
-                      className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                      className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
                     />
                   </div>
                   <div>
-                    <label htmlFor="block-link-label" className="mb-1.5 block text-body-xs font-medium">
+                    <label
+                      htmlFor="block-link-label"
+                      className="text-body-xs mb-1.5 block font-medium"
+                    >
                       Link text
                     </label>
                     <input
                       id="block-link-label"
                       name="linkLabel"
-                      className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                      className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label htmlFor="block-starts" className="mb-1.5 block text-body-xs font-medium">
+                    <label htmlFor="block-starts" className="text-body-xs mb-1.5 block font-medium">
                       Starts
                     </label>
                     <input
                       id="block-starts"
                       name="startsAt"
                       type="datetime-local"
-                      className="h-9 w-full rounded-lg border border-border bg-surface px-1.5 text-body-xs"
+                      className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-1.5"
                     />
                   </div>
                   <div>
-                    <label htmlFor="block-ends" className="mb-1.5 block text-body-xs font-medium">
+                    <label htmlFor="block-ends" className="text-body-xs mb-1.5 block font-medium">
                       Ends
                     </label>
                     <input
                       id="block-ends"
                       name="endsAt"
                       type="datetime-local"
-                      className="h-9 w-full rounded-lg border border-border bg-surface px-1.5 text-body-xs"
+                      className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-1.5"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="block-group" className="mb-1.5 block text-body-xs font-medium">
+                  <label htmlFor="block-group" className="text-body-xs mb-1.5 block font-medium">
                     Group
                   </label>
                   <input
                     id="block-group"
                     name="group"
                     placeholder="FAQ section, or banner slot"
-                    className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                    className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
                   />
                 </div>
 
@@ -372,7 +390,7 @@ export default async function AdminContentPage() {
                     name="content"
                     rows={6}
                     required
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-body-xs"
+                    className="text-body-xs w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono"
                   />
                 </div>
 
@@ -388,7 +406,7 @@ export default async function AdminContentPage() {
                     <option value="DRAFT">Draft</option>
                     <option value="PUBLISHED">Published</option>
                   </select>
-                  <p className="mt-1 text-body-xs text-foreground-subtle">
+                  <p className="text-body-xs mt-1 text-foreground-subtle">
                     Publishing needs the publish permission, which is separate from writing.
                   </p>
                 </div>

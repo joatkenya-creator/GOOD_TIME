@@ -87,7 +87,7 @@ export function MiniCart({ initialCount }: { initialCount: number }) {
             <div className="space-y-3">
               <div className="flex items-baseline justify-between">
                 <span className="text-body-sm text-foreground-muted">Subtotal</span>
-                <span className="text-h5 font-bold tabular-nums text-foreground">
+                <span className="text-h5 font-bold text-foreground tabular-nums">
                   {formatPrice(cart.totals.subtotalCents)}
                 </span>
               </div>

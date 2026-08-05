@@ -29,13 +29,19 @@ export default function SignInPage() {
 
       <div className="mt-6 space-y-3 text-center text-sm">
         <p>
-          <Link href={ROUTES.auth.forgotPassword} className="text-accent hover:underline">
+          <Link
+            href={ROUTES.auth.forgotPassword}
+            className="text-accent underline underline-offset-2"
+          >
             Forgot your password?
           </Link>
         </p>
         <p className="text-foreground-muted">
           New here?{' '}
-          <Link href={ROUTES.auth.register} className="font-medium text-accent hover:underline">
+          <Link
+            href={ROUTES.auth.register}
+            className="font-medium text-accent underline underline-offset-2"
+          >
             Create an account
           </Link>
         </p>

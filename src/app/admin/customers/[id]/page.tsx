@@ -45,9 +45,17 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Lifetime value" value={formatMoney(lifetimeValueCents)} changePercent={null} />
+        <StatCard
+          label="Lifetime value"
+          value={formatMoney(lifetimeValueCents)}
+          changePercent={null}
+        />
         <StatCard label="Paid orders" value={String(paidOrderCount)} changePercent={null} />
-        <StatCard label="Average order" value={formatMoney(averageOrderCents)} changePercent={null} />
+        <StatCard
+          label="Average order"
+          value={formatMoney(averageOrderCents)}
+          changePercent={null}
+        />
       </div>
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
@@ -60,7 +68,10 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
             ) : (
               <ul className="divide-y divide-border">
                 {orders.map((order) => (
-                  <li key={order.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <li
+                    key={order.id}
+                    className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+                  >
                     <div className="min-w-0">
                       <Link
                         href={`/admin/orders/${order.orderNumber}`}
@@ -118,7 +129,7 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm"
                 />
                 <div className="flex items-center justify-between gap-3">
-                  <label className="flex items-center gap-2 text-body-xs">
+                  <label className="text-body-xs flex items-center gap-2">
                     <input
                       type="checkbox"
                       name="isPinned"
@@ -128,7 +139,7 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
                   </label>
                   <button
                     type="submit"
-                    className="rounded-lg bg-accent px-3 py-1.5 text-body-xs font-medium text-white hover:bg-accent-hover"
+                    className="text-body-xs rounded-lg bg-accent px-3 py-1.5 font-medium text-white hover:bg-accent-hover"
                   >
                     Add note
                   </button>
@@ -155,7 +166,7 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
             </dl>
 
             {!seePii ? (
-              <p className="mt-3 text-body-xs text-foreground-subtle">
+              <p className="text-body-xs mt-3 text-foreground-subtle">
                 Details are masked. Reading them in full needs the customer PII permission.
               </p>
             ) : null}
@@ -182,9 +193,7 @@ export default async function AdminCustomerPage({ params }: { params: Promise<{ 
                         {[address.state, address.country].filter(Boolean).join(', ')}
                       </span>
                     )}
-                    {address.isDefault ? (
-                      <StatusPill label="Default" tone="accent" />
-                    ) : null}
+                    {address.isDefault ? <StatusPill label="Default" tone="accent" /> : null}
                   </li>
                 ))}
               </ul>

@@ -19,7 +19,7 @@ import { releaseExpiredReservations } from '@/services/order.service';
  * "out of stock" because of people who closed a tab.
  *
  * GET as well as POST because Vercel Cron issues a GET. The origin check is off
- * for the same reason it is off for the Stripe webhook — the caller is not a
+ * for the same reason it is off for the Klarna webhook — the caller is not a
  * browser — and the bearer token replaces it.
  */
 export const POST = withRoute(handler, { csrf: false, rateLimit: false });

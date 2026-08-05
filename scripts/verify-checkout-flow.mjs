@@ -92,8 +92,6 @@ async function act(page, locator, expectation) {
     .catch(() => false);
 }
 
-
-
 async function newGuest(browser) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await context.addCookies([{ name: 'gt.age_ok', value: '1', url: BASE }]);
@@ -124,10 +122,8 @@ async function main() {
     await hydrated(page);
 
     const started = Date.now();
-    const addedOk = await act(
-      page,
-      page.getByRole('button', { name: /add to bag/i }).first(),
-      () => /added to your bag/i.test(document.body.textContent ?? ''),
+    const addedOk = await act(page, page.getByRole('button', { name: /add to bag/i }).first(), () =>
+      /added to your bag/i.test(document.body.textContent ?? ''),
     );
     const addMs = Date.now() - started;
     check('add to cart from the product page', addedOk);
@@ -143,7 +139,10 @@ async function main() {
       )
       .then(() => true)
       .catch(() => false);
-    const badge = await page.locator('button[aria-label*="bag"]').first().getAttribute('aria-label');
+    const badge = await page
+      .locator('button[aria-label*="bag"]')
+      .first()
+      .getAttribute('aria-label');
     check('header bag badge updates without a reload', badgeOk, `read "${badge}"`);
 
     await page.goto(`${BASE}/cart`, { waitUntil: 'domcontentloaded' });
@@ -197,8 +196,10 @@ async function main() {
 
     check(
       'move back to bag restores it',
-      await act(page, page.getByRole('button', { name: /move to bag/i }).first(), () =>
-        !/saved for later/i.test(document.querySelector('main')?.textContent ?? ''),
+      await act(
+        page,
+        page.getByRole('button', { name: /move to bag/i }).first(),
+        () => !/saved for later/i.test(document.querySelector('main')?.textContent ?? ''),
       ),
     );
 
@@ -232,7 +233,10 @@ async function main() {
     // seconds, so it is claimed first — the emptied bag behind it takes a server
     // round trip and would outlast the toast if waited on first.
     const undo = page.getByRole('button', { name: /^Undo$/ }).first();
-    await page.getByRole('button', { name: /^Remove/i }).first().click();
+    await page
+      .getByRole('button', { name: /^Remove/i })
+      .first()
+      .click();
 
     const undoOffered = await undo
       .waitFor({ state: 'visible', timeout: 30_000 })
@@ -309,7 +313,10 @@ async function main() {
     check('invalid email blocks the step', (await heading())?.includes('reach you'));
     check(
       'invalid email is called out',
-      await page.locator('#email-error').isVisible().catch(() => false),
+      await page
+        .locator('#email-error')
+        .isVisible()
+        .catch(() => false),
     );
 
     await page.fill('#email', 'verify@example.test');
@@ -318,9 +325,10 @@ async function main() {
       'valid email advances to Shipping',
       await page
         .waitForFunction(
-          () => /Where is it going/.test(
-            document.getElementById('checkout-step-heading')?.textContent ?? '',
-          ),
+          () =>
+            /Where is it going/.test(
+              document.getElementById('checkout-step-heading')?.textContent ?? '',
+            ),
           { timeout: 15_000 },
         )
         .then(() => true)

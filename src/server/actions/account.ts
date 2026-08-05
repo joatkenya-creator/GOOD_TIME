@@ -120,7 +120,11 @@ export async function changeEmailAction(formData: FormData): Promise<ActionResul
   if (!parsed.success) return invalid(parsed.error);
 
   try {
-    const result = await profile.changeEmail(user.id, parsed.data.email, parsed.data.currentPassword);
+    const result = await profile.changeEmail(
+      user.id,
+      parsed.data.email,
+      parsed.data.currentPassword,
+    );
     if (!result.ok) return result;
 
     revalidatePath('/account', 'layout');
@@ -201,7 +205,10 @@ export async function revokeOtherSessionsAction(): Promise<ActionResult> {
 
     return {
       ok: true,
-      message: count === 0 ? 'No other devices were signed in.' : `Signed out ${count} other ${count === 1 ? 'device' : 'devices'}.`,
+      message:
+        count === 0
+          ? 'No other devices were signed in.'
+          : `Signed out ${count} other ${count === 1 ? 'device' : 'devices'}.`,
     };
   } catch (error) {
     return fail(error);
@@ -278,9 +285,7 @@ export async function setDefaultAddressAction(addressId: string): Promise<Action
 
 // ---------------------------------------------------------------- notifications
 
-export async function saveNotificationPreferencesAction(
-  formData: FormData,
-): Promise<ActionResult> {
+export async function saveNotificationPreferencesAction(formData: FormData): Promise<ActionResult> {
   const user = await requireUser();
 
   try {

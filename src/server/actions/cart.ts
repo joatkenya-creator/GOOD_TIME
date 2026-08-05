@@ -56,10 +56,7 @@ function refresh(): void {
   revalidatePath(ROUTES.checkout);
 }
 
-export async function addToCartAction(
-  variantId: string,
-  quantity = 1,
-): Promise<ActionResult> {
+export async function addToCartAction(variantId: string, quantity = 1): Promise<ActionResult> {
   try {
     const userId = await currentUserId();
     const result = await cart.addToCart(variantId, quantity, userId);
@@ -114,10 +111,7 @@ export async function removeFromCartAction(itemId: string): Promise<ActionResult
   }
 }
 
-export async function undoRemoveAction(
-  variantId: string,
-  quantity: number,
-): Promise<ActionResult> {
+export async function undoRemoveAction(variantId: string, quantity: number): Promise<ActionResult> {
   try {
     const userId = await currentUserId();
     await cart.addToCart(variantId, quantity, userId);

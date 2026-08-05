@@ -75,7 +75,7 @@ export default async function AccountDashboardPage() {
       {completion.missing.length > 0 ? (
         <section
           aria-labelledby="complete-profile"
-          className="rounded-2xl border border-accent/30 bg-accent-subtle p-5"
+          className="bg-accent-subtle rounded-2xl border border-accent/30 p-5"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="complete-profile" className="text-body font-semibold text-foreground">
@@ -280,11 +280,11 @@ function StatTile({
       href={href}
       className="block rounded-xl border border-border bg-surface p-4 transition-colors hover:border-foreground-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
     >
-      <span className="flex items-center gap-1.5 text-body-xs font-medium tracking-wide text-foreground-subtle uppercase">
+      <span className="text-body-xs flex items-center gap-1.5 font-medium tracking-wide text-foreground-subtle uppercase">
         {icon}
         {label}
       </span>
-      <p className="mt-2 text-h4 font-bold tabular-nums text-foreground">{value}</p>
+      <p className="text-h4 mt-2 font-bold text-foreground tabular-nums">{value}</p>
       <p className="text-body-xs text-foreground-subtle">{detail}</p>
     </Link>
   );

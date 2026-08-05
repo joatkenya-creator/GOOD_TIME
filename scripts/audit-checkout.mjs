@@ -224,7 +224,12 @@ async function auditPage(context, page, { name, path, shoot }, viewport) {
 
   const { overflow, offenders } = await page.evaluate(OVERFLOW_PROBE, viewport.width);
   if (overflow > 1) {
-    record(name, viewport.name, 'error', `${overflow}px horizontal overflow — ${offenders.join(', ')}`);
+    record(
+      name,
+      viewport.name,
+      'error',
+      `${overflow}px horizontal overflow — ${offenders.join(', ')}`,
+    );
   }
 
   const small = await page.evaluate(TAP_TARGET_PROBE);
@@ -261,9 +266,7 @@ async function runEngine(engineName, engine) {
 
   // Pre-consent to the age gate. Without this the modal covers every page and
   // every measurement below describes the dialog rather than the page under it.
-  await context.addCookies([
-    { name: 'gt.age_ok', value: '1', url: BASE },
-  ]);
+  await context.addCookies([{ name: 'gt.age_ok', value: '1', url: BASE }]);
   const page = await context.newPage();
 
   try {
@@ -296,10 +299,14 @@ async function runEngine(engineName, engine) {
     let onShipping = false;
     for (let attempt = 0; attempt < 5 && !onShipping; attempt += 1) {
       await page.fill('#email', 'audit@example.test').catch(() => {});
-      await page.getByRole('button', { name: 'Continue' }).click({ timeout: 5000 }).catch(() => {});
+      await page
+        .getByRole('button', { name: 'Continue' })
+        .click({ timeout: 5000 })
+        .catch(() => {});
       onShipping = await page
         .waitForFunction(
-          () => document.getElementById('checkout-step-heading')?.textContent === 'Where is it going?',
+          () =>
+            document.getElementById('checkout-step-heading')?.textContent === 'Where is it going?',
           { timeout: 2000 },
         )
         .then(() => true)
@@ -311,7 +318,12 @@ async function runEngine(engineName, engine) {
     } else {
       const { overflow, offenders } = await page.evaluate(OVERFLOW_PROBE, 390);
       if (overflow > 1) {
-        record('checkout-shipping', '390-iphone', 'error', `${overflow}px overflow — ${offenders.join(', ')}`);
+        record(
+          'checkout-shipping',
+          '390-iphone',
+          'error',
+          `${overflow}px overflow — ${offenders.join(', ')}`,
+        );
       }
 
       const unlabelled = await page.evaluate(LABEL_PROBE);
@@ -324,7 +336,10 @@ async function runEngine(engineName, engine) {
         record('checkout-shipping', '390-iphone', 'warn', `small targets: ${small.join('; ')}`);
       }
 
-      await page.screenshot({ path: `${OUT}/${engineName}-checkout-shipping-390.png`, fullPage: true });
+      await page.screenshot({
+        path: `${OUT}/${engineName}-checkout-shipping-390.png`,
+        fullPage: true,
+      });
       console.log('  checkout-shipping');
     }
   } finally {

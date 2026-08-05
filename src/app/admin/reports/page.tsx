@@ -85,13 +85,13 @@ export default async function AdminReportsPage({
               href={`/admin/reports?report=${key}&days=${option}`}
               aria-current={option === days ? 'page' : undefined}
               className={cn(
-                'rounded-lg px-2.5 py-1.5 text-body-xs font-medium',
+                'text-body-xs rounded-lg px-2.5 py-1.5 font-medium',
                 option === days
-                  // Was `bg-surface-inverse text-foreground-inverse`, which is
-                  // white on white once the ink ramp inverts — 1.07:1. The
-                  // report tabs above already have an active style that works
-                  // in both themes; reusing it is one less thing to get wrong.
-                  ? 'bg-accent-soft text-accent-text'
+                  ? // Was `bg-surface-inverse text-foreground-inverse`, which is
+                    // white on white once the ink ramp inverts — 1.07:1. The
+                    // report tabs above already have an active style that works
+                    // in both themes; reusing it is one less thing to get wrong.
+                    'bg-accent-soft text-accent-text'
                   : 'border border-border hover:bg-surface-muted',
               )}
             >
@@ -110,7 +110,7 @@ export default async function AdminReportsPage({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] text-left text-body-sm">
               <thead>
-                <tr className="border-b border-border text-body-xs tracking-wide text-foreground-subtle uppercase">
+                <tr className="text-body-xs border-b border-border tracking-wide text-foreground-subtle uppercase">
                   {report.columns.map((column) => (
                     <th
                       key={column.key}

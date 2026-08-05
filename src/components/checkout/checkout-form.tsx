@@ -12,7 +12,11 @@ import {
   Field,
   FieldError,
 } from '@/components/checkout/address-fields';
-import { CHECKOUT_STEPS, CheckoutProgress, type CheckoutStep } from '@/components/checkout/checkout-progress';
+import {
+  CHECKOUT_STEPS,
+  CheckoutProgress,
+  type CheckoutStep,
+} from '@/components/checkout/checkout-progress';
 import { PaymentStep } from '@/components/checkout/payment-step';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -52,9 +56,10 @@ export function CheckoutForm({
   const [step, setStep] = useState<CheckoutStep>('Contact');
   const [furthest, setFurthest] = useState<CheckoutStep>('Contact');
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [payment, setPayment] = useState<
-    Extract<Awaited<ReturnType<typeof submitCheckoutAction>>, { ok: true }> | null
-  >(null);
+  const [payment, setPayment] = useState<Extract<
+    Awaited<ReturnType<typeof submitCheckoutAction>>,
+    { ok: true }
+  > | null>(null);
 
   const form = useForm<CheckoutFormValues, unknown, CheckoutInput>({
     resolver: zodResolver(checkoutSchema),
@@ -124,16 +129,18 @@ export function CheckoutForm({
 
   // Store credit covered the whole bill, so there was never a card form to show.
   // The order is already paid; send them to the confirmation.
-  if (payment && payment.clientSecret === null) {
+  if (payment && payment.clientToken === null) {
     return (
       <div className="space-y-4">
         <Alert variant="success" title="Paid in full with your store credit">
-          Order <strong>{payment.orderNumber}</strong> is confirmed. Nothing was charged to a
-          card.
+          Order <strong>{payment.orderNumber}</strong> is confirmed. Klarna was not involved and
+          nothing is owed.
         </Alert>
 
         <Button asChild size="lg">
-          <Link href={`/order/${payment.orderNumber}?email=${encodeURIComponent(values.email ?? '')}`}>
+          <Link
+            href={`/order/${payment.orderNumber}?email=${encodeURIComponent(values.email ?? '')}`}
+          >
             View your order
           </Link>
         </Button>
@@ -144,8 +151,10 @@ export function CheckoutForm({
   if (payment) {
     return (
       <PaymentStep
-        clientSecret={payment.clientSecret!}
+        clientToken={payment.clientToken!}
+        orderId={payment.orderId}
         orderNumber={payment.orderNumber}
+        categories={payment.paymentMethodCategories}
         totals={payment.totals}
         email={values.email ?? ''}
         onBack={() => {
@@ -240,7 +249,7 @@ export function CheckoutForm({
                   className={cn(
                     'flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-colors',
                     selectedRateId === option.id
-                      ? 'border-accent bg-accent-subtle'
+                      ? 'bg-accent-subtle border-accent'
                       : 'border-border hover:border-foreground-subtle',
                   )}
                 >
@@ -248,9 +257,7 @@ export function CheckoutForm({
                     id={`rate-${option.id}`}
                     value={option.id}
                     checked={selectedRateId === option.id}
-                    onChange={() =>
-                      setValue('shippingRateId', option.id, { shouldValidate: true })
-                    }
+                    onChange={() => setValue('shippingRateId', option.id, { shouldValidate: true })}
                     name="shippingRateId"
                   />
 
@@ -259,13 +266,13 @@ export function CheckoutForm({
                       <span className="block text-body-sm font-medium text-foreground">
                         {option.name}
                       </span>
-                      <span className="block text-body-xs text-foreground-subtle">
+                      <span className="text-body-xs block text-foreground-subtle">
                         {option.description ??
                           `Arrives in ${option.estimatedDaysMin}–${option.estimatedDaysMax} business days`}
                       </span>
                     </span>
 
-                    <span className="shrink-0 text-body-sm font-medium tabular-nums text-foreground">
+                    <span className="shrink-0 text-body-sm font-medium text-foreground tabular-nums">
                       {option.priceCents === 0 ? 'Free' : formatPrice(option.priceCents)}
                     </span>
                   </span>
@@ -274,7 +281,10 @@ export function CheckoutForm({
             </div>
           )}
 
-          <FieldError message={formState.errors.shippingRateId?.message} id="shippingRateId-error" />
+          <FieldError
+            message={formState.errors.shippingRateId?.message}
+            id="shippingRateId-error"
+          />
         </fieldset>
 
         <fieldset>
@@ -316,8 +326,8 @@ export function CheckoutForm({
 
       <div hidden={step !== 'Payment'} className="space-y-5">
         <Alert variant="info" title="Your card is entered on the next screen">
-          Card details are handled by Stripe and never touch our servers. Confirm your order below
-          and the secure card form opens.
+          Payment details are handled by Klarna and never touch our servers. Confirm your order
+          below and the secure card form opens.
         </Alert>
 
         <div className="rounded-xl border border-border bg-surface-muted p-4">
@@ -325,7 +335,7 @@ export function CheckoutForm({
             <ShieldCheck aria-hidden="true" className="size-4 text-(--color-success)" />
             Discreet by default
           </h3>
-          <ul className="mt-2 space-y-1 text-body-xs text-foreground-muted">
+          <ul className="text-body-xs mt-2 space-y-1 text-foreground-muted">
             <li>Your statement shows a neutral descriptor, not a product name.</li>
             <li>The box is plain, unbranded, and the sender name is generic.</li>
             <li>Nothing on the outside describes what is inside.</li>
@@ -451,8 +461,7 @@ function ReviewSummary({
       <Block label="Delivery" onEdit={() => onEdit('Shipping')}>
         {method ? (
           <>
-            {method.name} —{' '}
-            {method.priceCents === 0 ? 'Free' : formatPrice(method.priceCents)}
+            {method.name} — {method.priceCents === 0 ? 'Free' : formatPrice(method.priceCents)}
             <br />
             <span className="text-body-xs text-foreground-subtle">
               Arrives in {method.estimatedDaysMin}–{method.estimatedDaysMax} business days

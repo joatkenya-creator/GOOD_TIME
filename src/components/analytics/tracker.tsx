@@ -93,7 +93,10 @@ function flush(useBeacon = false): void {
   try {
     if (useBeacon && navigator.sendBeacon) {
       // The only transport that survives the page being closed.
-      navigator.sendBeacon('/api/analytics/collect', new Blob([body], { type: 'application/json' }));
+      navigator.sendBeacon(
+        '/api/analytics/collect',
+        new Blob([body], { type: 'application/json' }),
+      );
       return;
     }
 

@@ -85,16 +85,20 @@ export default async function AccountOrdersPage({
       </header>
 
       <nav aria-label="Filter orders">
-        <ul className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden">
           {FILTERS.map((entry) => (
             <li key={entry.key} className="shrink-0">
               <Link
-                href={entry.key === 'all' ? ROUTES.account.orders : `${ROUTES.account.orders}?filter=${entry.key}`}
+                href={
+                  entry.key === 'all'
+                    ? ROUTES.account.orders
+                    : `${ROUTES.account.orders}?filter=${entry.key}`
+                }
                 aria-current={active.key === entry.key ? 'page' : undefined}
                 className={cn(
                   'flex min-h-11 items-center rounded-full border px-4 text-body-sm whitespace-nowrap transition-colors',
                   active.key === entry.key
-                    ? 'border-accent bg-accent-subtle font-medium text-accent-text'
+                    ? 'bg-accent-subtle border-accent font-medium text-accent-text'
                     : 'border-border text-foreground-muted hover:border-foreground-subtle',
                 )}
               >

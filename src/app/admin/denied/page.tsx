@@ -62,7 +62,7 @@ export default async function AdminDeniedPage({
                 >
                   <span className="block text-body-sm font-medium">{item.label}</span>
                   {item.hint ? (
-                    <span className="block text-body-xs text-foreground-subtle">{item.hint}</span>
+                    <span className="text-body-xs block text-foreground-subtle">{item.hint}</span>
                   ) : null}
                 </Link>
               </li>
@@ -70,7 +70,7 @@ export default async function AdminDeniedPage({
           </ul>
         )}
 
-        <p className="mt-4 text-body-xs text-foreground-subtle">
+        <p className="text-body-xs mt-4 text-foreground-subtle">
           Permissions are set per role under Staff &amp; roles. If you need this screen, that is
           where someone with the role permission can grant it.
         </p>

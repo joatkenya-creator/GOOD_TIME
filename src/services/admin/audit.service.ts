@@ -161,7 +161,12 @@ export async function listAudit(query: AuditQuery = {}) {
     ...(query.actorId ? { actorId: query.actorId } : {}),
     ...(query.action ? { action: query.action } : {}),
     ...(query.from || query.to
-      ? { createdAt: { ...(query.from ? { gte: query.from } : {}), ...(query.to ? { lte: query.to } : {}) } }
+      ? {
+          createdAt: {
+            ...(query.from ? { gte: query.from } : {}),
+            ...(query.to ? { lte: query.to } : {}),
+          },
+        }
       : {}),
   };
 

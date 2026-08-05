@@ -10,7 +10,6 @@ import {
   Truck,
 } from 'lucide-react';
 
-import type { BlogCardData } from '@/components/product/blog-card';
 import type { CategoryCardData } from '@/components/product/category-card';
 import type { CollectionCardData } from '@/components/product/collection-card';
 import type { ReviewCardData } from '@/components/product/review-card';
@@ -41,7 +40,18 @@ export const hero = {
   description:
     'Every toy here is non-porous, phthalate-free and rechargeable, with the material, decibel level and insertable length listed before you add it to the cart. Shipped in a plain box with a neutral billing descriptor.',
   primaryCta: { label: 'Shop all toys', href: '/shop' },
-  secondaryCta: { label: 'Our materials standard', href: '/pages/materials' },
+  /*
+   * Points at the catalogue, not at a policy page that was never written.
+   *
+   * This read "Our materials standard" → `/pages/materials`, which 404'd from
+   * the hero of the homepage — the single most prominent link on the site. The
+   * filter below is the claim made concrete: the three non-porous materials the
+   * copy above promises, as an actual list of products.
+   */
+  secondaryCta: {
+    label: 'Shop non-porous materials',
+    href: '/shop?material=platinum-cure-silicone,borosilicate-glass,316l-stainless-steel',
+  },
   imageSeed: 'hero-quiet-hours',
   stats: [
     { value: 50_000, suffix: '+', label: 'Orders shipped discreetly' },
@@ -244,39 +254,6 @@ export const reviews: ReviewCardData[] = [
     body: 'Listed at two hours of runtime and it holds up. USB-C rather than a proprietary cable, which is the detail that made me choose it over a better-known brand.',
     productName: 'Ember Dual-Stimulation Vibrator',
     verified: true,
-  },
-];
-
-export const journalPosts: BlogCardData[] = [
-  {
-    slug: 'choosing-your-first-vibrator',
-    title: 'Choosing your first vibrator: a plain-language guide',
-    excerpt:
-      'External, internal or dual — what each one does, what sizes to start with, and why motor type matters more than the number of vibration patterns.',
-    category: 'Buying guides',
-    publishedAt: '2026-07-14',
-    readingMinutes: 9,
-    imageSeed: 'post-first-vibrator',
-  },
-  {
-    slug: 'silicone-glass-or-steel',
-    title: 'Silicone, glass or steel: how to read a materials label',
-    excerpt:
-      'Non-porous, phthalate-free, body-safe — three phrases used very loosely. What each actually means, which materials cannot be sanitised, and how to verify a claim.',
-    category: 'Materials',
-    publishedAt: '2026-07-02',
-    readingMinutes: 7,
-    imageSeed: 'post-materials',
-  },
-  {
-    slug: 'cleaning-and-storing-toys',
-    title: 'Cleaning and storing toys, by material type',
-    excerpt:
-      'Most toys fail early because of storage, not use. Which materials can be boiled, which lubricants degrade silicone, and why toys should not touch each other in a drawer.',
-    category: 'Care',
-    publishedAt: '2026-06-21',
-    readingMinutes: 6,
-    imageSeed: 'post-care',
   },
 ];
 

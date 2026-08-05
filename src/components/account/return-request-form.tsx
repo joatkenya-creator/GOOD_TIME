@@ -107,11 +107,7 @@ export function ReturnRequestForm({
         Request a return
       </Button>
 
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title={`Return items from ${orderNumber}`}
-      >
+      <Modal open={open} onClose={() => setOpen(false)} title={`Return items from ${orderNumber}`}>
         <div className="space-y-5">
           <fieldset>
             <legend className="text-body-sm font-medium text-foreground">
@@ -131,7 +127,7 @@ export function ReturnRequestForm({
                       <span className="block text-body-sm font-medium text-foreground">
                         {item.productName}
                       </span>
-                      <span className="block text-body-xs text-foreground-subtle">
+                      <span className="text-body-xs block text-foreground-subtle">
                         {item.variantName} · {formatPrice(item.unitPriceCents)} each
                         {item.returnable < item.quantity
                           ? ` · ${item.returnable} of ${item.quantity} still returnable`
@@ -144,7 +140,7 @@ export function ReturnRequestForm({
                     <div className="mt-2 pl-8">
                       <label
                         htmlFor={`qty-${item.id}`}
-                        className="mb-1 block text-body-xs text-foreground-muted"
+                        className="text-body-xs mb-1 block text-foreground-muted"
                       >
                         How many?
                       </label>
@@ -175,7 +171,10 @@ export function ReturnRequestForm({
           </fieldset>
 
           <div>
-            <label htmlFor="return-reason" className="mb-1.5 block text-body-sm font-medium text-foreground">
+            <label
+              htmlFor="return-reason"
+              className="mb-1.5 block text-body-sm font-medium text-foreground"
+            >
               Why are you returning it?
             </label>
             <Select
@@ -193,7 +192,10 @@ export function ReturnRequestForm({
           </div>
 
           <div>
-            <label htmlFor="return-comment" className="mb-1.5 block text-body-sm font-medium text-foreground">
+            <label
+              htmlFor="return-comment"
+              className="mb-1.5 block text-body-sm font-medium text-foreground"
+            >
               Anything else we should know?{' '}
               <span className="font-normal text-foreground-subtle">(optional)</span>
             </label>

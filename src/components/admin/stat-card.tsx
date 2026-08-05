@@ -41,9 +41,9 @@ export function StatCard({
         {label}
       </p>
 
-      <p className="mt-2 text-display-xs font-semibold text-foreground tabular-nums">{value}</p>
+      <p className="text-display-xs mt-2 font-semibold text-foreground tabular-nums">{value}</p>
 
-      <div className="mt-2 flex items-center gap-1.5 text-body-xs">
+      <div className="text-body-xs mt-2 flex items-center gap-1.5">
         {changePercent === null || changePercent === undefined ? (
           <span className="text-foreground-subtle">No prior period to compare</span>
         ) : (
@@ -112,7 +112,9 @@ export function Sparkline({
     return { x, y };
   });
 
-  const line = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+  const line = coords
+    .map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`)
+    .join(' ');
   const area = `${line} L${width},${height} L0,${height} Z`;
 
   return (

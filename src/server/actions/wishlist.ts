@@ -117,7 +117,9 @@ export async function setWishlistSharedAction(shared: boolean): Promise<{
 
     return {
       ok: true,
-      message: shared ? 'Your wishlist is now shareable.' : 'Sharing turned off. The old link no longer works.',
+      message: shared
+        ? 'Your wishlist is now shareable.'
+        : 'Sharing turned off. The old link no longer works.',
       shareToken,
     };
   } catch (error) {
@@ -175,7 +177,10 @@ export async function requestReturnAction(input: {
 
   const parsed = returnRequestSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues[0]?.message ?? 'Check the form and try again.' };
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? 'Check the form and try again.',
+    };
   }
 
   try {

@@ -53,16 +53,16 @@ token declared there becomes both a custom property and a utility class:
 
 ### Neutral ramp
 
-| Token     | Hex       | Role                             |
-| --------- | --------- | -------------------------------- |
-| `ink-50`  | `#F5F5F5` | **Light grey** — muted surface   |
-| `ink-200` | `#E5E5E5` | **Default border**               |
-| `ink-300` | `#CCCCCC` | Strong border                    |
-| `ink-400` | `#999999` | Decorative only — never text     |
+| Token     | Hex       | Role                                 |
+| --------- | --------- | ------------------------------------ |
+| `ink-50`  | `#F5F5F5` | **Light grey** — muted surface       |
+| `ink-200` | `#E5E5E5` | **Default border**                   |
+| `ink-300` | `#CCCCCC` | Strong border                        |
+| `ink-400` | `#999999` | Decorative only — never text         |
 | `ink-450` | `#707070` | **`foreground-subtle`** — quiet text |
-| `ink-500` | `#666666` | **Medium grey** — secondary text |
-| `ink-700` | `#333333` | **Dark grey** — body text        |
-| `ink-900` | `#1A1A1A` | Inverse surface, modal backdrop  |
+| `ink-500` | `#666666` | **Medium grey** — secondary text     |
+| `ink-700` | `#333333` | **Dark grey** — body text            |
+| `ink-900` | `#1A1A1A` | Inverse surface, modal backdrop      |
 
 ### Feedback
 

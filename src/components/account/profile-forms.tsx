@@ -194,7 +194,13 @@ export function PasswordForm() {
   const strength = passwordStrength(password);
   const meterId = useId();
 
-  const BAR = ['bg-danger-500', 'bg-danger-500', 'bg-warning-500', 'bg-success-500', 'bg-success-500'];
+  const BAR = [
+    'bg-danger-500',
+    'bg-danger-500',
+    'bg-warning-500',
+    'bg-success-500',
+    'bg-success-500',
+  ];
 
   return (
     <Panel
@@ -239,7 +245,7 @@ export function PasswordForm() {
                 ))}
               </div>
               {/* The text carries the meaning; the bars are decoration. */}
-              <p aria-live="polite" className="mt-1.5 text-body-xs text-foreground-muted">
+              <p aria-live="polite" className="text-body-xs mt-1.5 text-foreground-muted">
                 <span className="font-medium text-foreground">{strength.label}.</span>{' '}
                 {strength.hint}
               </p>
@@ -290,18 +296,28 @@ export function PreferencesForm({
       : ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'];
 
   const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   return (
-    <Panel
-      title="Regional settings"
-      description="How dates and times are shown to you."
-    >
+    <Panel title="Regional settings" description="How dates and times are shown to you.">
       <form action={action} noValidate className="space-y-4">
         <div>
-          <label htmlFor="timezone" className="mb-1.5 block text-body-sm font-medium text-foreground">
+          <label
+            htmlFor="timezone"
+            className="mb-1.5 block text-body-sm font-medium text-foreground"
+          >
             Time zone
           </label>
           <Select id="timezone" name="timezone" defaultValue={timezone}>
@@ -320,16 +336,14 @@ export function PreferencesForm({
           <Select id="locale" name="locale" defaultValue={locale}>
             <option value="en-US">English (US)</option>
           </Select>
-          <p className="mt-1 text-body-xs text-foreground-subtle">
-            More languages are on the way.
-          </p>
+          <p className="text-body-xs mt-1 text-foreground-subtle">More languages are on the way.</p>
         </div>
 
         <fieldset>
           <legend className="mb-1.5 text-body-sm font-medium text-foreground">
             Birthday <span className="font-normal text-foreground-subtle">(optional)</span>
           </legend>
-          <p className="mb-2 text-body-xs text-foreground-subtle">
+          <p className="text-body-xs mb-2 text-foreground-subtle">
             For a birthday treat. We do not ask for the year.
           </p>
 
@@ -386,9 +400,9 @@ export function DeleteAccountForm() {
         Close your account
       </h2>
       <p className="mt-1 text-body-sm text-foreground-muted">
-        Your order history is kept — we are required to retain records of sales — but your
-        profile, addresses, saved cards, wishlist and browsing history are deleted, and you
-        will not be able to sign in again.
+        Your order history is kept — we are required to retain records of sales — but your profile,
+        addresses, saved cards, wishlist and browsing history are deleted, and you will not be able
+        to sign in again.
       </p>
 
       <Button variant="outline" className="mt-4" onClick={() => setOpen(true)}>
@@ -419,7 +433,10 @@ export function DeleteAccountForm() {
           />
 
           <div>
-            <label htmlFor="reason" className="mb-1.5 block text-body-sm font-medium text-foreground">
+            <label
+              htmlFor="reason"
+              className="mb-1.5 block text-body-sm font-medium text-foreground"
+            >
               Anything we could have done better?{' '}
               <span className="font-normal text-foreground-subtle">(optional)</span>
             </label>

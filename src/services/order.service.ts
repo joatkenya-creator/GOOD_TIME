@@ -19,11 +19,7 @@ import {
   redeem,
   reverseForOrder,
 } from '@/services/account/rewards.service';
-import {
-  quoteGiftCardById,
-  redeemGiftCard,
-  refundToGiftCard,
-} from '@/services/gift-card.service';
+import { quoteGiftCardById, redeemGiftCard, refundToGiftCard } from '@/services/gift-card.service';
 import { quoteTax } from '@/services/tax.service';
 
 /**
@@ -37,7 +33,7 @@ import { quoteTax } from '@/services/tax.service';
  * ## Status and money
  *
  * An order starts `PENDING` with money reserved but not taken. It becomes `PAID`
- * only from a Stripe webhook — never from the browser returning to a success
+ * only from Klarna's own record — never from the browser returning to a success
  * page, which a customer can forge or a network can lose.
  */
 
@@ -476,7 +472,10 @@ async function commitReservations(tx: Tx, items: { variantId: string | null; qua
 }
 
 /** Reservation is dropped without touching quantity. Called on cancellation. */
-async function releaseReservations(tx: Tx, items: { variantId: string | null; quantity: number }[]) {
+async function releaseReservations(
+  tx: Tx,
+  items: { variantId: string | null; quantity: number }[],
+) {
   for (const item of items) {
     if (!item.variantId) continue;
     await tx.inventory.updateMany({
@@ -548,7 +547,7 @@ export async function getOrdersForUser(userId: string, take = 20, skip = 0) {
 /**
  * Cancels an unshipped order and returns its reservations.
  *
- * Refunding money is deliberately not done here — that is a Stripe call, and
+ * Refunding money is deliberately not done here — that is a Klarna call, and
  * folding a network request into this transaction would hold a database lock
  * open across it.
  */
@@ -561,6 +560,20 @@ export async function cancelOrder(orderId: string, reason: string, actorId?: str
   }
 
   logger.info('order.cancel', { orderId, reason, status: order.status });
+
+  /*
+   * Release the Klarna authorisation before changing our own status.
+   *
+   * Klarna holds the amount against the customer's credit line for weeks.
+   * Cancelling our order and leaving theirs authorised means a customer who
+   * cancelled an order still cannot spend that money — and finds out from
+   * Klarna, not from us. Imported lazily because the payment service imports
+   * this module for `transitionOrder`, and a static import would be a cycle.
+   */
+  const { cancelPayment } = await import('@/services/payment.service');
+  await cancelPayment(orderId).catch((error: unknown) =>
+    logger.error('order.cancel_payment_failed', error, { orderId }),
+  );
 
   return transitionOrder(orderId, 'CANCELLED', {
     message: `Order cancelled: ${reason}`,
@@ -640,10 +653,7 @@ export function totalsOf(order: {
   shippingCents: number;
   taxCents: number;
   totalCents: number;
-}): Pick<
-  Totals,
-  'subtotalCents' | 'discountCents' | 'shippingCents' | 'taxCents' | 'totalCents'
-> {
+}): Pick<Totals, 'subtotalCents' | 'discountCents' | 'shippingCents' | 'taxCents' | 'totalCents'> {
   return {
     subtotalCents: order.subtotalCents,
     discountCents: order.discountCents,

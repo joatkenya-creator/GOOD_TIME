@@ -38,21 +38,21 @@ system.
 
 ## Pages
 
-| Route | What it does |
-|---|---|
-| `/account` | Dashboard: orders, wishlist, rewards, addresses, recommendations |
-| `/account/profile` | Name, phone, email, password, regional settings, account closure |
-| `/account/addresses` | Address book with defaults per type |
-| `/account/orders` | History, filterable by status |
-| `/account/orders/[orderNumber]` | Detail, reorder, return request, invoice |
-| `/account/returns` | Return requests and their status |
-| `/account/wishlist` | Saved items, move to bag, share link |
-| `/account/recently-viewed` | Browsing history, individually removable |
-| `/account/notifications` | Per-topic, per-channel preferences |
-| `/account/security` | Password, devices, sign-in history, 2FA status |
-| `/account/rewards` | Points, credit, tier, referral code |
-| `/account/payment-methods` | Saved cards (references only) |
-| `/wishlist/[token]` | A shared wishlist — public, `noindex`, no owner details |
+| Route                           | What it does                                                     |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `/account`                      | Dashboard: orders, wishlist, rewards, addresses, recommendations |
+| `/account/profile`              | Name, phone, email, password, regional settings, account closure |
+| `/account/addresses`            | Address book with defaults per type                              |
+| `/account/orders`               | History, filterable by status                                    |
+| `/account/orders/[orderNumber]` | Detail, reorder, return request, invoice                         |
+| `/account/returns`              | Return requests and their status                                 |
+| `/account/wishlist`             | Saved items, move to bag, share link                             |
+| `/account/recently-viewed`      | Browsing history, individually removable                         |
+| `/account/notifications`        | Per-topic, per-channel preferences                               |
+| `/account/security`             | Password, devices, sign-in history, 2FA status                   |
+| `/account/rewards`              | Points, credit, tier, referral code                              |
+| `/account/payment-methods`      | Saved cards (references only)                                    |
+| `/wishlist/[token]`             | A shared wishlist — public, `noindex`, no owner details          |
 
 ---
 
@@ -102,7 +102,7 @@ against a cost that did not exist, while leaving a stolen laptop working for a
 minute after its owner hit "sign out everywhere". Correctness wins a trade that
 cheap.
 
-The *write* is still throttled — `SESSION_TOUCH_INTERVAL_SECONDS`. "Last active 40
+The _write_ is still throttled — `SESSION_TOUCH_INTERVAL_SECONDS`. "Last active 40
 seconds ago" and "just now" are the same answer to a customer, and one write per
 request is a real cost where one read is not.
 
@@ -178,7 +178,7 @@ transitions exist; the admin UI that drives them arrives with the dashboard.
 works.
 
 The validation worth noting: a request is checked against quantities already claimed
-on *other* returns, not just against the order. That is the check a naive
+on _other_ returns, not just against the order. That is the check a naive
 implementation misses and a determined customer finds.
 
 ---
@@ -197,16 +197,16 @@ writes a balance directly.
 
 ### The programme
 
-| | |
-|---|---|
-| Earning | 1 point per $1 of goods, times the tier multiplier |
-| Point value | 1 cent — so the base programme returns 1% |
-| Redemption floor | 500 points ($5) |
-| Expiry | 24 months from the day earned; store credit never expires |
-| Tiers | Trailing-12-month spend: Silver $250, Gold $750, Platinum $2,000 |
-| Multipliers | 1× / 1.25× / 1.5× / 2× |
-| Birthday | 500 points, once per calendar year |
-| Referral | $10 credit once the referred friend's first order clears $30 |
+|                  |                                                                  |
+| ---------------- | ---------------------------------------------------------------- |
+| Earning          | 1 point per $1 of goods, times the tier multiplier               |
+| Point value      | 1 cent — so the base programme returns 1%                        |
+| Redemption floor | 500 points ($5)                                                  |
+| Expiry           | 24 months from the day earned; store credit never expires        |
+| Tiers            | Trailing-12-month spend: Silver $250, Gold $750, Platinum $2,000 |
+| Multipliers      | 1× / 1.25× / 1.5× / 2×                                           |
+| Birthday         | 500 points, once per calendar year                               |
+| Referral         | $10 credit once the referred friend's first order clears $30     |
 
 Every one of those numbers is a pricing decision with real margin attached. They
 live in one file, with tests that catch what changing them breaks. The rewards page
@@ -228,14 +228,14 @@ which nobody expects and which is impossible to explain.
 
 **Tiers are trailing, not lifetime.** A tier should describe who someone is now.
 
-**Credit and points are tender, not a discount.** They are applied *after* tax and
+**Credit and points are tender, not a discount.** They are applied _after_ tax and
 recorded in `Order.creditAppliedCents`, never folded into `discountCents`. A
 discount reduces the taxable base; credit pays part of a bill that was already
 taxed in full. Conflating them under-collects tax. `totalCents` therefore stays the
 full amount owed and keeps satisfying `orders_total_is_sum`; the card is charged
 `totalCents - creditAppliedCents`.
 
-**A bill fully covered by credit never reaches Stripe.** Stripe rejects a
+**A bill fully covered by credit never reaches Klarna.** Klarna rejects a
 zero-amount intent, correctly — there is no payment to make. The order transitions
 to `PAID` directly, running the same path a webhook would.
 
@@ -243,7 +243,7 @@ to `PAID` directly, running the same path a webhook would.
 coupon redemption is: two checkouts started at once must not both spend the same
 balance. Non-negative check constraints are the backstop.
 
-**A refund does both halves.** It claws back what the order earned *and* returns
+**A refund does both halves.** It claws back what the order earned _and_ returns
 what it spent. Keeping the points pays a reward for a sale that did not happen;
 keeping the redemption charges the customer twice. The clawback may drive a balance
 to zero but never below — a negative balance is a debt nobody agreed to.
@@ -312,13 +312,16 @@ three that means "I understand this is irreversible".
 
 ## Saved cards
 
-**No card data is stored and none may ever be.** A row is a Stripe PaymentMethod
-reference plus the display fragments Stripe itself returns — enough for "Visa ending
+**No card data is stored and none may ever be.** A row is a provider-side
+reference plus the display fragments the provider returns — enough for "Visa ending
 4242". Storing a card number, even encrypted, moves this store out of PCI SAQ-A into
 a scope requiring an annual audit. That is a business decision, not an engineering
 one.
 
-Saving a card at checkout needs Stripe SetupIntents, which are not wired up. The
+Under Klarna this list is normally empty: Klarna holds the payment instrument
+and a returning customer picks a saved method inside its own widget, so there is
+nothing for us to store. The model is retained for historical rows and for a
+second provider covering markets Klarna does not. The
 schema and the page are ready for them.
 
 ---
@@ -353,14 +356,14 @@ port.
 
 Six defects, none of which the type checker or unit tests would have found:
 
-| Defect | Why it mattered |
-|---|---|
-| **Session revocation never ran on a page request** | The liveness check sat in the Auth.js `jwt` callback, which does not run when a JWT session is merely read. "Sign out everywhere" left every other device fully signed in until its token expired. The API was protected; the account pages were not. |
-| **The guard and the edge proxy redirected at each other** | Once the guard worked, a revoked device bounced between `/account` and `/sign-in` until the browser gave up, because the proxy reads the JWT and cannot see a revocation. Fixed by always sending a `callbackUrl`. |
+| Defect                                                               | Why it mattered                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Session revocation never ran on a page request**                   | The liveness check sat in the Auth.js `jwt` callback, which does not run when a JWT session is merely read. "Sign out everywhere" left every other device fully signed in until its token expired. The API was protected; the account pages were not.                                                        |
+| **The guard and the edge proxy redirected at each other**            | Once the guard worked, a revoked device bounced between `/account` and `/sign-in` until the browser gave up, because the proxy reads the JWT and cannot see a revocation. Fixed by always sending a `callbackUrl`.                                                                                           |
 | **The root loading boundary duplicated the entire storefront shell** | A `notFound()` raised after the shell had streamed left the empty original in the DOM beside the 404 — two `<main id="main">`, two footers, a broken skip link. It also made missing categories answer **200 instead of 404**, which tells a crawler the page exists. Deleting `app/loading.tsx` fixed both. |
-| **The default loading skeleton rendered its own `<main>`** | Every route transition inside the storefront briefly had two `main` landmarks and two `id="main"`, breaking the skip link. Pre-existing since phase 1; found by adding a landmark probe. |
-| **The CSRF origin check never accepted the request's own host** | `new URL(request.url).origin` looks like it does, but Next normalises `request.url` to the deployment URL — so the allow-list collapsed to one entry and a preview deployment would 403 every write. Now reads the forwarded host, with tests. |
-| **The 404 page nested a `<main>` inside the layout's** | Same landmark problem, on the page people reach when something has already gone wrong. |
+| **The default loading skeleton rendered its own `<main>`**           | Every route transition inside the storefront briefly had two `main` landmarks and two `id="main"`, breaking the skip link. Pre-existing since phase 1; found by adding a landmark probe.                                                                                                                     |
+| **The CSRF origin check never accepted the request's own host**      | `new URL(request.url).origin` looks like it does, but Next normalises `request.url` to the deployment URL — so the allow-list collapsed to one entry and a preview deployment would 403 every write. Now reads the forwarded host, with tests.                                                               |
+| **The 404 page nested a `<main>` inside the layout's**               | Same landmark problem, on the page people reach when something has already gone wrong.                                                                                                                                                                                                                       |
 
 ---
 
@@ -375,7 +378,8 @@ Six defects, none of which the type checker or unit tests would have found:
   absent rather than dormant.
 - **SMS and push are not deliverable.** The preference rows exist and the switches are
   disabled.
-- **Saving a card is not possible yet.** Needs Stripe SetupIntents.
+- **Saving a card is not something we do.** Klarna owns the payment instrument,
+  which is strictly better for the customer and for our compliance scope.
 - **Email change does not send a verification link.** The address is marked unverified
   immediately, which is the security-relevant half; the send needs `RESEND_API_KEY`.
 - **No address autocomplete or validation beyond format.** A plausible-but-wrong

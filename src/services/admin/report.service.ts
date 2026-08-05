@@ -15,13 +15,7 @@ import { prisma } from '@/lib/prisma';
 
 const EARNING: OrderStatus[] = ['PAID', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 
-export type ReportKey =
-  | 'sales'
-  | 'products'
-  | 'customers'
-  | 'coupons'
-  | 'inventory'
-  | 'returns';
+export type ReportKey = 'sales' | 'products' | 'customers' | 'coupons' | 'inventory' | 'returns';
 
 export interface ReportColumn {
   key: string;
@@ -51,7 +45,14 @@ export async function buildReport(key: ReportKey, days = 30): Promise<Report> {
   switch (key) {
     case 'sales': {
       const rows = await prisma.$queryRaw<
-        { day: Date; orders: bigint; gross: bigint; discount: bigint; tax: bigint; shipping: bigint }[]
+        {
+          day: Date;
+          orders: bigint;
+          gross: bigint;
+          discount: bigint;
+          tax: bigint;
+          shipping: bigint;
+        }[]
       >`
         SELECT date_trunc('day', "placedAt") AS day,
                COUNT(*)::bigint AS orders,
@@ -198,7 +199,14 @@ export async function buildReport(key: ReportKey, days = 30): Promise<Report> {
         orderBy: { quantity: 'asc' },
         take: 200,
         include: {
-          variant: { select: { sku: true, name: true, priceCents: true, product: { select: { name: true } } } },
+          variant: {
+            select: {
+              sku: true,
+              name: true,
+              priceCents: true,
+              product: { select: { name: true } },
+            },
+          },
         },
       });
 

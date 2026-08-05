@@ -149,7 +149,10 @@ export function registerAllHandlers(): void {
         };
       case 'refund':
         return {
-          sent: await email.sendRefundEmail(String(payload.orderId), Number(payload.amountCents ?? 0)),
+          sent: await email.sendRefundEmail(
+            String(payload.orderId),
+            Number(payload.amountCents ?? 0),
+          ),
         };
       case 'welcome':
         return { sent: await email.sendWelcomeEmail(String(payload.userId)) };
@@ -305,7 +308,8 @@ export const DEFAULT_SCHEDULES = [
     kind: 'analytics.rollup',
     cron: '15 0 * * *',
     payload: { days: 2 },
-    description: 'Aggregates raw events into daily metrics. Re-runs yesterday to catch late events.',
+    description:
+      'Aggregates raw events into daily metrics. Re-runs yesterday to catch late events.',
   },
   {
     key: 'weekly-seo-audit',

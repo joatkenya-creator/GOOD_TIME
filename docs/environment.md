@@ -10,107 +10,207 @@ secret behind that prefix.
 
 ---
 
-## Required
+## Two tiers, on purpose
 
-| Variable       | Format                                | Notes                                                      |
-| -------------- | ------------------------------------- | ---------------------------------------------------------- |
-| `DATABASE_URL` | `postgresql://user:pass@host:port/db` | Use the **pooled** endpoint in production.                 |
-| `AUTH_SECRET`  | ≥ 32 characters                       | `openssl rand -base64 32`. Rotating it signs everyone out. |
+Only `DATABASE_URL` and `AUTH_SECRET` are required to run `npm run dev`.
+Everything else degrades gracefully: the cache falls back to memory, emails log
+instead of sending, payments refuse with a clear message.
+
+That is deliberate — making them `required` in the Zod schema breaks a fresh
+clone, a cost paid by every new contributor forever. Making them optional and
+hoping means a production deploy boots happily with no payments, no rate
+limiting and no error reporting, and nothing says so until a customer does.
+
+So the launch gate is explicit and separate:
+
+```bash
+npm run verify:production
+```
+
+It enumerates what production requires and **why each one matters**, and exits
+non-zero. It runs in the production deploy workflow before anything is built,
+and is reported live at `/api/health/deep`. The list is `productionReadiness()`
+in `env.ts`.
 
 ---
+
+## Where values live
+
+|                   | Development         | Staging / Production                  |
+| ----------------- | ------------------- | ------------------------------------- |
+| Secrets           | `.env` (gitignored) | `wrangler secret put KEY --env <env>` |
+| Non-secret        | `.env`              | `vars` in `wrangler.jsonc`            |
+| Build-time public | `.env`              | The `env:` block in `deploy.yml`      |
+
+`NEXT_PUBLIC_*` values are baked in at **build** time, not read at runtime, so
+they belong in the workflow's `env:` block rather than in `wrangler secret`. A
+`wrangler secret` named `NEXT_PUBLIC_ANYTHING` does nothing at all — which is a
+confusing half-hour the first time.
+
+```bash
+wrangler secret list --env production
+wrangler secret put DATABASE_URL --env production
+wrangler secret delete OLD_KEY --env production
+```
+
+---
+
+## Required everywhere
+
+| Variable       | Format           | Secret | Notes                                                     |
+| -------------- | ---------------- | ------ | --------------------------------------------------------- |
+| `DATABASE_URL` | `postgresql://…` | yes    | The **pooled** endpoint in production                     |
+| `AUTH_SECRET`  | ≥ 32 chars       | yes    | `openssl rand -base64 32`. Rotating it signs everyone out |
 
 ## Core
 
-| Variable               | Default                      | Notes                                                                                                                     |
-| ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`             | `development`                | Set by the platform.                                                                                                      |
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000`      | Public. Drives canonical URLs, OG tags, sitemap, email links. **Must be the real production domain**, not `*.vercel.app`. |
-| `DIRECT_DATABASE_URL`  | falls back to `DATABASE_URL` | Unpooled connection for migrations. Required when `DATABASE_URL` is a transaction pooler.                                 |
-
----
+| Variable               | Default                      | Secret | Notes                                                                                                             |
+| ---------------------- | ---------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`             | `development`                | no     | Set by the platform                                                                                               |
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000`      | no     | Drives canonical URLs, OG tags, the sitemap, email links and the Klarna notification URL. Must be the real domain |
+| `DIRECT_DATABASE_URL`  | falls back to `DATABASE_URL` | yes    | Unpooled, for migrations. **Required in production** — see [neon.md](./neon.md#why-migrations-must-not)           |
 
 ## Auth.js
 
-| Variable             | Required | Notes                                                    |
-| -------------------- | -------- | -------------------------------------------------------- |
-| `AUTH_SECRET`        | yes      | See above.                                               |
-| `AUTH_URL`           | no       | Canonical auth origin. Inferred on Vercel.               |
-| `AUTH_TRUST_HOST`    | no       | `true` behind a trusted proxy (Vercel). Default `false`. |
-| `AUTH_GOOGLE_ID`     | no       | Enables the Google button when set alongside the secret. |
-| `AUTH_GOOGLE_SECRET` | no       | Both must be present, or neither.                        |
+| Variable             | Required | Secret | Notes                                          |
+| -------------------- | -------- | ------ | ---------------------------------------------- |
+| `AUTH_SECRET`        | yes      | yes    |                                                |
+| `AUTH_URL`           | no       | no     | Canonical auth origin                          |
+| `AUTH_TRUST_HOST`    | no       | no     | `true` behind Cloudflare                       |
+| `AUTH_GOOGLE_ID`     | no       | no     | Enables the Google button alongside the secret |
+| `AUTH_GOOGLE_SECRET` | no       | yes    | Both, or neither                               |
 
-The Google provider is registered only when both values exist, so the sign-in
-page never renders a button that cannot work.
+## Klarna
 
----
+| Variable                         | Required in production | Secret | Notes                                                |
+| -------------------------------- | ---------------------- | ------ | ---------------------------------------------------- |
+| `KLARNA_USERNAME`                | **yes**                | yes    | `PK12345_1a2b3c4d`, not an email                     |
+| `KLARNA_PASSWORD`                | **yes**                | yes    | Shown once at generation                             |
+| `KLARNA_REGION`                  | yes                    | no     | `na` / `eu` / `oc`. A wrong value 404s every request |
+| `KLARNA_ENVIRONMENT`             | **yes**                | no     | Must be `production`; `verify:production` checks it  |
+| `KLARNA_WEBHOOK_SECRET`          | **yes**                | yes    | ≥ 32 chars. Goes in the notification URL path        |
+| `NEXT_PUBLIC_KLARNA_ENVIRONMENT` | yes                    | no     | Build-time                                           |
 
-## Stripe — scaffolded, not wired
+Playground and production are separate accounts. A playground credential against
+the production host authenticates and then 404s.
 
-| Variable                | Format    | Notes                                             |
-| ----------------------- | --------- | ------------------------------------------------- |
-| `STRIPE_SECRET_KEY`     | `sk_…`    | Absent means Stripe calls return a clean 503.     |
-| `STRIPE_WEBHOOK_SECRET` | `whsec_…` | From the webhook endpoint, not the API keys page. |
+## Tax
 
----
+| Variable                              | Required in production | Secret | Notes                                                            |
+| ------------------------------------- | ---------------------- | ------ | ---------------------------------------------------------------- |
+| `TAX_PROVIDER`                        | **yes**                | no     | `table` charges an estimate. Must be `taxjar` before real orders |
+| `TAXJAR_API_KEY`                      | with `taxjar`          | yes    |                                                                  |
+| `SHIP_FROM_COUNTRY`                   | yes                    | no     | Default `US`                                                     |
+| `SHIP_FROM_STATE`                     | yes                    | no     | Required by origin-sourced states                                |
+| `SHIP_FROM_CITY` / `_STREET` / `_ZIP` | yes                    | no     |                                                                  |
 
-## Resend — scaffolded, not wired
+## Email
 
-| Variable         | Format                            | Notes                                                 |
-| ---------------- | --------------------------------- | ----------------------------------------------------- |
-| `RESEND_API_KEY` | `re_…`                            | Absent: emails are logged, not sent, and never throw. |
-| `EMAIL_FROM`     | `GOOD TIME <no-reply@domain.com>` | Domain must be verified in Resend.                    |
+| Variable                | Required in production | Secret | Notes                                                     |
+| ----------------------- | ---------------------- | ------ | --------------------------------------------------------- |
+| `RESEND_API_KEY`        | **yes**                | yes    | Unset means emails log instead of sending                 |
+| `EMAIL_FROM`            | yes                    | no     | `GOOD TIME <yowens@yoassoc.com>`. Domain must be verified |
+| `EMAIL_REPLY_TO`        | yes                    | no     | Never the sending address                                 |
+| `RESEND_WEBHOOK_SECRET` | yes                    | yes    | Svix-signed. Without it bounces are invisible             |
 
----
+## Cache and rate limiting
 
-## Cloudinary — scaffolded, not wired
+| Variable                    | Required in production | Secret | Notes                                         |
+| --------------------------- | ---------------------- | ------ | --------------------------------------------- |
+| `UPSTASH_REDIS_REST_URL`    | **yes**                | no     | REST, not `redis://` — Workers has no raw TCP |
+| `UPSTASH_REDIS_REST_TOKEN`  | **yes**                | yes    |                                               |
+| `RATE_LIMIT_MAX`            | no                     | no     | Default 60                                    |
+| `RATE_LIMIT_WINDOW_SECONDS` | no                     | no     | Default 60                                    |
 
-| Variable                            | Public | Notes                                               |
-| ----------------------------------- | ------ | --------------------------------------------------- |
-| `CLOUDINARY_CLOUD_NAME`             | no     | Signing.                                            |
-| `CLOUDINARY_API_KEY`                | no     | Signing.                                            |
-| `CLOUDINARY_API_SECRET`             | no     | **Secret.** Never expose.                           |
-| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes    | Same value, for building delivery URLs client-side. |
+Unset means limits are per-isolate, which on Workers is no limit at all.
 
-All three server values must be set together; `integrations.cloudinary` gates on
-the trio.
+## Media
 
----
+| Variable                            | Required in production | Secret | Notes                       |
+| ----------------------------------- | ---------------------- | ------ | --------------------------- |
+| `CLOUDINARY_CLOUD_NAME`             | **yes**                | no     | Appears in every image URL  |
+| `CLOUDINARY_API_KEY`                | **yes**                | no     |                             |
+| `CLOUDINARY_API_SECRET`             | **yes**                | yes    | Signs uploads and deletions |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes                    | no     | Build-time                  |
 
-## Analytics
+## Monitoring
 
-| Variable                         | Public | Notes                                               |
-| -------------------------------- | ------ | --------------------------------------------------- |
-| `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | yes    | `G-XXXXXXXXXX`. Absent: no GA4 script is rendered.  |
-| `NEXT_PUBLIC_CLARITY_PROJECT_ID` | yes    | Absent: no Clarity script is rendered.              |
-| `GOOGLE_SITE_VERIFICATION`       | no     | Search Console HTML-tag token. Absent: tag omitted. |
+| Variable                    | Required in production | Secret | Notes                                            |
+| --------------------------- | ---------------------- | ------ | ------------------------------------------------ |
+| `SENTRY_DSN`                | **yes**                | yes\*  | \*It can only submit events, but treat it as one |
+| `NEXT_PUBLIC_SENTRY_DSN`    | yes                    | no     | A **separate** browser project key               |
+| `SENTRY_ENVIRONMENT`        | yes                    | no     | `production` / `staging`                         |
+| `SENTRY_RELEASE`            | yes                    | no     | The git SHA, set by CI                           |
+| `SENTRY_TRACES_SAMPLE_RATE` | no                     | no     | 0–1, default 0.1                                 |
 
----
+## Bot protection
+
+| Variable                         | Required in production | Secret | Notes                       |
+| -------------------------------- | ---------------------- | ------ | --------------------------- |
+| `TURNSTILE_SECRET_KEY`           | recommended            | yes    | Unconfigured means no check |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | recommended            | no     | Build-time                  |
 
 ## Operations
 
-| Variable                    | Default | Notes                                                          |
-| --------------------------- | ------- | -------------------------------------------------------------- |
-| `RATE_LIMIT_MAX`            | `60`    | Requests per window for the default bucket.                    |
-| `RATE_LIMIT_WINDOW_SECONDS` | `60`    | Window length.                                                 |
-| `LOG_LEVEL`                 | `info`  | `debug` \| `info` \| `warn` \| `error`.                        |
-| `SKIP_ENV_VALIDATION`       | `false` | Bypasses validation. **CI type-checks and image builds only.** |
+| Variable                   | Required in production | Secret | Notes                                                   |
+| -------------------------- | ---------------------- | ------ | ------------------------------------------------------- |
+| `CRON_SECRET`              | **yes**                | yes    | ≥ 16 chars. Unset makes `/api/cron/*` refuse everything |
+| `LOG_LEVEL`                | no                     | no     | `debug` / `info` / `warn` / `error`                     |
+| `GOOGLE_SITE_VERIFICATION` | no                     | no     | Search Console                                          |
+| `SKIP_ENV_VALIDATION`      | no                     | no     | CI and image builds **only**                            |
 
-Auth routes set their own tighter limits in code and ignore the defaults.
+## Analytics — not here
+
+GA4, GTM, Google Ads, Meta, TikTok, Pinterest, Clarity and Cloudflare Web
+Analytics are configured in the admin under **Marketing → Integrations**. Their
+ids are public, they change without a deploy, and they are gated on consent at
+render time. See
+[`services/marketing/integrations.ts`](../src/services/marketing/integrations.ts).
 
 ---
 
-## Per-environment checklist
+## Rotation
 
-**Local** — `DATABASE_URL`, `AUTH_SECRET`. Everything else optional.
+| Variable                   | Cadence                 | Impact of rotating                                |
+| -------------------------- | ----------------------- | ------------------------------------------------- |
+| `AUTH_SECRET`              | yearly, or on suspicion | **Signs every user out.** Schedule it             |
+| `KLARNA_PASSWORD`          | yearly                  | None if deployed atomically                       |
+| `KLARNA_WEBHOOK_SECRET`    | yearly                  | Update the Merchant Portal URL in the same window |
+| `RESEND_API_KEY`           | yearly                  | None                                              |
+| `RESEND_WEBHOOK_SECRET`    | yearly                  | Svix accepts both keys during rotation            |
+| `CLOUDINARY_API_SECRET`    | yearly                  | Invalidates in-flight upload signatures (1 hour)  |
+| `UPSTASH_REDIS_REST_TOKEN` | yearly                  | Cache cold briefly; limits fail open in the gap   |
+| `CRON_SECRET`              | yearly                  | Jobs pause until redeployed                       |
+| `SENTRY_DSN`               | on suspicion            | Events go to a new project                        |
+| Cloudflare API token       | quarterly               | CI fails until updated                            |
+| Database password          | yearly                  | Update both URLs together                         |
 
-**Preview** — the above, plus `NEXT_PUBLIC_SITE_URL` pointed at the preview
-domain, plus Stripe **test** keys if payments are being exercised.
+### The procedure
 
-**Production** — everything. Specifically verify:
+1. Generate the new value. **Do not revoke the old one yet.**
+2. `wrangler secret put KEY --env staging`, verify.
+3. `wrangler secret put KEY --env production`, deploy, verify.
+4. Revoke the old value at the provider.
+5. Record the new value in the password manager.
+6. Note the date.
 
-- `NEXT_PUBLIC_SITE_URL` is the real domain (wrong value = wrong canonical URLs
-  on every page, and broken links in every email);
-- `DATABASE_URL` is pooled and `DIRECT_DATABASE_URL` is set;
-- `AUTH_SECRET` differs from every other environment;
-- Stripe keys are **live**, and the webhook secret matches the live endpoint;
-- `EMAIL_FROM` uses a Resend-verified domain.
+Step 1 is the one people get wrong. Revoking first turns a routine rotation into
+an outage, and there is no reason to — every provider here supports two live
+credentials during a changeover.
+
+**On a suspected leak, rotate first and investigate second.** Minutes to rotate;
+potentially everything if the investigation concludes wrongly.
+
+---
+
+## Adding a variable
+
+1. Add it to the Zod schema in `env.ts` (server) or `env.public.ts` (client),
+   with a comment saying what it does and what happens without it.
+2. Add it to `.env.example` with the same explanation.
+3. Add a row to the table above, including whether it is secret.
+4. If production genuinely needs it, add it to `productionReadiness()` with a
+   `why` that names the consequence — "SENTRY_DSN missing" gets ignored, "errors
+   go nowhere a human will see" does not.
+5. If it is `NEXT_PUBLIC_*`, add it to the `env:` block in `deploy.yml`, because
+   it is a build input rather than a runtime one.

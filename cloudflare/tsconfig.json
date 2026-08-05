@@ -1,0 +1,30 @@
+/**
+ * Type-checking for the Worker entrypoint only.
+ *
+ * Separate from the root config because `@cloudflare/workers-types` overrides
+ * the DOM lib: in the Workers runtime `Response.json()` returns `unknown`, not
+ * `any`, and `fetch` has a different signature. Those are the *correct* types
+ * inside the isolate and the wrong ones for every React component in `src/`, so
+ * the two type worlds are kept apart rather than merged into a config that is
+ * subtly wrong for both.
+ *
+ * `npm run typecheck` runs this and the root config.
+ */
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types"],
+    "lib": ["esnext"],
+    "noEmit": true
+  },
+  /*
+   * The Worker imports from `src/` via `@/`, so this project pulls those files
+   * in — and it must pull in the ambient module augmentations with them.
+   * `src/types/next-auth.d.ts` is what teaches TypeScript that a session user
+   * carries `roles`, `permissions` and `sessionId`. Without it, every auth file
+   * reachable from the Worker fails to compile here while compiling fine under
+   * the root config, which is a genuinely baffling way to fail.
+   */
+  "include": ["**/*.ts", "../src/types/**/*.d.ts"],
+  "exclude": []
+}

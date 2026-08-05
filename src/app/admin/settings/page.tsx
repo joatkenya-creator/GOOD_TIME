@@ -30,7 +30,12 @@ const GROUPS = [
     title: 'Store',
     description: 'Trading rules a merchant changes without a deploy.',
     fields: [
-      { key: 'store.freeShippingThresholdCents', label: 'Free shipping over ($)', type: 'number', hint: 'Entered in dollars, stored in cents everywhere else.' },
+      {
+        key: 'store.freeShippingThresholdCents',
+        label: 'Free shipping over ($)',
+        type: 'number',
+        hint: 'Entered in dollars, stored in cents everywhere else.',
+      },
       { key: 'store.lowStockThreshold', label: 'Default low-stock threshold', type: 'number' },
       { key: 'store.orderPrefix', label: 'Order number prefix', type: 'text' },
       { key: 'store.supportEmail', label: 'Support email', type: 'email' },
@@ -42,7 +47,12 @@ const GROUPS = [
     title: 'Checkout and tax',
     description: 'Applied at checkout. Changing these changes what customers pay.',
     fields: [
-      { key: 'checkout.taxProvider', label: 'Tax provider', type: 'text', hint: 'taxjar or estimated' },
+      {
+        key: 'checkout.taxProvider',
+        label: 'Tax provider',
+        type: 'text',
+        hint: 'taxjar or estimated',
+      },
       { key: 'checkout.reservationMinutes', label: 'Stock reservation (minutes)', type: 'number' },
       { key: 'checkout.guestCheckout', label: 'Allow guest checkout (on/off)', type: 'text' },
     ],
@@ -66,10 +76,18 @@ export default async function AdminSettingsPage() {
   const canWrite = can(user, PERMISSIONS.settingsWrite);
 
   const integrations = [
-    { label: 'Payments (Stripe)', env: 'STRIPE_SECRET_KEY', set: Boolean(process.env.STRIPE_SECRET_KEY) },
+    {
+      label: 'Payments (Klarna)',
+      env: 'STRIPE_SECRET_KEY',
+      set: Boolean(process.env.STRIPE_SECRET_KEY),
+    },
     { label: 'Email (Resend)', env: 'RESEND_API_KEY', set: Boolean(process.env.RESEND_API_KEY) },
     { label: 'Tax (TaxJar)', env: 'TAXJAR_API_KEY', set: Boolean(process.env.TAXJAR_API_KEY) },
-    { label: 'Media (Cloudinary)', env: 'CLOUDINARY_API_KEY', set: Boolean(process.env.CLOUDINARY_API_KEY) },
+    {
+      label: 'Media (Cloudinary)',
+      env: 'CLOUDINARY_API_KEY',
+      set: Boolean(process.env.CLOUDINARY_API_KEY),
+    },
     { label: 'Database', env: 'DATABASE_URL', set: Boolean(process.env.DATABASE_URL) },
   ];
 
@@ -90,10 +108,7 @@ export default async function AdminSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {group.fields.map((field) => (
                   <div key={field.key}>
-                    <label
-                      htmlFor={field.key}
-                      className="mb-1.5 block text-body-sm font-medium"
-                    >
+                    <label htmlFor={field.key} className="mb-1.5 block text-body-sm font-medium">
                       {field.label}
                     </label>
                     <input
@@ -108,7 +123,7 @@ export default async function AdminSettingsPage() {
                       className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-body-sm disabled:opacity-60"
                     />
                     {'hint' in field && field.hint ? (
-                      <p className="mt-1 text-body-xs text-foreground-subtle">{field.hint}</p>
+                      <p className="text-body-xs mt-1 text-foreground-subtle">{field.hint}</p>
                     ) : null}
                   </div>
                 ))}
@@ -130,16 +145,13 @@ export default async function AdminSettingsPage() {
           </AdminCard>
         ))}
 
-        <AdminCard
-          title="Integrations"
-          description="Configured in the environment, never here."
-        >
+        <AdminCard title="Integrations" description="Configured in the environment, never here.">
           <dl className="space-y-3 text-body-sm">
             {integrations.map((integration) => (
               <div key={integration.env} className="flex items-center justify-between gap-3">
                 <dt>
                   {integration.label}
-                  <span className="block font-mono text-body-xs text-foreground-subtle">
+                  <span className="text-body-xs block font-mono text-foreground-subtle">
                     {integration.env}
                   </span>
                 </dt>
@@ -153,7 +165,7 @@ export default async function AdminSettingsPage() {
             ))}
           </dl>
 
-          <p className="mt-4 text-body-xs text-foreground-subtle">
+          <p className="text-body-xs mt-4 text-foreground-subtle">
             Only whether a key is present is shown, never the key. The settings table is readable by
             every process holding a database connection and appears in every backup — a secret in it
             is a secret in all of those.
@@ -163,7 +175,7 @@ export default async function AdminSettingsPage() {
         <AdminCard title="Legal pages">
           <p className="text-body-sm text-foreground-muted">
             Terms and Privacy are managed in code, in{' '}
-            <code className="rounded bg-surface-muted px-1 text-body-xs">
+            <code className="text-body-xs rounded bg-surface-muted px-1">
               src/features/legal/documents.ts
             </code>
             , because they describe what the system actually does and are checked against it. Both

@@ -133,7 +133,11 @@ export async function deleteRole(roleId: string): Promise<void> {
  * first question asked after something goes wrong, and it has no answer unless
  * it was written down at the moment of granting.
  */
-export async function assignRole(userId: string, roleId: string, assignedBy: string): Promise<void> {
+export async function assignRole(
+  userId: string,
+  roleId: string,
+  assignedBy: string,
+): Promise<void> {
   await prisma.userRole.upsert({
     where: { userId_roleId: { userId, roleId } },
     update: {},

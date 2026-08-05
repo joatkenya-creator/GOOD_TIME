@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { Prisma } from '@/generated/prisma/client';
 import type { JobStatus } from '@/generated/prisma/enums';
+import { publish, publishBatch } from '@/lib/jobs/cf-queue';
 import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 
@@ -23,6 +24,15 @@ import { prisma } from '@/lib/prisma';
  * the day the numbers change, that is where SQS or BullMQ slots in without
  * touching a single handler.
  *
+ * ## Where Cloudflare Queues fits
+ *
+ * On top, as delivery only. `enqueue` writes the row and then publishes the job
+ * *id* to a Cloudflare Queue, whose consumer claims and runs it within a second
+ * or two. Postgres remains the ledger — dedupe, retries, dead-letter, the admin
+ * screen, transactional enqueue — and the queue is a latency optimisation that
+ * is allowed to fail. Lose every message and the cron drain still runs
+ * everything a minute later. See `lib/jobs/cf-queue.ts`.
+ *
  * ## The failure model
  *
  * Retries are exponential with jitter. A job that exhausts `maxAttempts`
@@ -36,7 +46,10 @@ import { prisma } from '@/lib/prisma';
  */
 
 /** Handlers register here; the worker looks them up by kind. */
-export type JobHandler = (payload: Record<string, unknown>, context: JobContext) => Promise<unknown>;
+export type JobHandler = (
+  payload: Record<string, unknown>,
+  context: JobContext,
+) => Promise<unknown>;
 
 export interface JobContext {
   jobId: string;
@@ -95,6 +108,7 @@ export async function enqueue(
 
   if (!input.dedupeKey) {
     const created = await tx.backgroundJob.create({ data, select: { id: true } });
+    await notify(created.id, input);
     return { id: created.id, deduped: false };
   }
 
@@ -128,11 +142,41 @@ export async function enqueue(
         finishedAt: null,
       },
     });
+    await notify(existing.id, input);
     return { id: existing.id, deduped: false };
   }
 
   const created = await tx.backgroundJob.create({ data, select: { id: true } });
+  await notify(created.id, input);
   return { id: created.id, deduped: false };
+}
+
+/**
+ * Nudges the Cloudflare Queue consumer to pick a job up now.
+ *
+ * Deliberately outside the caller's transaction and deliberately unable to
+ * fail: publishing inside the transaction would either block the commit on a
+ * network call or announce a job that then rolls back. A dropped message costs
+ * latency, never work — the cron drain is the floor.
+ *
+ * Jobs scheduled more than a minute out are not published at all. Cloudflare's
+ * delivery delay caps at twelve hours and `runAt` already handles the general
+ * case, so publishing them would only produce messages the consumer must
+ * repeatedly decline to claim.
+ */
+async function notify(jobId: string, input: EnqueueInput): Promise<void> {
+  const delayMs = (input.runAt?.getTime() ?? Date.now()) - Date.now();
+  if (delayMs > 60_000) return;
+
+  await publish(
+    { jobId, kind: input.kind },
+    {
+      // Email gets its own queue so a ten-thousand-row import cannot delay a
+      // password reset by twenty minutes.
+      queue: input.kind.startsWith('email.') ? 'email' : 'jobs',
+      ...(delayMs > 0 ? { delaySeconds: Math.ceil(delayMs / 1000) } : {}),
+    },
+  );
 }
 
 /** Enqueue many at once — used by bulk operations and the scheduler. */
@@ -152,7 +196,26 @@ export async function enqueueMany(inputs: EnqueueInput[]): Promise<number> {
     skipDuplicates: true,
   });
 
+  /*
+   * `createMany` does not return ids, and fetching them back for a bulk enqueue
+   * of ten thousand rows would double the write cost for a latency
+   * optimisation. Bulk work is throughput-bound rather than latency-bound, so
+   * these are left for the cron drain — which is exactly what it is for.
+   */
+  logger.debug('queue.bulk_enqueued', { count: result.count });
+
   return result.count;
+}
+
+/**
+ * Publishes already-queued jobs for immediate pickup.
+ *
+ * Used by the admin's "run now" and by the scheduler after it fires a batch,
+ * both of which know the ids and both of which want the work to start now
+ * rather than at the next sweep.
+ */
+export async function notifyQueued(jobs: { id: string; kind: string }[]): Promise<number> {
+  return publishBatch(jobs.map((job) => ({ jobId: job.id, kind: job.kind })));
 }
 
 interface ClaimedJob {
@@ -174,7 +237,13 @@ export async function claim(workerId: string, limit = 1): Promise<ClaimedJob[]> 
   const now = new Date();
 
   const rows = await prisma.$queryRaw<
-    { id: string; kind: string; payload: Record<string, unknown>; attempts: number; maxAttempts: number }[]
+    {
+      id: string;
+      kind: string;
+      payload: Record<string, unknown>;
+      attempts: number;
+      maxAttempts: number;
+    }[]
   >`
     UPDATE "background_jobs" AS j
     SET "status"    = 'RUNNING',
@@ -332,7 +401,7 @@ export async function runJob(job: ClaimedJob): Promise<'succeeded' | 'retry' | '
 
 /** Requeues a dead job — the "try that again" button in the admin. */
 export async function requeue(jobId: string): Promise<void> {
-  await prisma.backgroundJob.update({
+  const job = await prisma.backgroundJob.update({
     where: { id: jobId },
     data: {
       status: 'QUEUED',
@@ -343,7 +412,47 @@ export async function requeue(jobId: string): Promise<void> {
       lockedBy: null,
       finishedAt: null,
     },
+    select: { id: true, kind: true },
   });
+
+  // Someone is watching this one — they just clicked the button.
+  await publish({ jobId: job.id, kind: job.kind });
+}
+
+/**
+ * Claims one specific job, for the push path.
+ *
+ * The Cloudflare Queue consumer is handed a job id, not "whatever is next", so
+ * it needs a targeted claim. The `status = 'QUEUED'` predicate inside the
+ * UPDATE is what makes a duplicate delivery safe: the second attempt matches no
+ * rows and returns nothing, rather than running the job twice.
+ */
+export async function claimById(jobId: string, workerId: string): Promise<ClaimedJob | null> {
+  const now = new Date();
+
+  const rows = await prisma.$queryRaw<
+    {
+      id: string;
+      kind: string;
+      payload: Record<string, unknown>;
+      attempts: number;
+      maxAttempts: number;
+    }[]
+  >`
+    UPDATE "background_jobs" AS j
+    SET "status"    = 'RUNNING',
+        "lockedAt"  = ${now},
+        "lockedBy"  = ${workerId},
+        "startedAt" = COALESCE(j."startedAt", ${now}),
+        "attempts"  = j."attempts" + 1,
+        "updatedAt" = ${now}
+    WHERE j."id" = ${jobId}
+      AND j."status" = 'QUEUED'
+      AND j."runAt" <= ${now}
+    RETURNING j."id", j."kind", j."payload", j."attempts", j."maxAttempts"
+  `;
+
+  return rows[0] ?? null;
 }
 
 export async function cancel(jobId: string): Promise<void> {

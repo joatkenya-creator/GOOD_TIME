@@ -62,7 +62,7 @@ export default async function NewsletterConfirmPage({
         )}
       </div>
 
-      <h1 className="mt-5 text-h3 font-bold text-foreground">
+      <h1 className="text-h3 mt-5 font-bold text-foreground">
         {!ok
           ? 'That link is no longer valid'
           : unsubscribing

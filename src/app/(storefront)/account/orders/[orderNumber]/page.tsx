@@ -97,7 +97,9 @@ export default async function AccountOrderPage({
           ) : null}
 
           <Button asChild variant="ghost">
-            <Link href={`/order/${order.orderNumber}/receipt?email=${encodeURIComponent(order.email)}`}>
+            <Link
+              href={`/order/${order.orderNumber}/receipt?email=${encodeURIComponent(order.email)}`}
+            >
               <Printer aria-hidden="true" className="size-4" />
               Invoice
             </Link>

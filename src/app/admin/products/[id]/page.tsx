@@ -5,7 +5,11 @@ import { AdminCard, AdminPageHeader } from '@/components/admin/page-header';
 import { ProductEditor } from '@/components/admin/product-editor';
 import { PERMISSIONS } from '@/constants/permissions';
 import { formatDateTime } from '@/features/admin/query';
-import { archiveProductAction, duplicateProductAction, updateProductAction } from '@/server/actions/admin/products';
+import {
+  archiveProductAction,
+  duplicateProductAction,
+  updateProductAction,
+} from '@/server/actions/admin/products';
 import { requireAdminPermission } from '@/server/auth/admin';
 import { can } from '@/server/auth/session';
 import { describeChanges, listAudit } from '@/services/admin/audit.service';
@@ -130,7 +134,10 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
                       {entry.actor?.firstName ?? entry.actor?.email ?? 'System'}
                     </span>{' '}
                     <span className="text-foreground-muted">{entry.action.toLowerCase()}d it</span>
-                    <span className="text-foreground-subtle"> · {formatDateTime(entry.createdAt)}</span>
+                    <span className="text-foreground-subtle">
+                      {' '}
+                      · {formatDateTime(entry.createdAt)}
+                    </span>
                   </p>
                   {changes.length > 0 ? (
                     <ul className="mt-1 space-y-0.5">

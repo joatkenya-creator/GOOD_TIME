@@ -83,13 +83,26 @@ export default async function AdminAuditPage({
               className="h-10 rounded-lg border border-border bg-surface px-3 text-body-sm"
             >
               <option value="">All records</option>
-              {['Product', 'Order', 'User', 'Role', 'UserRole', 'Inventory', 'Category', 'Collection', 'Media', 'Page', 'Post', 'Redirect', 'Setting', 'Report'].map(
-                (entity) => (
-                  <option key={entity} value={entity}>
-                    {entity}
-                  </option>
-                ),
-              )}
+              {[
+                'Product',
+                'Order',
+                'User',
+                'Role',
+                'UserRole',
+                'Inventory',
+                'Category',
+                'Collection',
+                'Media',
+                'Page',
+                'Post',
+                'Redirect',
+                'Setting',
+                'Report',
+              ].map((entity) => (
+                <option key={entity} value={entity}>
+                  {entity}
+                </option>
+              ))}
             </select>
           </div>
         </ListToolbar>
@@ -113,15 +126,15 @@ export default async function AdminAuditPage({
                       <p className="text-body-sm">
                         <span className="font-medium">
                           {entry.actor
-                            ? ([entry.actor.firstName, entry.actor.lastName]
+                            ? [entry.actor.firstName, entry.actor.lastName]
                                 .filter(Boolean)
-                                .join(' ') || entry.actor.email)
+                                .join(' ') || entry.actor.email
                             : 'System'}
                         </span>{' '}
                         <span className="text-foreground-muted">
                           {entry.action.toLowerCase()}d {entry.entityType}
                         </span>{' '}
-                        <span className="font-mono text-body-xs text-foreground-subtle">
+                        <span className="text-body-xs font-mono text-foreground-subtle">
                           {entry.entityId}
                         </span>
                       </p>
@@ -154,7 +167,7 @@ export default async function AdminAuditPage({
                   </div>
 
                   {entry.ipAddress ? (
-                    <p className="mt-1 font-mono text-body-xs text-foreground-subtle">
+                    <p className="text-body-xs mt-1 font-mono text-foreground-subtle">
                       {entry.ipAddress}
                     </p>
                   ) : null}
@@ -179,8 +192,8 @@ export default async function AdminAuditPage({
           the worst place to keep them.
         </p>
         <p className="mt-2 text-body-sm text-foreground-muted">
-          Customer sign-ins are recorded separately, on each customer&rsquo;s own security page, because
-          they belong to the customer rather than to the store.
+          Customer sign-ins are recorded separately, on each customer&rsquo;s own security page,
+          because they belong to the customer rather than to the store.
         </p>
       </AdminCard>
     </>

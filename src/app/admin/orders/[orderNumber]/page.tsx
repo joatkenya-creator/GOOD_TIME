@@ -89,11 +89,19 @@ export default async function AdminOrderPage({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-body-sm">
                 <thead>
-                  <tr className="border-b border-border text-body-xs tracking-wide text-foreground-subtle uppercase">
-                    <th scope="col" className="py-2 pr-3">Item</th>
-                    <th scope="col" className="py-2 pr-3 text-right">Qty</th>
-                    <th scope="col" className="py-2 pr-3 text-right">Unit</th>
-                    <th scope="col" className="py-2 text-right">Total</th>
+                  <tr className="text-body-xs border-b border-border tracking-wide text-foreground-subtle uppercase">
+                    <th scope="col" className="py-2 pr-3">
+                      Item
+                    </th>
+                    <th scope="col" className="py-2 pr-3 text-right">
+                      Qty
+                    </th>
+                    <th scope="col" className="py-2 pr-3 text-right">
+                      Unit
+                    </th>
+                    <th scope="col" className="py-2 text-right">
+                      Total
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -101,7 +109,7 @@ export default async function AdminOrderPage({
                     <tr key={item.id} className="border-b border-border last:border-0">
                       <td className="py-2.5 pr-3">
                         <span className="block">{item.productName}</span>
-                        <span className="block text-body-xs text-foreground-subtle">
+                        <span className="text-body-xs block text-foreground-subtle">
                           {item.variantName} · {item.sku}
                         </span>
                       </td>
@@ -170,7 +178,10 @@ export default async function AdminOrderPage({
             <AdminCard title="Returns">
               <ul className="divide-y divide-border">
                 {order.returnRequests.map((request) => (
-                  <li key={request.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <li
+                    key={request.id}
+                    className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
+                  >
                     <div className="min-w-0">
                       <p className="text-body-sm font-medium">{request.returnNumber}</p>
                       <p className="text-body-xs text-foreground-subtle">
@@ -218,7 +229,7 @@ export default async function AdminOrderPage({
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm"
                 />
                 <div className="flex items-center justify-between gap-3">
-                  <label className="flex items-center gap-2 text-body-xs">
+                  <label className="text-body-xs flex items-center gap-2">
                     <input
                       type="checkbox"
                       name="isPinned"
@@ -228,7 +239,7 @@ export default async function AdminOrderPage({
                   </label>
                   <button
                     type="submit"
-                    className="rounded-lg bg-accent px-3 py-1.5 text-body-xs font-medium text-white hover:bg-accent-hover"
+                    className="text-body-xs rounded-lg bg-accent px-3 py-1.5 font-medium text-white hover:bg-accent-hover"
                   >
                     Add note
                   </button>
@@ -248,12 +259,12 @@ export default async function AdminOrderPage({
             {order.user ? (
               <Link
                 href={`/admin/customers/${order.user.id}`}
-                className="mt-2 inline-block text-body-xs font-medium text-accent-text hover:underline"
+                className="text-body-xs mt-2 inline-block font-medium text-accent-text hover:underline"
               >
                 View customer
               </Link>
             ) : (
-              <p className="mt-2 text-body-xs text-foreground-subtle">
+              <p className="text-body-xs mt-2 text-foreground-subtle">
                 Guest checkout — no account.
               </p>
             )}
@@ -261,7 +272,7 @@ export default async function AdminOrderPage({
 
           <AdminCard title="Shipping">
             {shipTo ? (
-              <address className="text-body-sm not-italic text-foreground-muted">
+              <address className="text-body-sm text-foreground-muted not-italic">
                 {seePii ? (
                   <>
                     <span className="block">
@@ -280,7 +291,7 @@ export default async function AdminOrderPage({
                 ) : (
                   <>
                     <span className="block">{maskAddress(shipTo, false)}</span>
-                    <span className="mt-1 block text-body-xs text-foreground-subtle">
+                    <span className="text-body-xs mt-1 block text-foreground-subtle">
                       Full address hidden — needs the customer PII permission.
                     </span>
                   </>
@@ -291,11 +302,11 @@ export default async function AdminOrderPage({
             )}
 
             {order.shippingMethod ? (
-              <p className="mt-3 text-body-xs text-foreground-subtle">{order.shippingMethod}</p>
+              <p className="text-body-xs mt-3 text-foreground-subtle">{order.shippingMethod}</p>
             ) : null}
 
             {order.shipments[0] ? (
-              <p className="mt-1 text-body-xs">
+              <p className="text-body-xs mt-1">
                 {order.shipments[0].carrier}
                 {order.shipments[0].trackingNumber ? (
                   <>
@@ -329,7 +340,10 @@ export default async function AdminOrderPage({
                   that claims to be in transit and a timeline that cannot say
                   where — which is the exact moment they contact support.
                 */
-                <form action={fulfilOrderAction} className="space-y-2 rounded-lg border border-border p-3">
+                <form
+                  action={fulfilOrderAction}
+                  className="space-y-2 rounded-lg border border-border p-3"
+                >
                   <p className="text-body-xs font-medium">Fulfil this order</p>
                   <input type="hidden" name="orderId" value={order.id} />
 
@@ -340,7 +354,7 @@ export default async function AdminOrderPage({
                     <select
                       id="carrier"
                       name="carrier"
-                      className="h-9 flex-1 rounded-lg border border-border bg-surface px-2 text-body-xs"
+                      className="text-body-xs h-9 flex-1 rounded-lg border border-border bg-surface px-2"
                     >
                       {CARRIERS.map((carrier) => (
                         <option key={carrier.value} value={carrier.value}>
@@ -356,7 +370,7 @@ export default async function AdminOrderPage({
                       id="service"
                       name="service"
                       placeholder="Ground"
-                      className="h-9 w-24 rounded-lg border border-border bg-surface px-2 text-body-xs"
+                      className="text-body-xs h-9 w-24 rounded-lg border border-border bg-surface px-2"
                     />
                   </div>
 
@@ -367,7 +381,7 @@ export default async function AdminOrderPage({
                     id="tracking"
                     name="trackingNumber"
                     placeholder="Tracking number (optional)"
-                    className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                    className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
                   />
 
                   <button
@@ -412,11 +426,11 @@ export default async function AdminOrderPage({
               </Link>
 
               {!canRefund ? (
-                <p className="pt-1 text-body-xs text-foreground-subtle">
+                <p className="text-body-xs pt-1 text-foreground-subtle">
                   Refunds need the refund permission, which this role does not hold.
                 </p>
               ) : (
-                <p className="pt-1 text-body-xs text-foreground-subtle">
+                <p className="text-body-xs pt-1 text-foreground-subtle">
                   Refunds are issued from the payment provider and reconciled here — see
                   docs/admin.md.
                 </p>

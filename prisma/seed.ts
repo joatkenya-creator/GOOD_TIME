@@ -1,7 +1,12 @@
 import 'dotenv/config';
 
 import { createScriptClient } from './client';
-import { PERMISSIONS, ROLE_DEFINITIONS, ROLES } from '../src/constants/permissions';
+import {
+  PERMISSION_GROUPS,
+  PERMISSIONS,
+  ROLE_DEFINITIONS,
+  ROLES,
+} from '../src/constants/permissions';
 
 /**
  * Seed.
@@ -25,37 +30,58 @@ const SETTINGS: { key: string; group: string; value: unknown }[] = [
   { key: 'reviews.verifiedPurchaseOnly', group: 'reviews', value: false },
 ];
 
+/**
+ * Creates every permission the application defines.
+ *
+ * ## Derived, never listed
+ *
+ * This used to hold its own hardcoded map of seventeen permissions. The
+ * canonical list lives in `PERMISSION_GROUPS`, and the two drifted: phases six
+ * and seven added `jobs:read`, `jobs:manage`, `import:read`, `import:rollback`,
+ * `import:template`, `search:manage` and `marketing:manage` to the constants and
+ * to `ROLE_DEFINITIONS`, but not here.
+ *
+ * The result was not a crash. `seedRoles` connects only the permissions this
+ * function created, so the roles were seeded *successfully* while silently
+ * missing seven grants — and `/admin/jobs`, `/admin/imports`, `/admin/search`
+ * and `/admin/marketing` answered "Not permitted" to every user in the system,
+ * including SUPER_ADMIN. Screens that were built, tested and documented were
+ * unreachable, and nothing anywhere reported an error.
+ *
+ * Deriving from `PERMISSION_GROUPS` makes that class of drift impossible: a
+ * permission that exists in the constants is seeded, and one that does not is
+ * not a permission.
+ */
 async function seedPermissions(): Promise<Map<string, string>> {
-  const descriptions: Record<string, string> = {
-    [PERMISSIONS.productRead]: 'View products in the admin',
-    [PERMISSIONS.productWrite]: 'Create and edit products',
-    [PERMISSIONS.productDelete]: 'Archive or delete products',
-    [PERMISSIONS.orderRead]: 'View orders',
-    [PERMISSIONS.orderWrite]: 'Edit and fulfil orders',
-    [PERMISSIONS.orderRefund]: 'Issue refunds',
-    [PERMISSIONS.customerRead]: 'View customer records',
-    [PERMISSIONS.customerWrite]: 'Edit customer records',
-    [PERMISSIONS.contentRead]: 'View pages and posts',
-    [PERMISSIONS.contentWrite]: 'Publish pages and posts',
-    [PERMISSIONS.reviewModerate]: 'Approve or reject reviews',
-    [PERMISSIONS.couponWrite]: 'Create and edit coupons',
-    [PERMISSIONS.importRun]: 'Run catalogue imports',
-    [PERMISSIONS.settingsWrite]: 'Change store settings',
-    [PERMISSIONS.analyticsRead]: 'View analytics dashboards',
-    [PERMISSIONS.auditRead]: 'Read the audit log',
-    [PERMISSIONS.roleAssign]: 'Assign roles to users',
-  };
-
   const ids = new Map<string, string>();
 
-  for (const [key, description] of Object.entries(descriptions)) {
-    const permission = await prisma.permission.upsert({
-      where: { key },
-      update: { description },
-      create: { key, description },
-      select: { id: true, key: true },
-    });
-    ids.set(permission.key, permission.id);
+  for (const group of PERMISSION_GROUPS) {
+    for (const definition of group.permissions) {
+      const permission = await prisma.permission.upsert({
+        where: { key: definition.key },
+        update: { description: definition.label },
+        create: { key: definition.key, description: definition.label },
+        select: { id: true, key: true },
+      });
+      ids.set(permission.key, permission.id);
+    }
+  }
+
+  /*
+   * Fails loudly rather than seeding a half-configured system.
+   *
+   * `PERMISSIONS` is what the application checks against at runtime;
+   * `PERMISSION_GROUPS` is what the admin renders and what this function
+   * seeds. If a key is added to the first and not the second, the check will
+   * refuse everyone forever — exactly the bug above. Better to fail the seed.
+   */
+  const ungrouped = (Object.values(PERMISSIONS) as string[]).filter((key) => !ids.has(key));
+
+  if (ungrouped.length > 0) {
+    throw new Error(
+      `These permissions are defined in PERMISSIONS but missing from PERMISSION_GROUPS, ` +
+        `so nothing would ever grant them: ${ungrouped.join(', ')}`,
+    );
   }
 
   return ids;

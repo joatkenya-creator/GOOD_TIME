@@ -45,19 +45,19 @@ export default async function AdminMarketingPage() {
           </div>
           <div>
             <dt className="text-body-xs text-foreground-subtle">No image</dt>
-            <dd className="text-display-xs font-semibold tabular-nums text-warning-700">
+            <dd className="text-display-xs font-semibold text-warning-700 tabular-nums">
               {feed.skippedNoImage}
             </dd>
           </div>
           <div>
             <dt className="text-body-xs text-foreground-subtle">No description</dt>
-            <dd className="text-display-xs font-semibold tabular-nums text-warning-700">
+            <dd className="text-display-xs font-semibold text-warning-700 tabular-nums">
               {feed.skippedNoDescription}
             </dd>
           </div>
           <div>
             <dt className="text-body-xs text-foreground-subtle">No price</dt>
-            <dd className="text-display-xs font-semibold tabular-nums text-warning-700">
+            <dd className="text-display-xs font-semibold text-warning-700 tabular-nums">
               {feed.skippedNoPrice}
             </dd>
           </div>
@@ -73,10 +73,11 @@ export default async function AdminMarketingPage() {
           buries the items that genuinely need fixing.
         </p>
 
-        <p className="mt-2 text-body-xs text-foreground-subtle">
-          Every item is submitted with <code className="rounded bg-surface-muted px-1">adult: yes</code>{' '}
-          unless a product is explicitly marked otherwise. Getting that wrong risks the whole
-          Merchant account, not one listing.
+        <p className="text-body-xs mt-2 text-foreground-subtle">
+          Every item is submitted with{' '}
+          <code className="rounded bg-surface-muted px-1">adult: yes</code> unless a product is
+          explicitly marked otherwise. Getting that wrong risks the whole Merchant account, not one
+          listing.
         </p>
       </AdminCard>
 
@@ -113,8 +114,12 @@ export default async function AdminMarketingPage() {
                         id={`id-${integration.provider}`}
                         name="publicId"
                         defaultValue={stored?.publicId ?? ''}
-                        placeholder={integration.idPattern ? String(integration.idPattern.source).replace(/[\^$\\]/g, '') : ''}
-                        className="h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono text-body-xs"
+                        placeholder={
+                          integration.idPattern
+                            ? String(integration.idPattern.source).replace(/[\^$\\]/g, '')
+                            : ''
+                        }
+                        className="text-body-xs h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono"
                       />
                     </div>
 
@@ -146,7 +151,7 @@ export default async function AdminMarketingPage() {
                     />
                     <span>
                       Wait for consent
-                      <span className="block text-body-xs text-foreground-subtle">
+                      <span className="text-body-xs block text-foreground-subtle">
                         {integration.consentByDefault
                           ? 'This tag sends browsing data to a third party. Turning this off is a decision to make with legal advice.'
                           : 'This one sets no cookies and identifies nobody, so it can load immediately.'}
@@ -165,7 +170,7 @@ export default async function AdminMarketingPage() {
                 <dl className="space-y-2 text-body-sm">
                   <div className="flex justify-between gap-3">
                     <dt className="text-foreground-muted">{integration.idLabel}</dt>
-                    <dd className="font-mono text-body-xs">{stored?.publicId ?? 'Not set'}</dd>
+                    <dd className="text-body-xs font-mono">{stored?.publicId ?? 'Not set'}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-foreground-muted">Consent</dt>

@@ -5,7 +5,13 @@ import { DataTable, StatusPill, TablePagination } from '@/components/admin/data-
 import { BulkBar, ListToolbar } from '@/components/admin/list-toolbar';
 import { AdminPageHeader } from '@/components/admin/page-header';
 import { PERMISSIONS } from '@/constants/permissions';
-import { type RawSearchParams, buildListHref, formatDate, formatMoney, parseListParams } from '@/features/admin/query';
+import {
+  type RawSearchParams,
+  buildListHref,
+  formatDate,
+  formatMoney,
+  parseListParams,
+} from '@/features/admin/query';
 import { displayProductStatus } from '@/features/admin/status';
 import { bulkProductAction } from '@/server/actions/admin/products';
 import { requireAdminPermission } from '@/server/auth/admin';
@@ -61,7 +67,7 @@ export default async function AdminProductsPage({
       cell: (row: AdminProductRow) => (
         <span className="block">
           <span className="block truncate">{row.name}</span>
-          <span className="block truncate text-body-xs font-normal text-foreground-subtle">
+          <span className="text-body-xs block truncate font-normal text-foreground-subtle">
             {row.sku ?? row.slug}
             {row.variantCount > 1 ? ` · ${row.variantCount} variants` : ''}
           </span>
@@ -194,7 +200,9 @@ export default async function AdminProductsPage({
             getKey={(row) => row.id}
             getHref={(row) => `/admin/products/${row.id}`}
             sort={{ key: params.sort, direction: params.direction }}
-            buildSortHref={(key, direction) => buildListHref(BASE, params, { sort: key, direction })}
+            buildSortHref={(key, direction) =>
+              buildListHref(BASE, params, { sort: key, direction })
+            }
             selection={canBulk ? { name: 'selected' } : undefined}
             empty={
               <div>

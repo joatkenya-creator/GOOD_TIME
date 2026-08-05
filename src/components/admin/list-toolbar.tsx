@@ -46,7 +46,7 @@ export function ListToolbar({
               >
                 {status.label}
                 {status.count !== undefined ? (
-                  <span className="ml-1.5 text-body-xs text-foreground-subtle">{status.count}</span>
+                  <span className="text-body-xs ml-1.5 text-foreground-subtle">{status.count}</span>
                 ) : null}
               </Link>
             );
@@ -78,7 +78,9 @@ export function ListToolbar({
         */}
         {params.status ? <input type="hidden" name="status" value={params.status} /> : null}
         {params.sort ? <input type="hidden" name="sort" value={params.sort} /> : null}
-        {params.direction ? <input type="hidden" name="direction" value={params.direction} /> : null}
+        {params.direction ? (
+          <input type="hidden" name="direction" value={params.direction} />
+        ) : null}
 
         <button
           type="submit"
@@ -125,9 +127,7 @@ export function BulkBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-muted px-4 py-3">
-      <p className="text-body-xs text-foreground-subtle">
-        Tick rows, then apply:
-      </p>
+      <p className="text-body-xs text-foreground-subtle">Tick rows, then apply:</p>
 
       {actions
         .filter((action) => (action.danger ? canDelete : true))
@@ -138,7 +138,7 @@ export function BulkBar({
             name="action"
             value={action.value}
             className={cn(
-              'rounded-lg border px-3 py-1.5 text-body-xs font-medium',
+              'text-body-xs rounded-lg border px-3 py-1.5 font-medium',
               action.danger
                 ? 'border-danger-700/30 text-danger-700 hover:bg-danger-50'
                 : 'border-border bg-surface hover:bg-surface-muted',
@@ -157,7 +157,7 @@ export function BulkBar({
             id="bulk-category"
             name="categoryId"
             defaultValue=""
-            className="h-8 rounded-lg border border-border bg-surface px-2 text-body-xs"
+            className="text-body-xs h-8 rounded-lg border border-border bg-surface px-2"
           >
             <option value="">Assign category…</option>
             {categories.map((category) => (
@@ -170,7 +170,7 @@ export function BulkBar({
             type="submit"
             name="action"
             value="category"
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-body-xs font-medium hover:bg-surface-muted"
+            className="text-body-xs rounded-lg border border-border bg-surface px-3 py-1.5 font-medium hover:bg-surface-muted"
           >
             Assign
           </button>
@@ -185,7 +185,7 @@ export function BulkBar({
           name="priceMode"
           defaultValue="percent"
           aria-label="Price change type"
-          className="h-8 rounded-lg border border-border bg-surface px-2 text-body-xs"
+          className="text-body-xs h-8 rounded-lg border border-border bg-surface px-2"
         >
           <option value="percent">%</option>
           <option value="fixed">$</option>
@@ -196,13 +196,13 @@ export function BulkBar({
           name="priceAmount"
           step="0.01"
           placeholder="0"
-          className="h-8 w-20 rounded-lg border border-border bg-surface px-2 text-body-xs"
+          className="text-body-xs h-8 w-20 rounded-lg border border-border bg-surface px-2"
         />
         <button
           type="submit"
           name="action"
           value="price"
-          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-body-xs font-medium hover:bg-surface-muted"
+          className="text-body-xs rounded-lg border border-border bg-surface px-3 py-1.5 font-medium hover:bg-surface-muted"
         >
           Adjust prices
         </button>

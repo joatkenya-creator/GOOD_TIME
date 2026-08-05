@@ -1,19 +1,28 @@
 import 'server-only';
 
+import { Redis } from '@upstash/redis';
+
+import { env, integrations } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
 /**
  * The application cache.
  *
- * ## Redis is optional, not assumed
+ * ## Upstash over the wire, memory as the fallback
  *
- * `REDIS_URL` set → Redis. Unset → an in-process LRU. Every call site is
- * identical either way, so a single instance runs with no extra service and a
- * fleet gets a shared cache by setting one variable.
+ * Upstash speaks HTTP, not the Redis wire protocol, and that is the reason it
+ * is here rather than a `redis://` client: the Cloudflare Workers runtime has
+ * no raw TCP sockets, so `ioredis` cannot open a connection from the edge at
+ * all. A REST call is the only shape that works in every place this code runs —
+ * a local `next dev`, a CI job, and an isolate in Sydney.
  *
- * The fallback is a real cache, not a stub. Most of what gets cached here —
- * a facet count, a synonym table, a rendered feed — is per-instance derivable
- * and cheap to recompute, so a cold local cache costs a query, not correctness.
+ * `UPSTASH_REDIS_REST_URL` set → Upstash. Unset → an in-process LRU. Every call
+ * site is identical either way, so a local clone runs with no extra service and
+ * a fleet gets a shared cache by setting two variables.
+ *
+ * The fallback is a real cache, not a stub. Most of what gets cached here — a
+ * facet count, a synonym table, a rendered feed — is per-instance derivable and
+ * cheap to recompute, so a cold local cache costs a query, not correctness.
  * What it deliberately does *not* do is pretend to be shared: `invalidate` on
  * one instance cannot clear another's memory, which is exactly why the entries
  * carry short TTLs and why anything correctness-critical uses the database.
@@ -37,48 +46,28 @@ const MAX_ENTRIES = 5000;
 
 const memory = new Map<string, Entry>();
 
-/** Lazily-created Redis client, if the dependency and the URL are both present. */
-let redis: RedisLike | null = null;
-let redisChecked = false;
+/** Lazily created: constructing it eagerly would run on every cold start. */
+let redis: Redis | null = null;
 
-/** The three commands used here, so any client library satisfies it. */
-interface RedisLike {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, mode: 'EX', seconds: number): Promise<unknown>;
-  del(...keys: string[]): Promise<unknown>;
-  keys(pattern: string): Promise<string[]>;
-  sadd(key: string, ...members: string[]): Promise<unknown>;
-  smembers(key: string): Promise<string[]>;
-}
+function client(): Redis | null {
+  if (!integrations.upstash) return null;
 
-async function client(): Promise<RedisLike | null> {
-  if (redisChecked) return redis;
-  redisChecked = true;
-
-  const url = process.env.REDIS_URL;
-  if (!url) return null;
-
-  try {
+  redis ??= new Redis({
+    url: env.UPSTASH_REDIS_REST_URL!,
+    token: env.UPSTASH_REDIS_REST_TOKEN!,
     /*
-     * Imported by name through a variable so bundlers do not try to resolve it
-     * at build time. Redis is an optional peer: the platform must build and run
-     * without it installed, and a static import would make it mandatory.
+     * Two retries with backoff. A cache is not worth a long stall on the
+     * request path — past this we fall through to recomputing, which is slower
+     * than a hit and faster than waiting for a service that is down.
      */
-    const moduleName = 'ioredis';
-    const { default: Redis } = (await import(/* webpackIgnore: true */ moduleName)) as {
-      default: new (url: string, options?: Record<string, unknown>) => RedisLike;
-    };
-
-    redis = new Redis(url, { maxRetriesPerRequest: 2, lazyConnect: false });
-    logger.info('cache.redis_connected');
-  } catch (error) {
-    // Falling back is correct: a cache that cannot connect must not take the
-    // application down with it.
-    logger.warn('cache.redis_unavailable', {
-      reason: error instanceof Error ? error.message : String(error),
-    });
-    redis = null;
-  }
+    retry: { retries: 2, backoff: (attempt) => Math.min(2 ** attempt * 50, 500) },
+    /*
+     * Upstash's client JSON-parses response bodies by default and hands back
+     * whatever it guesses. We store JSON strings ourselves so the round-trip is
+     * exactly what was written — no silent number/string coercion on read.
+     */
+    automaticDeserialization: false,
+  });
 
   return redis;
 }
@@ -94,12 +83,12 @@ function evictIfFull(): void {
 }
 
 export async function get<T>(key: string): Promise<T | null> {
-  const store = await client();
+  const store = client();
 
   if (store) {
     try {
-      const raw = await store.get(key);
-      return raw === null ? null : (JSON.parse(raw) as T);
+      const raw = await store.get<string>(key);
+      return raw == null ? null : (JSON.parse(raw) as T);
     } catch (error) {
       logger.warn('cache.get_failed', { key, reason: String(error) });
       return null;
@@ -123,14 +112,32 @@ export async function set(
   ttlSeconds = 60,
   tags: string[] = [],
 ): Promise<void> {
-  const store = await client();
+  const store = client();
 
   if (store) {
     try {
-      await store.set(key, JSON.stringify(value), 'EX', ttlSeconds);
-      // Tag membership lives in a set per tag, so invalidation is one lookup
-      // rather than a `KEYS *` scan across the whole keyspace.
-      for (const tag of tags) await store.sadd(`tag:${tag}`, key);
+      /*
+       * One pipeline, not N round trips.
+       *
+       * Every command here is an HTTP request on its own, and a product page
+       * writing four tagged keys would otherwise pay four times the latency.
+       * Tag membership lives in a set per tag so invalidation is one lookup
+       * rather than a `SCAN` across the whole keyspace.
+       *
+       * The tag sets get a TTL of their own — a generous multiple of the
+       * entry's — because without one they accumulate dead key names forever
+       * and eventually a single `invalidate` deletes ten thousand keys that
+       * expired last month.
+       */
+      const pipeline = store.pipeline();
+      pipeline.set(key, JSON.stringify(value), { ex: ttlSeconds });
+
+      for (const tag of tags) {
+        pipeline.sadd(`tag:${tag}`, key);
+        pipeline.expire(`tag:${tag}`, Math.max(ttlSeconds * 4, 3600));
+      }
+
+      await pipeline.exec();
     } catch (error) {
       logger.warn('cache.set_failed', { key, reason: String(error) });
     }
@@ -157,7 +164,7 @@ export async function remember<T>(
 }
 
 export async function del(key: string): Promise<void> {
-  const store = await client();
+  const store = client();
 
   if (store) {
     await store.del(key).catch(() => undefined);
@@ -169,14 +176,15 @@ export async function del(key: string): Promise<void> {
 
 /** Drops everything carrying a tag. */
 export async function invalidate(tag: string): Promise<number> {
-  const store = await client();
+  const store = client();
 
   if (store) {
     try {
-      const keys = await store.smembers(`tag:${tag}`);
-      if (keys.length > 0) await store.del(...keys);
+      const members = await store.smembers<string[]>(`tag:${tag}`);
+      // `del` with no arguments is an error, not a no-op.
+      if (members.length > 0) await store.del(...members);
       await store.del(`tag:${tag}`);
-      return keys.length;
+      return members.length;
     } catch (error) {
       logger.warn('cache.invalidate_failed', { tag, reason: String(error) });
       return 0;
@@ -199,21 +207,68 @@ export async function clear(): Promise<void> {
 }
 
 export interface CacheStatus {
-  driver: 'redis' | 'memory';
+  driver: 'upstash' | 'memory';
   entries: number | null;
   /** Present only for the in-memory driver, where the ceiling is real. */
   maxEntries: number | null;
+  /** Round-trip to the cache, in ms. `null` for the in-process driver. */
+  latencyMs: number | null;
+  reachable: boolean;
 }
 
 export async function status(): Promise<CacheStatus> {
-  const store = await client();
+  const store = client();
 
-  return store
-    ? { driver: 'redis', entries: null, maxEntries: null }
-    : { driver: 'memory', entries: memory.size, maxEntries: MAX_ENTRIES };
+  if (!store) {
+    return {
+      driver: 'memory',
+      entries: memory.size,
+      maxEntries: MAX_ENTRIES,
+      latencyMs: null,
+      reachable: true,
+    };
+  }
+
+  const startedAt = Date.now();
+
+  try {
+    await store.ping();
+    return {
+      driver: 'upstash',
+      entries: null,
+      maxEntries: null,
+      latencyMs: Date.now() - startedAt,
+      reachable: true,
+    };
+  } catch {
+    return {
+      driver: 'upstash',
+      entries: null,
+      maxEntries: null,
+      latencyMs: Date.now() - startedAt,
+      reachable: false,
+    };
+  }
 }
 
-/** Namespaced key builders, so two features cannot collide by accident. */
+/**
+ * Namespaced key builders, so two features cannot collide by accident.
+ *
+ * ## TTLs
+ *
+ * The value is not encoded here because the right TTL depends on what the
+ * caller is doing, but the house rules are:
+ *
+ *   - **Search and facets: 60s.** Derived, cheap to recompute, and a stale
+ *     facet count is invisible to a customer.
+ *   - **Product cards: 300s, tagged.** Invalidated by name on every write, so
+ *     the TTL is only a backstop against a missed invalidation.
+ *   - **Settings and marketing tags: 300s.** Changed by hand, read on every
+ *     render; a merchant flipping a pixel on should see it within a coffee.
+ *   - **Feeds: 3600s.** Regenerated by a job, consumed by a crawler, and
+ *     nobody is waiting on it.
+ *   - **Sessions: the session's own lifetime.** Never longer.
+ */
 export const keys = {
   facets: (categoryId: string) => `facets:${categoryId}`,
   search: (term: string, filters: string) => `search:${term}:${filters}`,
@@ -223,4 +278,17 @@ export const keys = {
   merchantFeed: () => 'feed:merchant',
   settings: () => 'settings:all',
   marketing: () => 'marketing:integrations',
+  session: (sessionId: string) => `session:${sessionId}`,
+  apiResponse: (route: string, fingerprint: string) => `api:${route}:${fingerprint}`,
 };
+
+/** Recommended TTLs, so the numbers live in one place rather than thirty. */
+export const TTL = {
+  search: 60,
+  facets: 60,
+  productCard: 300,
+  settings: 300,
+  marketing: 300,
+  feed: 3600,
+  apiResponse: 30,
+} as const;

@@ -34,7 +34,7 @@ export function ProductRail({
       <div className="flex items-baseline justify-between gap-4">
         <h2
           id={headingId}
-          className="flex items-center gap-2 text-h5 font-semibold text-foreground"
+          className="text-h5 flex items-center gap-2 font-semibold text-foreground"
         >
           {icon ? <span className="text-foreground-subtle">{icon}</span> : null}
           {title}

@@ -30,7 +30,13 @@ vi.mock(import('@/lib/env'), async (importOriginal) => ({
 const { isConfigured, quote } = await import('@/services/tax/taxjar');
 
 const input = {
-  address: { country: 'US', state: 'CA', city: 'Los Angeles', postalCode: '90002', line1: '1 A St' },
+  address: {
+    country: 'US',
+    state: 'CA',
+    city: 'Los Angeles',
+    postalCode: '90002',
+    line1: '1 A St',
+  },
   taxableGoodsCents: 10_000,
   shippingCents: 599,
   lines: [{ unitPriceCents: 10_000, quantity: 1 }],
@@ -129,9 +135,7 @@ describe('quote', () => {
 
     const result = await quote(input);
 
-    expect(result.lines).toEqual([
-      { label: 'Sales tax', rateBasisPoints: 0, amountCents: 825 },
-    ]);
+    expect(result.lines).toEqual([{ label: 'Sales tax', rateBasisPoints: 0, amountCents: 825 }]);
     expect(result.totalCents).toBe(825);
   });
 

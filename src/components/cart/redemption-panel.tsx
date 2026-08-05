@@ -38,7 +38,7 @@ export function RedemptionPanel({ redemption }: { redemption: CartView['redempti
   }
 
   return (
-    <div className="rounded-xl border border-accent/30 bg-accent-subtle p-4">
+    <div className="bg-accent-subtle rounded-xl border border-accent/30 p-4">
       <h3 className="text-body-sm font-semibold text-foreground">Use your rewards</h3>
 
       <div className="mt-3 space-y-2">
@@ -55,7 +55,7 @@ export function RedemptionPanel({ redemption }: { redemption: CartView['redempti
                 <Wallet aria-hidden="true" className="size-4 text-accent-text" />
                 Store credit
               </span>
-              <span className="block text-body-xs text-foreground-muted">
+              <span className="text-body-xs block text-foreground-muted">
                 {formatPrice(available.storeCreditCents)} available
               </span>
             </span>
@@ -75,9 +75,8 @@ export function RedemptionPanel({ redemption }: { redemption: CartView['redempti
                 <Sparkles aria-hidden="true" className="size-4 text-accent-text" />
                 Points
               </span>
-              <span className="block text-body-xs text-foreground-muted">
-                {available.pointsBalance} points · worth{' '}
-                {formatPrice(available.pointsValueCents)}
+              <span className="text-body-xs block text-foreground-muted">
+                {available.pointsBalance} points · worth {formatPrice(available.pointsValueCents)}
               </span>
             </span>
           </label>
@@ -89,7 +88,7 @@ export function RedemptionPanel({ redemption }: { redemption: CartView['redempti
           <span className="font-medium text-accent-text">
             {formatPrice(redemption.totalCents)} off this order
           </span>
-          <span className="block text-body-xs text-foreground-muted">
+          <span className="text-body-xs block text-foreground-muted">
             {redemption.amountDueCents === 0
               ? 'Covered in full — nothing will be charged to a card.'
               : `${formatPrice(redemption.amountDueCents)} left to pay by card.`}
@@ -98,7 +97,7 @@ export function RedemptionPanel({ redemption }: { redemption: CartView['redempti
       ) : null}
 
       {!hasPoints && available.pointsBalance > 0 ? (
-        <p className="mt-3 text-body-xs text-foreground-subtle">
+        <p className="text-body-xs mt-3 text-foreground-subtle">
           You need {available.minimumPoints - available.pointsBalance} more points before you can
           spend them.
         </p>

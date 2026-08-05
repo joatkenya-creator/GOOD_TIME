@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { escapeJsonLd, normalizeText, safeRedirectPath, safeUrl } from '@/lib/security/sanitize';
-import { rateLimit } from '@/lib/security/rate-limit';
+import { clientIdentifier, rateLimit, rateLimitHeaders } from '@/lib/security/rate-limit';
 import { securityHeaders } from '@/lib/security/headers';
 
 import { isSameOrigin } from '@/lib/security/csrf';
@@ -140,33 +140,93 @@ describe('rateLimit', () => {
     vi.useRealTimers();
   });
 
-  it('allows up to the limit, then blocks', () => {
+  /*
+   * These exercise the in-process fallback, which is what runs when Upstash is
+   * unconfigured — the case in the test environment and on a fresh clone. The
+   * shared sliding-window path is Upstash's own Lua script and is covered by
+   * the integration suite against a real Redis; re-implementing an HTTP mock
+   * for it here would assert that the mock behaves like the mock.
+   */
+  it('allows up to the limit, then blocks', async () => {
     const key = `test:${Math.random()}`;
     const options = { limit: 3, windowSeconds: 60 };
 
-    expect(rateLimit(key, options).success).toBe(true);
-    expect(rateLimit(key, options).success).toBe(true);
-    const third = rateLimit(key, options);
+    expect((await rateLimit(key, options)).success).toBe(true);
+    expect((await rateLimit(key, options)).success).toBe(true);
+    const third = await rateLimit(key, options);
     expect(third.success).toBe(true);
     expect(third.remaining).toBe(0);
-    expect(rateLimit(key, options).success).toBe(false);
+    expect((await rateLimit(key, options)).success).toBe(false);
   });
 
-  it('resets once the window elapses', () => {
+  it('resets once the window elapses', async () => {
     const key = `test:${Math.random()}`;
     const options = { limit: 1, windowSeconds: 60 };
 
-    expect(rateLimit(key, options).success).toBe(true);
-    expect(rateLimit(key, options).success).toBe(false);
+    expect((await rateLimit(key, options)).success).toBe(true);
+    expect((await rateLimit(key, options)).success).toBe(false);
 
     vi.advanceTimersByTime(61_000);
-    expect(rateLimit(key, options).success).toBe(true);
+    expect((await rateLimit(key, options)).success).toBe(true);
   });
 
-  it('keeps separate buckets independent', () => {
+  it('keeps separate buckets independent', async () => {
     const options = { limit: 1, windowSeconds: 60 };
-    expect(rateLimit('bucket-a', options).success).toBe(true);
-    expect(rateLimit('bucket-b', options).success).toBe(true);
+    expect((await rateLimit('bucket-a', options)).success).toBe(true);
+    expect((await rateLimit('bucket-b', options)).success).toBe(true);
+  });
+
+  it('emits Retry-After only when the request was actually blocked', () => {
+    const allowed = rateLimitHeaders({
+      success: true,
+      limit: 10,
+      remaining: 9,
+      reset: Date.now() + 30_000,
+    });
+    const blocked = rateLimitHeaders({
+      success: false,
+      limit: 10,
+      remaining: 0,
+      reset: Date.now() + 30_000,
+    });
+
+    // A client that sees Retry-After on a 200 backs off for no reason.
+    expect(allowed['Retry-After']).toBeUndefined();
+    expect(Number(blocked['Retry-After'])).toBeGreaterThan(0);
+  });
+});
+
+describe('clientIdentifier', () => {
+  /*
+   * The whole point of this function: `x-forwarded-for` is a header anyone can
+   * send, and a limiter that trusts it is bypassed by adding one line to a
+   * request. `CF-Connecting-IP` is set by Cloudflare from the TCP peer.
+   */
+  it('prefers CF-Connecting-IP over a forged x-forwarded-for', () => {
+    const request = new Request('https://example.test', {
+      headers: {
+        'cf-connecting-ip': '203.0.113.5',
+        'x-forwarded-for': '10.0.0.1, 203.0.113.9',
+      },
+    });
+
+    expect(clientIdentifier(request)).toBe('203.0.113.5');
+  });
+
+  it('falls back to the first x-forwarded-for entry, never the last', () => {
+    // The last entry is whatever the client appended. The first is what the
+    // outermost trusted proxy wrote.
+    const request = new Request('https://example.test', {
+      headers: { 'x-forwarded-for': '198.51.100.7, 10.0.0.1' },
+    });
+
+    expect(clientIdentifier(request)).toBe('198.51.100.7');
+  });
+
+  it('never returns an empty identifier', () => {
+    // An empty key would put every anonymous request in one shared bucket,
+    // which is a self-inflicted denial of service.
+    expect(clientIdentifier(new Request('https://example.test'))).toBe('unknown');
   });
 });
 
@@ -210,9 +270,7 @@ describe('isSameOrigin', () => {
     // Next normalises `request.url`, so without the forwarded host this is the
     // case that wrongly 403s a legitimate same-origin request.
     expect(
-      isSameOrigin(
-        request('POST', { origin: 'http://127.0.0.1:3000', host: '127.0.0.1:3000' }),
-      ),
+      isSameOrigin(request('POST', { origin: 'http://127.0.0.1:3000', host: '127.0.0.1:3000' })),
     ).toBe(true);
 
     expect(
@@ -228,9 +286,7 @@ describe('isSameOrigin', () => {
 
   it('still rejects a foreign origin even when the host header is present', () => {
     expect(
-      isSameOrigin(
-        request('POST', { origin: 'https://evil.example', host: '127.0.0.1:3000' }),
-      ),
+      isSameOrigin(request('POST', { origin: 'https://evil.example', host: '127.0.0.1:3000' })),
     ).toBe(false);
   });
 

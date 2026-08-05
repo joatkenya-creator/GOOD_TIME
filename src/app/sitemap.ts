@@ -2,7 +2,8 @@ import type { MetadataRoute } from 'next';
 
 import { LEGAL_SLUGS } from '@/features/legal/documents';
 import { absoluteUrl } from '@/lib/seo/url';
-import { listCategoryPaths } from '@/services/category.service';
+import { listPageSlugs, listPostSlugs } from '@/services/blog.service';
+import { listBrands, listCategoryPaths, listCollections } from '@/services/category.service';
 import { listProductSlugs, productHref } from '@/services/product.service';
 
 /**
@@ -25,11 +26,26 @@ export const revalidate = 86_400; // 24h
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [categories, products] = await Promise.all([listCategoryPaths(), listProductSlugs()]);
+  const [categories, products, collections, brands, posts, cmsPages] = await Promise.all([
+    listCategoryPaths(),
+    listProductSlugs(),
+    listCollections(),
+    listBrands(),
+    listPostSlugs(),
+    listPageSlugs(),
+  ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: absoluteUrl('/'), lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: absoluteUrl('/shop'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    {
+      url: absoluteUrl('/collections'),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    { url: absoluteUrl('/brands'), lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
+    { url: absoluteUrl('/guides'), lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
 
     // Low priority, but listed: a shopper checking whether a retailer is
     // trustworthy often reads these before anything else.
@@ -42,12 +58,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   /*
-   * `/collections`, `/brands` and `/guides` used to be listed here, along with a
-   * URL per collection. None of those routes exist yet, so the sitemap was
-   * handing search engines a list of 404s and asking them to index it — which
-   * costs crawl budget and reads as a low-quality site. They go back in when the
-   * pages do, not before. `verify:quality` now fetches every URL the sitemap
-   * publishes, so the next one to drift fails the build instead of shipping.
+   * `/collections`, `/brands` and `/guides` are listed again.
+   *
+   * They were removed when the sitemap was found to be publishing a list of
+   * 404s — the routes did not exist, and asking a crawler to index them costs
+   * crawl budget and reads as a low-quality site. The note left behind said
+   * they go back in when the pages do. The pages exist now, so they do.
+   *
+   * `verify:quality` fetches every URL the sitemap publishes, so the next one
+   * to drift fails the build rather than shipping.
    */
 
   return [
@@ -67,6 +86,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: product.updatedAt,
       changeFrequency: 'weekly' as const,
       priority: 0.7,
+    })),
+
+    // Merchandised edits change more often than the categories they cut across.
+    ...collections.map((collection) => ({
+      url: absoluteUrl(`/collections/${collection.slug}`),
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    })),
+
+    ...brands.map((brand) => ({
+      url: absoluteUrl(`/brands/${brand.slug}`),
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    })),
+
+    /*
+     * Editorial earns the informational searches product pages cannot, so it is
+     * worth more than its transactional priority suggests.
+     */
+    ...posts.map((post) => ({
+      url: absoluteUrl(`/guides/${post.slug}`),
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
+
+    /*
+     * Admin-authored pages — shipping, returns, warranty and the rest of the
+     * footer. Low priority, but a shopper deciding whether a retailer is
+     * trustworthy often reads these before anything else.
+     */
+    ...cmsPages.map((page) => ({
+      url: absoluteUrl(`/pages/${page.slug}`),
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.3,
     })),
   ];
 }

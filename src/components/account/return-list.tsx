@@ -85,7 +85,7 @@ export function ReturnList({ returns }: { returns: ReturnRecord[] }) {
             ) : null}
 
             {request.trackingNumber ? (
-              <p className="mt-3 text-body-xs text-foreground-subtle">
+              <p className="text-body-xs mt-3 text-foreground-subtle">
                 Return tracking: {request.carrier} {request.trackingNumber}
               </p>
             ) : null}

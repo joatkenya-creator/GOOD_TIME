@@ -2,6 +2,8 @@ import { PERMISSIONS } from '@/constants/permissions';
 import { withRoute } from '@/lib/api/handler';
 import { jsonOk } from '@/lib/api/response';
 import { status as cacheStatus } from '@/lib/cache/store';
+import { productionReadiness } from '@/lib/env';
+import { isQueueAvailable } from '@/lib/jobs/cf-queue';
 import { stats as queueStats } from '@/lib/jobs/queue';
 import { snapshot } from '@/lib/monitoring/metrics';
 import { prisma } from '@/lib/prisma';
@@ -30,14 +32,17 @@ export const GET = withRoute(
 
     const startedAt = Date.now();
 
-    const [database, cache, queue, search, indexSize, deadJobs] = await Promise.all([
+    const [database, cache, queue, search, indexSize, deadJobs, pushDelivery] = await Promise.all([
       checkDatabase(),
       cacheStatus(),
       queueStats(),
       searchEngine().healthy(),
       prisma.productSearchDocument.count(),
       prisma.backgroundJob.count({ where: { status: 'DEAD' } }),
+      isQueueAvailable(),
     ]);
+
+    const readiness = productionReadiness();
 
     /*
      * The queue's health is its age, not its depth.
@@ -55,17 +60,29 @@ export const GET = withRoute(
         detail: database.reachable ? null : 'Unreachable',
       },
       cache: {
-        ok: true,
+        // A configured Upstash that cannot be reached *is* a failure: rate
+        // limits silently fail open and every cached read becomes a query.
+        ok: cache.reachable,
         driver: cache.driver,
         entries: cache.entries,
-        // Not an error — the fallback is a real cache — but worth surfacing,
-        // because on more than one instance it stops being shared.
-        detail: cache.driver === 'memory' ? 'In-process fallback; REDIS_URL is unset.' : null,
+        latencyMs: cache.latencyMs,
+        detail: !cache.reachable
+          ? 'Upstash is configured but unreachable. Rate limits are failing open.'
+          : cache.driver === 'memory'
+            ? 'In-process fallback; UPSTASH_REDIS_REST_URL is unset. Limits are per-isolate.'
+            : null,
       },
       queue: {
         ok: !queueDegraded,
         ...queue,
         deadLetter: deadJobs,
+        /*
+         * Push delivery is a latency optimisation, never a correctness one —
+         * the cron sweep runs every minute regardless. So its absence is
+         * reported, not failed: on `next dev` and in CI there is no Cloudflare
+         * binding at all, and that is the expected state.
+         */
+        pushDelivery: pushDelivery ? 'cloudflare-queues' : 'cron-sweep-only',
         detail: queueDegraded
           ? deadJobs > 0
             ? `${deadJobs} jobs exhausted their retries.`
@@ -79,11 +96,29 @@ export const GET = withRoute(
         detail: indexSize === 0 ? 'The index is empty. Run a full reindex.' : null,
       },
       integrations: {
-        stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+        klarna: Boolean(process.env.KLARNA_USERNAME),
+        klarnaEnvironment: process.env.KLARNA_ENVIRONMENT ?? 'playground',
         email: Boolean(process.env.RESEND_API_KEY),
         cloudinary: Boolean(process.env.CLOUDINARY_API_KEY),
-        redis: Boolean(process.env.REDIS_URL),
+        upstash: Boolean(process.env.UPSTASH_REDIS_REST_URL),
+        sentry: Boolean(process.env.SENTRY_DSN),
+        turnstile: Boolean(process.env.TURNSTILE_SECRET_KEY),
         cron: Boolean(process.env.CRON_SECRET),
+      },
+
+      /*
+       * The launch gate, reported live.
+       *
+       * The same list `npm run verify:production` prints, surfaced here so an
+       * operator can answer "is anything unconfigured right now" without
+       * shelling into a build. Deliberately not part of `failing` below: a
+       * staging environment is *supposed* to be missing production
+       * credentials, and marking it degraded for that would train people to
+       * ignore this endpoint.
+       */
+      readiness: {
+        ok: readiness.ready,
+        missing: readiness.missing,
       },
     };
 

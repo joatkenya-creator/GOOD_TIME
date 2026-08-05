@@ -88,9 +88,7 @@ describe('computeTotals', () => {
       lines: [line(10_000)],
       shippingCents: 0,
       discount: { kind: 'PERCENTAGE', value: 20 },
-      taxJurisdictions: [
-        { label: 'CA state', rateBasisPoints: 725, appliesToShipping: false },
-      ],
+      taxJurisdictions: [{ label: 'CA state', rateBasisPoints: 725, appliesToShipping: false }],
     });
 
     expect(totals.discountCents).toBe(2000);

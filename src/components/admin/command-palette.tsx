@@ -197,7 +197,10 @@ export function AdminCommandPalette({
             className="h-14 flex-1 bg-transparent text-body outline-none placeholder:text-foreground-subtle"
           />
           {searching && loading ? (
-            <Loader2 className="size-4 shrink-0 animate-spin text-foreground-subtle" aria-hidden="true" />
+            <Loader2
+              className="size-4 shrink-0 animate-spin text-foreground-subtle"
+              aria-hidden="true"
+            />
           ) : null}
         </div>
 
@@ -230,7 +233,7 @@ export function AdminCommandPalette({
                         {row.item.label}
                       </span>
                       {row.item.hint ? (
-                        <span className="block truncate text-body-xs text-foreground-subtle">
+                        <span className="text-body-xs block truncate text-foreground-subtle">
                           {row.item.hint}
                         </span>
                       ) : null}
@@ -262,18 +265,21 @@ export function AdminCommandPalette({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-body-sm font-medium">{row.hit.title}</span>
-                    <span className="block truncate text-body-xs text-foreground-subtle">
+                    <span className="text-body-xs block truncate text-foreground-subtle">
                       {row.hit.subtitle}
                     </span>
                   </span>
-                  <ArrowRight className="size-3.5 shrink-0 text-foreground-subtle" aria-hidden="true" />
+                  <ArrowRight
+                    className="size-3.5 shrink-0 text-foreground-subtle"
+                    aria-hidden="true"
+                  />
                 </button>
               </li>
             );
           })}
         </ul>
 
-        <div className="flex items-center gap-4 border-t border-border px-4 py-2 text-body-xs text-foreground-subtle">
+        <div className="text-body-xs flex items-center gap-4 border-t border-border px-4 py-2 text-foreground-subtle">
           <span>↑↓ to move</span>
           <span>↵ to open</span>
           <span>esc to close</span>

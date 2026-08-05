@@ -53,7 +53,7 @@ export function ReferralCodeBlock({ code, uses }: { code: string; uses: number }
         {copied ? 'Referral code copied to clipboard.' : ''}
       </p>
 
-      <p className="mt-2 text-body-xs text-foreground-subtle">
+      <p className="text-body-xs mt-2 text-foreground-subtle">
         {uses === 0 ? 'Not used yet.' : `Used ${uses} ${uses === 1 ? 'time' : 'times'}.`}
       </p>
     </div>

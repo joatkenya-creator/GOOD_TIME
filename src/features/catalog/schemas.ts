@@ -48,23 +48,50 @@ const csv = z
  * list so adding a facet cannot be forgotten here.
  */
 const facetShape = Object.fromEntries(
-  FACET_NAMESPACES.map((namespace) => [namespace, csv.optional()]),
-) as Record<(typeof FACET_NAMESPACES)[number], z.ZodOptional<typeof csv>>;
+  // `.catch(undefined)` for the same reason as the fields below: a facet list
+  // longer than the cap, or one a crawler has mangled, drops the facet rather
+  // than failing the page.
+  FACET_NAMESPACES.map((namespace) => [namespace, csv.optional().catch(undefined)]),
+) as Record<(typeof FACET_NAMESPACES)[number], z.ZodCatch<z.ZodOptional<typeof csv>>>;
 
 export const productFilterSchema = cursorQuerySchema.extend({
   ...facetShape,
-  q: z.string().trim().min(1).max(120).optional(),
+  q: z.string().trim().min(1).max(120).optional().catch(undefined),
   /** Prices are always cents on the wire, never dollars. */
-  minPriceCents: z.coerce.number().int().min(0).optional(),
-  maxPriceCents: z.coerce.number().int().min(0).optional(),
-  minRating: z.coerce.number().min(0).max(5).optional(),
-  inStockOnly: z.stringbool().default(false),
-  onSaleOnly: z.stringbool().default(false),
-  newOnly: z.stringbool().default(false),
-  sort: z.enum(PRODUCT_SORTS).default('relevance'),
+  minPriceCents: z.coerce.number().int().min(0).optional().catch(undefined),
+  maxPriceCents: z.coerce.number().int().min(0).optional().catch(undefined),
+  minRating: z.coerce.number().min(0).max(5).optional().catch(undefined),
+  /*
+   * `.catch()`, not `.default()`, on everything that comes from the URL.
+   *
+   * `.default()` only fires when a value is *absent*. A value that is present
+   * and invalid — `?sort=price-asc` when the enum says `price_asc`, a `?page=`
+   * left over from an old link, a truncated share URL — fails the parse and
+   * throws, and the listing page answers a plain GET with a 500.
+   *
+   * That is reachable by anyone, needs no session, and is exactly what a
+   * crawler does with a stale link: Search Console fills with server errors and
+   * the category stops being crawled. A query string is untrusted input, and
+   * the correct response to an unreadable filter is to ignore the filter, not
+   * to fail the page.
+   *
+   * Every field in this schema gets the same treatment, defaulted or optional:
+   * an over-long `q`, a negative `minPriceCents` and a `minRating` of 99 each
+   * produced a 500 before this.
+   *
+   * These are deliberately the *presentation* parameters. Anything that
+   * changes what is charged or who can see what — the checkout schemas, the
+   * admin schemas, `searchQuerySchema` behind the API — is validated strictly
+   * and must keep rejecting bad input loudly, because there a 422 with a
+   * message is the useful answer.
+   */
+  inStockOnly: z.stringbool().catch(false),
+  onSaleOnly: z.stringbool().catch(false),
+  newOnly: z.stringbool().catch(false),
+  sort: z.enum(PRODUCT_SORTS).catch('relevance'),
   /** Offset paging for crawlable listing pages; cursor paging for infinite scroll. */
-  page: z.coerce.number().int().min(1).default(1),
-  view: z.enum(['grid', 'list']).default('grid'),
+  page: z.coerce.number().int().min(1).catch(1),
+  view: z.enum(['grid', 'list']).catch('grid'),
 });
 
 export type ProductFilter = z.infer<typeof productFilterSchema>;

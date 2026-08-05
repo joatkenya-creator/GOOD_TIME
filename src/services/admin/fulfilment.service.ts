@@ -2,7 +2,9 @@ import 'server-only';
 
 import type { ShippingCarrier } from '@/generated/prisma/enums';
 import { errors } from '@/lib/api/errors';
+import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
+import { captureForOrder } from '@/services/payment.service';
 
 /**
  * Fulfilment: turning a paid order into a parcel with a tracking number.
@@ -113,6 +115,51 @@ export async function createShipment(input: CreateShipmentInput) {
 
     return shipment;
   });
+}
+
+/**
+ * Records a shipment and takes the money for it.
+ *
+ * Klarna authorises at checkout and is captured at fulfilment — that is its
+ * merchant model, not a preference — so the capture belongs here, at the moment
+ * goods actually leave. Anything that ships without passing through this
+ * function ships against an authorisation nobody ever converted into revenue.
+ *
+ * The capture is deliberately *after* the shipment is committed, and its
+ * failure does not roll the shipment back. The parcel is physically gone by the
+ * time this runs; pretending otherwise would leave the warehouse and the
+ * database disagreeing about reality. A failed capture is logged, recorded on
+ * the order timeline, and picked up by the nightly reconcile — money is
+ * recoverable, a lost shipment record is not.
+ */
+export async function shipAndCapture(input: CreateShipmentInput & { actorId?: string | null }) {
+  const shipment = await createShipment(input);
+
+  try {
+    const { amountCents, captureId } = await captureForOrder(input.orderId, {
+      description: input.trackingNumber
+        ? `Shipped ${input.carrier} ${input.trackingNumber}`
+        : `Shipped ${input.carrier}`,
+      actorId: input.actorId ?? null,
+    });
+
+    return { shipment, capture: { amountCents, captureId }, captureError: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    logger.error('fulfilment.capture_failed', error, { orderId: input.orderId });
+
+    await prisma.orderEvent.create({
+      data: {
+        orderId: input.orderId,
+        type: 'NOTE_ADDED',
+        message: `Shipped, but the Klarna capture failed: ${message}`,
+        isCustomerVisible: false,
+      },
+    });
+
+    return { shipment, capture: null, captureError: message };
+  }
 }
 
 /** Everything a printable label needs, in one query. */

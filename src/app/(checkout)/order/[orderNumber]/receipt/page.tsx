@@ -63,10 +63,10 @@ export default async function ReceiptPage({
       <header className="flex items-start justify-between gap-6 border-b border-border pb-6">
         <div>
           <p className="font-display text-2xl tracking-tight">{siteConfig.name}</p>
-          <p className="mt-1 text-body-xs text-foreground-subtle">Receipt</p>
+          <p className="text-body-xs mt-1 text-foreground-subtle">Receipt</p>
         </div>
 
-        <dl className="text-right text-body-xs">
+        <dl className="text-body-xs text-right">
           <dt className="text-foreground-subtle">Order</dt>
           <dd className="font-mono text-body-sm font-semibold">{order.orderNumber}</dd>
 
@@ -144,7 +144,7 @@ export default async function ReceiptPage({
             <tr key={item.id} className="border-b border-border">
               <td className="py-2.5">
                 {item.productName}
-                <span className="block text-body-xs text-foreground-subtle">
+                <span className="text-body-xs block text-foreground-subtle">
                   {item.variantName} · {item.sku}
                 </span>
               </td>
@@ -195,7 +195,7 @@ export default async function ReceiptPage({
         </tfoot>
       </table>
 
-      <footer className="mt-8 border-t border-border pt-4 text-body-xs text-foreground-subtle">
+      <footer className="text-body-xs mt-8 border-t border-border pt-4 text-foreground-subtle">
         <p>
           Thank you for your order. Questions? Reply to your confirmation email and a real person
           will answer.

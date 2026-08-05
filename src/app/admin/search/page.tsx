@@ -111,7 +111,7 @@ export default async function AdminSearchPage() {
                   className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
                 >
                   <span className="truncate text-body-sm">{row.term}</span>
-                  <span className="shrink-0 text-body-xs tabular-nums text-foreground-subtle">
+                  <span className="text-body-xs shrink-0 text-foreground-subtle tabular-nums">
                     {row.searches} searches
                   </span>
                 </li>
@@ -133,7 +133,7 @@ export default async function AdminSearchPage() {
                   className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
                 >
                   <span className="truncate text-body-sm">{row.term}</span>
-                  <span className="shrink-0 text-body-xs tabular-nums text-foreground-subtle">
+                  <span className="text-body-xs shrink-0 text-foreground-subtle tabular-nums">
                     {row.searches} searches · {row.averageResults} results
                   </span>
                 </li>
@@ -168,7 +168,7 @@ export default async function AdminSearchPage() {
                       <input type="hidden" name="id" value={row.id} />
                       <button
                         type="submit"
-                        className="rounded-lg border border-border px-2 py-1 text-body-xs text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
+                        className="text-body-xs rounded-lg border border-border px-2 py-1 text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
                       >
                         Delete
                       </button>
@@ -183,7 +183,7 @@ export default async function AdminSearchPage() {
         {canManage ? (
           <form action={saveSynonymAction} className="flex flex-wrap items-end gap-2">
             <div className="min-w-0 flex-1">
-              <label htmlFor="term" className="mb-1 block text-body-xs font-medium">
+              <label htmlFor="term" className="text-body-xs mb-1 block font-medium">
                 Term
               </label>
               <input
@@ -191,11 +191,11 @@ export default async function AdminSearchPage() {
                 name="term"
                 required
                 placeholder="bullet"
-                className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
               />
             </div>
             <div className="min-w-0 flex-[2]">
-              <label htmlFor="synonyms" className="mb-1 block text-body-xs font-medium">
+              <label htmlFor="synonyms" className="text-body-xs mb-1 block font-medium">
                 Also matches
               </label>
               <input
@@ -203,10 +203,10 @@ export default async function AdminSearchPage() {
                 name="synonyms"
                 required
                 placeholder="mini vibrator, lipstick vibe"
-                className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
               />
             </div>
-            <label className="flex h-9 items-center gap-1.5 text-body-xs">
+            <label className="text-body-xs flex h-9 items-center gap-1.5">
               <input
                 type="checkbox"
                 name="isOneWay"
@@ -216,14 +216,14 @@ export default async function AdminSearchPage() {
             </label>
             <button
               type="submit"
-              className="h-9 rounded-lg bg-accent px-3 text-body-xs font-medium text-white hover:bg-accent-hover"
+              className="text-body-xs h-9 rounded-lg bg-accent px-3 font-medium text-white hover:bg-accent-hover"
             >
               Add
             </button>
           </form>
         ) : null}
 
-        <p className="mt-3 text-body-xs text-foreground-subtle">
+        <p className="text-body-xs mt-3 text-foreground-subtle">
           One-way means a search for &ldquo;vibrator&rdquo; also finds bullets, without a search for
           &ldquo;bullet&rdquo; returning every vibrator in the catalogue.
         </p>

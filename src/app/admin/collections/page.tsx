@@ -58,9 +58,12 @@ export default async function AdminCollectionsPage() {
 
                       <StatusPill
                         label={
-                          { live: 'Live', scheduled: 'Scheduled', ended: 'Ended', hidden: 'Hidden' }[
-                            collection.state
-                          ]
+                          {
+                            live: 'Live',
+                            scheduled: 'Scheduled',
+                            ended: 'Ended',
+                            hidden: 'Hidden',
+                          }[collection.state]
                         }
                         tone={
                           (
@@ -75,7 +78,7 @@ export default async function AdminCollectionsPage() {
                       />
                     </div>
 
-                    <p className="mt-0.5 truncate text-body-xs text-foreground-subtle">
+                    <p className="text-body-xs mt-0.5 truncate text-foreground-subtle">
                       /{collection.slug} ·{' '}
                       {isAutomatic(collection)
                         ? 'membership resolved on read'
@@ -128,7 +131,7 @@ export default async function AdminCollectionsPage() {
                     id="col-starts"
                     name="startsAt"
                     type="datetime-local"
-                    className="h-10 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                    className="text-body-xs h-10 w-full rounded-lg border border-border bg-surface px-2"
                   />
                 </div>
                 <div>
@@ -139,13 +142,13 @@ export default async function AdminCollectionsPage() {
                     id="col-ends"
                     name="endsAt"
                     type="datetime-local"
-                    className="h-10 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                    className="text-body-xs h-10 w-full rounded-lg border border-border bg-surface px-2"
                   />
                 </div>
               </div>
 
               <fieldset className="rounded-lg border border-border p-3">
-                <legend className="px-1 text-body-xs font-medium">Automatic membership</legend>
+                <legend className="text-body-xs px-1 font-medium">Automatic membership</legend>
 
                 <label className="flex items-center gap-2.5 text-body-sm">
                   <input
@@ -156,19 +159,19 @@ export default async function AdminCollectionsPage() {
                   Pick products by rule
                 </label>
 
-                <p className="mt-1.5 mb-3 text-body-xs text-foreground-subtle">
+                <p className="text-body-xs mt-1.5 mb-3 text-foreground-subtle">
                   Rules are evaluated when the page is read, so a product leaving a sale drops out
                   immediately.
                 </p>
 
-                <label htmlFor="rule-category" className="mb-1 block text-body-xs">
+                <label htmlFor="rule-category" className="text-body-xs mb-1 block">
                   In category
                 </label>
                 <select
                   id="rule-category"
                   name="ruleCategoryId"
                   defaultValue=""
-                  className="mb-2.5 h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                  className="text-body-xs mb-2.5 h-9 w-full rounded-lg border border-border bg-surface px-2"
                 >
                   <option value="">Any</option>
                   {categories.map((category) => (
@@ -178,7 +181,7 @@ export default async function AdminCollectionsPage() {
                   ))}
                 </select>
 
-                <label className="flex items-center gap-2 text-body-xs">
+                <label className="text-body-xs flex items-center gap-2">
                   <input
                     type="checkbox"
                     name="ruleOnSale"
@@ -187,7 +190,7 @@ export default async function AdminCollectionsPage() {
                   On sale
                 </label>
 
-                <label className="mt-1.5 flex items-center gap-2 text-body-xs">
+                <label className="text-body-xs mt-1.5 flex items-center gap-2">
                   <input
                     type="checkbox"
                     name="ruleNewArrival"
@@ -196,7 +199,7 @@ export default async function AdminCollectionsPage() {
                   New arrival
                 </label>
 
-                <label htmlFor="rule-max" className="mt-2.5 mb-1 block text-body-xs">
+                <label htmlFor="rule-max" className="text-body-xs mt-2.5 mb-1 block">
                   Under ($)
                 </label>
                 <input
@@ -204,7 +207,7 @@ export default async function AdminCollectionsPage() {
                   name="ruleMaxPrice"
                   type="number"
                   step="0.01"
-                  className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-body-xs"
+                  className="text-body-xs h-9 w-full rounded-lg border border-border bg-surface px-2"
                 />
               </fieldset>
 

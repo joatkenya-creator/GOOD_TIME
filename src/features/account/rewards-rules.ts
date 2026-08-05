@@ -134,9 +134,7 @@ export function planRedemption(input: {
   usePoints: boolean;
   useCredit: boolean;
 }): { creditCents: number; points: number; pointsCents: number; totalCents: number } {
-  const creditCents = input.useCredit
-    ? Math.min(input.storeCreditCents, input.amountDueCents)
-    : 0;
+  const creditCents = input.useCredit ? Math.min(input.storeCreditCents, input.amountDueCents) : 0;
 
   const remaining = input.amountDueCents - creditCents;
 

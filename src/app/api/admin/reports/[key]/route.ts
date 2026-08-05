@@ -81,12 +81,12 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function renderTable(
-  report: Awaited<ReturnType<typeof buildReport>>,
-  print: boolean,
-): string {
+function renderTable(report: Awaited<ReturnType<typeof buildReport>>, print: boolean): string {
   const head = report.columns
-    .map((column) => `<th style="text-align:${column.align ?? 'left'}">${escapeHtml(column.label)}</th>`)
+    .map(
+      (column) =>
+        `<th style="text-align:${column.align ?? 'left'}">${escapeHtml(column.label)}</th>`,
+    )
     .join('');
 
   const body = report.rows

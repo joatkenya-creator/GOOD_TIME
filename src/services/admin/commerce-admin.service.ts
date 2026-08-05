@@ -238,7 +238,10 @@ export async function getAdminCustomer(id: string) {
 
 /** Staff-applied labels, replacing the set rather than diffing it. */
 export async function setCustomerTags(userId: string, tags: string[]): Promise<void> {
-  const cleaned = [...new Set(tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))].slice(0, 20);
+  const cleaned = [...new Set(tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))].slice(
+    0,
+    20,
+  );
   await prisma.user.update({ where: { id: userId }, data: { adminTags: cleaned } });
 }
 
@@ -281,7 +284,9 @@ export async function listCoupons(query: { q?: string; status?: string } = {}) {
 
   const where: Prisma.CouponWhereInput = {
     ...(query.q ? { code: { contains: query.q, mode: 'insensitive' } } : {}),
-    ...(query.status === 'active' ? { isActive: true, OR: [{ endsAt: null }, { endsAt: { gt: now } }] } : {}),
+    ...(query.status === 'active'
+      ? { isActive: true, OR: [{ endsAt: null }, { endsAt: { gt: now } }] }
+      : {}),
     ...(query.status === 'expired' ? { endsAt: { lt: now } } : {}),
     ...(query.status === 'disabled' ? { isActive: false } : {}),
   };

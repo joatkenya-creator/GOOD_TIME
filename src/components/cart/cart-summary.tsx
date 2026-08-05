@@ -40,12 +40,14 @@ export function CartSummary({ cart }: { cart: CartView }) {
         <h2 className="text-body-lg font-semibold text-foreground">Order summary</h2>
 
         <dl className="mt-4 space-y-2.5 text-body-sm">
-          <Row label={`Subtotal (${totals.itemCount} ${totals.itemCount === 1 ? 'item' : 'items'})`}>
+          <Row
+            label={`Subtotal (${totals.itemCount} ${totals.itemCount === 1 ? 'item' : 'items'})`}
+          >
             {formatPrice(totals.subtotalCents)}
           </Row>
 
           {totals.discountCents > 0 ? (
-            <Row label={`Discount${cart.couponCode ? ` · ${cart.couponCode}` : ''}` } accent>
+            <Row label={`Discount${cart.couponCode ? ` · ${cart.couponCode}` : ''}`} accent>
               −{formatPrice(totals.discountCents)}
             </Row>
           ) : null}
@@ -56,12 +58,14 @@ export function CartSummary({ cart }: { cart: CartView }) {
 
           {/* An empty breakdown means no jurisdiction is configured for the
               destination, which is different from a 0% rate — say so. */}
-          <Row label={totals.taxBreakdown.length ? 'Sales tax' : 'Sales tax (estimated at checkout)'}>
+          <Row
+            label={totals.taxBreakdown.length ? 'Sales tax' : 'Sales tax (estimated at checkout)'}
+          >
             {totals.taxBreakdown.length ? formatPrice(totals.taxCents) : '—'}
           </Row>
 
           {totals.taxBreakdown.length > 1 ? (
-            <ul className="ml-1 space-y-1 border-l border-border pl-3 text-body-xs text-foreground-subtle">
+            <ul className="text-body-xs ml-1 space-y-1 border-l border-border pl-3 text-foreground-subtle">
               {totals.taxBreakdown.map((entry) => (
                 <li key={entry.label} className="flex justify-between gap-2">
                   <span>
@@ -104,12 +108,12 @@ export function CartSummary({ cart }: { cart: CartView }) {
         </Button>
 
         {cart.hasIssues ? (
-          <p role="alert" className="mt-2 text-body-xs text-(--color-error)">
+          <p role="alert" className="text-body-xs mt-2 text-(--color-error)">
             Adjust the quantities flagged above before checking out.
           </p>
         ) : null}
 
-        <p className="mt-3 text-center text-body-xs text-foreground-subtle">
+        <p className="text-body-xs mt-3 text-center text-foreground-subtle">
           Discreet billing · Plain packaging · Free returns within 30 days
         </p>
       </div>
@@ -142,10 +146,10 @@ function Row({
       <dd
         className={
           large
-            ? 'text-h5 font-bold tabular-nums text-foreground'
+            ? 'text-h5 font-bold text-foreground tabular-nums'
             : accent
-              ? 'font-medium tabular-nums text-accent-text'
-              : 'tabular-nums text-foreground'
+              ? 'font-medium text-accent-text tabular-nums'
+              : 'text-foreground tabular-nums'
         }
       >
         {children}
@@ -161,7 +165,7 @@ function CouponForm({ code, message }: { code: string | null; message: string | 
 
   if (code && !message) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3">
+      <div className="bg-accent-subtle flex items-center justify-between gap-3 rounded-xl border border-accent/30 px-4 py-3">
         <span className="flex items-center gap-2 text-body-sm font-medium text-accent-text">
           <Tag aria-hidden="true" className="size-4" />
           {code} applied
@@ -211,7 +215,7 @@ function CouponForm({ code, message }: { code: string | null; message: string | 
       </div>
 
       {error ? (
-        <p id="coupon-error" role="alert" className="mt-2 text-body-xs text-(--color-error)">
+        <p id="coupon-error" role="alert" className="text-body-xs mt-2 text-(--color-error)">
           {error}
         </p>
       ) : null}
@@ -228,18 +232,14 @@ function CouponForm({ code, message }: { code: string | null; message: string | 
  * which. It also means the applied states read differently: "SAVE10 applied"
  * against "$25.00 from card ••••7K2P".
  */
-function GiftCardForm({
-  applied,
-}: {
-  applied: { last4: string; applicableCents: number } | null;
-}) {
+function GiftCardForm({ applied }: { applied: { last4: string; applicableCents: number } | null }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   if (applied) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-subtle px-4 py-3">
+      <div className="bg-accent-subtle flex items-center justify-between gap-3 rounded-xl border border-accent/30 px-4 py-3">
         <span className="flex items-center gap-2 text-body-sm font-medium text-accent-text">
           <Gift aria-hidden="true" className="size-4" />
           {formatPrice(applied.applicableCents)} from card ••••{applied.last4}
@@ -297,7 +297,7 @@ function GiftCardForm({
       </div>
 
       {error ? (
-        <p id="gift-card-error" role="alert" className="mt-2 text-body-xs text-(--color-error)">
+        <p id="gift-card-error" role="alert" className="text-body-xs mt-2 text-(--color-error)">
           {error}
         </p>
       ) : null}

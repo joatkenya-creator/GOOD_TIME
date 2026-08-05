@@ -4,24 +4,27 @@ import { randomUUID } from 'node:crypto';
 
 import { logger } from '@/lib/logger';
 import { registerAllHandlers, tickScheduler } from '@/lib/jobs/handlers';
-import { claim, reclaimStale, runJob } from '@/lib/jobs/queue';
+import { claim, claimById, reclaimStale, runJob } from '@/lib/jobs/queue';
 
 /**
  * The worker.
  *
  * Two ways to run it, both supported deliberately:
  *
- * **Serverless** — `POST /api/cron/jobs` drains a bounded batch and returns.
- * Vercel Cron calls it every minute. No process to keep alive, no container to
- * pay for, and the platform's own retry covers a failed invocation. The ceiling
- * is the function timeout, which is why the batch is bounded by both count and
- * elapsed time rather than "until the queue is empty".
+ * **Push** — `runOne` is called by the Cloudflare Queues consumer in
+ * `cloudflare/worker.ts` the moment a job is enqueued. This is the normal path
+ * in production: latency of a second or two, no polling, no idle cost.
  *
- * **Long-running** — `npm run worker` loops until stopped, for a container or
- * a VM. Same code, same handlers; only the loop differs.
+ * **Scheduled sweep** — `drain` claims a bounded batch. A Cloudflare Cron
+ * Trigger calls `/api/cron/jobs` every minute. This is the floor that makes the
+ * push path allowed to fail: anything a queue message dropped, delayed, or was
+ * never published for gets picked up within the minute.
  *
- * Neither is "the" architecture. Which one is right depends on where this is
- * deployed, and both being one function apart is the point.
+ * **Long-running** — `npm run worker` loops until stopped, for a container or a
+ * VM. Same code, same handlers; only the loop differs.
+ *
+ * None is "the" architecture. Production runs the first two together, which is
+ * what makes losing the queue a latency regression rather than lost work.
  */
 
 export interface DrainOptions {
@@ -104,6 +107,38 @@ export async function drain(options: DrainOptions = {}): Promise<DrainResult> {
   }
 
   return result;
+}
+
+/**
+ * Runs one job by id, for the push consumer.
+ *
+ * Returns `'gone'` when the row could not be claimed — already running,
+ * already finished, cancelled, or scheduled for later. That is the expected
+ * outcome of a duplicate delivery, not an error: Cloudflare Queues guarantees
+ * at-least-once, so the second copy of a message must be a no-op rather than a
+ * second execution.
+ *
+ * Never throws. The consumer decides whether to `ack` or `retry` from the
+ * return value, and an exception escaping into the Workers runtime would retry
+ * the whole batch — including the jobs in it that already succeeded.
+ */
+export async function runOne(
+  jobId: string,
+  workerId = 'queue-consumer',
+): Promise<'succeeded' | 'retry' | 'dead' | 'gone'> {
+  registerAllHandlers();
+
+  try {
+    const job = await claimById(jobId, workerId);
+    if (!job) return 'gone';
+
+    return await runJob(job);
+  } catch (error) {
+    // A failure *outside* the handler — the claim query itself, a dead
+    // connection. The job row is untouched, so the sweep will find it.
+    logger.error('worker.run_one_failed', error, { jobId });
+    return 'retry';
+  }
 }
 
 /**

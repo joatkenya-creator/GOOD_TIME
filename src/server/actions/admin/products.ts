@@ -291,7 +291,12 @@ export async function archiveProductAction(formData: FormData): Promise<void> {
   await withAdminAction(
     PERMISSIONS.productDelete,
     () => bulkUpdateProducts([id], 'archive'),
-    () => ({ action: 'UPDATE' as const, entityType: 'Product', entityId: id, changes: { status: { from: null, to: 'ARCHIVED' } } }),
+    () => ({
+      action: 'UPDATE' as const,
+      entityType: 'Product',
+      entityId: id,
+      changes: { status: { from: null, to: 'ARCHIVED' } },
+    }),
   );
 
   revalidatePath('/admin/products');

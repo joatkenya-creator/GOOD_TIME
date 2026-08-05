@@ -128,13 +128,27 @@ async function main(): Promise<void> {
   // ----------------------------------------------------------- mapping
   section('Field mapping');
 
-  const suggested = suggestMapping(['item_no', 'SKU', 'product_name', 'wholesale_price', 'stock_qty']);
+  const suggested = suggestMapping([
+    'item_no',
+    'SKU',
+    'product_name',
+    'wholesale_price',
+    'stock_qty',
+  ]);
   check('guesses the id column', (suggested.externalId as { from: string })?.from === 'item_no');
-  check('guesses the price column and its transform',
-    (suggested.priceCents as { from: string; transform: string })?.transform === 'money_to_cents');
+  check(
+    'guesses the price column and its transform',
+    (suggested.priceCents as { from: string; transform: string })?.transform === 'money_to_cents',
+  );
 
   const mapped = mapRow(
-    { item_no: 'X1', SKU: 'SKU-1', product_name: 'Wand', wholesale_price: '$24.50', cat: 'Toys > Wands' },
+    {
+      item_no: 'X1',
+      SKU: 'SKU-1',
+      product_name: 'Wand',
+      wholesale_price: '$24.50',
+      cat: 'Toys > Wands',
+    },
     {
       externalId: { from: 'item_no' },
       sku: { from: 'SKU' },
@@ -192,7 +206,10 @@ async function main(): Promise<void> {
   check('http feed URLs are refused', !checkFeedUrl('http://feeds.example.test/a.csv').ok);
   check('https feed URLs pass', checkFeedUrl('https://feeds.example.test/a.csv').ok);
   check('localhost is refused', !checkFeedUrl('https://localhost/feed.csv').ok);
-  check('the cloud metadata address is refused', !checkFeedUrl('https://169.254.169.254/latest').ok);
+  check(
+    'the cloud metadata address is refused',
+    !checkFeedUrl('https://169.254.169.254/latest').ok,
+  );
   check('private ranges are refused', !checkFeedUrl('https://10.0.0.5/feed.csv').ok);
   check('.internal is refused', !checkFeedUrl('https://db.internal/feed.csv').ok);
 
@@ -237,9 +254,8 @@ async function main(): Promise<void> {
   // ------------------------------------------------------------- queue
   section('The job queue');
 
-  const { enqueue, claim, succeed, fail, stats, registerHandler } = await import(
-    '../src/lib/jobs/queue'
-  );
+  const { enqueue, claim, succeed, fail, stats, registerHandler } =
+    await import('../src/lib/jobs/queue');
 
   registerHandler('verify.noop', async () => ({ ok: true }));
 
@@ -269,7 +285,11 @@ async function main(): Promise<void> {
     const idsA = new Set(claimA.map((job) => job.id));
     const overlap = claimB.filter((job) => idsA.has(job.id));
 
-    check('two workers never claim the same job', overlap.length === 0, `${overlap.length} overlapped`);
+    check(
+      'two workers never claim the same job',
+      overlap.length === 0,
+      `${overlap.length} overlapped`,
+    );
 
     for (const job of [...claimA, ...claimB]) {
       if (!created.includes(job.id)) created.push(job.id);

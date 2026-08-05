@@ -72,7 +72,10 @@ export async function listJobs(filter: { status?: string; kind?: string } = {}, 
   return prisma.backgroundJob.findMany({
     where: {
       ...(filter.status && filter.status !== 'all'
-        ? { status: filter.status as 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'DEAD' | 'CANCELLED' }
+        ? {
+            status: filter.status as
+              'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'DEAD' | 'CANCELLED',
+          }
         : {}),
       ...(filter.kind ? { kind: filter.kind } : {}),
     },

@@ -12,7 +12,7 @@ a future mobile client, multiple payment and shipping providers.
   Browser / future mobile client
         │
   ┌─────▼──────────────────────────────────────────────┐
-  │  src/proxy.ts          edge auth filter            │
+  │  src/middleware.ts          edge auth filter            │
   ├────────────────────────────────────────────────────┤
   │  src/app/              routes, layouts, handlers   │
   │  src/actions/          server actions              │
@@ -24,7 +24,7 @@ a future mobile client, multiple payment and shipping providers.
   │                        cache, seo, security        │
   └─────┬──────────────────────────────────────────────┘
         │
-   PostgreSQL          Stripe · Resend · Cloudinary
+   PostgreSQL          Klarna · Resend · Cloudinary
 ```
 
 **The rule that keeps this honest:** a `prisma.` call outside `src/services/` (or
@@ -126,18 +126,18 @@ design change never means re-uploading 100k assets.
 
 ## Security
 
-| Threat               | Control                                                                                             |
-| -------------------- | --------------------------------------------------------------------------------------------------- |
-| CSRF                 | Strict origin check on unsafe methods + `SameSite=Lax` cookies; Server Actions add Next's own check |
-| XSS                  | React escaping; `escapeJsonLd` for structured data; `safeUrl` for user-supplied links               |
-| Open redirect        | `safeRedirectPath` on every `callbackUrl`                                                           |
-| Clickjacking         | `X-Frame-Options: DENY`, `frame-ancestors 'none'`                                                   |
-| Injection            | Prisma parameterises everything; Zod validates at every boundary                                    |
-| Brute force          | Per-bucket rate limits: 10 sign-ins / 5 min, 5 registrations / hour                                 |
-| Enumeration          | Constant-time password verification; identical forgot-password response either way                  |
-| Token theft          | Reset and verification tokens stored as SHA-256 hashes, single-use, expiring                        |
-| Privilege escalation | Capability checks server-side on every route; edge filter is a fast pre-check, not the authority    |
-| Webhook forgery      | Stripe signature verification; the only routes allowed to skip the origin check                     |
+| Threat               | Control                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CSRF                 | Strict origin check on unsafe methods + `SameSite=Lax` cookies; Server Actions add Next's own check                                               |
+| XSS                  | React escaping; `escapeJsonLd` for structured data; `safeUrl` for user-supplied links                                                             |
+| Open redirect        | `safeRedirectPath` on every `callbackUrl`                                                                                                         |
+| Clickjacking         | `X-Frame-Options: DENY`, `frame-ancestors 'none'`                                                                                                 |
+| Injection            | Prisma parameterises everything; Zod validates at every boundary                                                                                  |
+| Brute force          | Per-bucket rate limits: 10 sign-ins / 5 min, 5 registrations / hour                                                                               |
+| Enumeration          | Constant-time password verification; identical forgot-password response either way                                                                |
+| Token theft          | Reset and verification tokens stored as SHA-256 hashes, single-use, expiring                                                                      |
+| Privilege escalation | Capability checks server-side on every route; edge filter is a fast pre-check, not the authority                                                  |
+| Webhook forgery      | Klarna: constant-time URL secret, then the order is re-read from Klarna. Resend: Svix signature. The only routes allowed to skip the origin check |
 
 **Known gap.** The CSP allows `'unsafe-inline'` on `script-src`, required by
 Next's bootstrap and by the GA4/Clarity loaders. Tightening it to a nonce means

@@ -137,7 +137,13 @@ export async function activeIntegrations(): Promise<IntegrationConfig[]> {
     async () => {
       const rows = await prisma.marketingIntegration.findMany({
         where: { isEnabled: true, publicId: { not: null } },
-        select: { provider: true, isEnabled: true, publicId: true, requiresConsent: true, config: true },
+        select: {
+          provider: true,
+          isEnabled: true,
+          publicId: true,
+          requiresConsent: true,
+          config: true,
+        },
       });
 
       return rows.map((row) => ({
@@ -185,7 +191,12 @@ export async function saveIntegration(input: {
    * installed. Validating the format catches the common half of that at the
    * moment someone can still fix it.
    */
-  if (input.isEnabled && input.publicId && definition?.idPattern && !definition.idPattern.test(input.publicId)) {
+  if (
+    input.isEnabled &&
+    input.publicId &&
+    definition?.idPattern &&
+    !definition.idPattern.test(input.publicId)
+  ) {
     throw new Error(
       `That does not look like a ${definition.label} ${definition.idLabel.toLowerCase()}.`,
     );

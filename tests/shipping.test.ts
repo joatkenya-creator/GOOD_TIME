@@ -51,19 +51,34 @@ describe('priceFor', () => {
 
   it('adds a per-kilogram charge above the included weight', () => {
     // 3200g total, 2000g included -> 1200g billable -> 2 started kilos.
-    const weighted = rate({ type: 'WEIGHT_BASED', baseCents: 999, perKgCents: 450, freeWeightGrams: 2000 });
+    const weighted = rate({
+      type: 'WEIGHT_BASED',
+      baseCents: 999,
+      perKgCents: 450,
+      freeWeightGrams: 2000,
+    });
     expect(priceFor(weighted, basket(5000, 3200))).toBe(999 + 900);
   });
 
   it('bills per *started* kilogram, as carriers do', () => {
-    const weighted = rate({ type: 'WEIGHT_BASED', baseCents: 0, perKgCents: 500, freeWeightGrams: 0 });
+    const weighted = rate({
+      type: 'WEIGHT_BASED',
+      baseCents: 0,
+      perKgCents: 500,
+      freeWeightGrams: 0,
+    });
     expect(priceFor(weighted, basket(5000, 1))).toBe(500);
     expect(priceFor(weighted, basket(5000, 1000))).toBe(500);
     expect(priceFor(weighted, basket(5000, 1001))).toBe(1000);
   });
 
   it('never charges for weight below the included allowance', () => {
-    const weighted = rate({ type: 'WEIGHT_BASED', baseCents: 999, perKgCents: 450, freeWeightGrams: 2000 });
+    const weighted = rate({
+      type: 'WEIGHT_BASED',
+      baseCents: 999,
+      perKgCents: 450,
+      freeWeightGrams: 2000,
+    });
     expect(priceFor(weighted, basket(5000, 1500))).toBe(999);
   });
 

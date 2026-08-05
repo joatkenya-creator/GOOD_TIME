@@ -9,3 +9,12 @@ coverage
 .agents
 .neon
 skills-lock.json
+
+# Build artefacts. `.open-next` holds a traced copy of node_modules — formatting
+# it would rewrite thousands of third-party files and take minutes.
+.open-next
+.wrangler
+.playwright
+playwright-report
+test-results
+.lighthouse.json

@@ -6,7 +6,9 @@ import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { ConsentBanner } from '@/components/marketing/consent-banner';
 import { MarketingTags } from '@/components/marketing/tag-manager';
+import { LEGAL_SLUGS } from '@/features/legal/documents';
 import { getSessionUser } from '@/server/auth/session';
+import { listPageSlugs } from '@/services/blog.service';
 import { getCartCount } from '@/services/cart.service';
 import { partitioned } from '@/services/marketing/integrations';
 
@@ -34,9 +36,19 @@ export default async function StorefrontLayout({ children }: { children: React.R
    */
   const tags = await partitioned();
 
+  /*
+   * Which `/pages/*` links the footer may render.
+   *
+   * The legal documents live in code; everything else is a published `Page`.
+   * The footer drops links to anything absent rather than advertising a policy
+   * page that 404s — see its header.
+   */
+  const publishedPages = await listPageSlugs();
+  const availablePages = [...LEGAL_SLUGS, ...publishedPages.map(({ slug }) => slug)];
+
   return (
     <div className="flex min-h-dvh flex-col">
-      <Header cartCount={cartCount} />
+      <Header cartCount={cartCount} availablePages={availablePages} />
 
       {/* Signed-in only: a guest's list lives in `localStorage` and is already
           the whole truth, so there is nothing to merge. */}
@@ -44,7 +56,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
       <main id="main" className="flex-1">
         {children}
       </main>
-      <Footer />
+      <Footer availablePages={availablePages} />
 
       {/*
         `useSearchParams` inside the tracker opts its subtree into client-side

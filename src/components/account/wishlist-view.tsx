@@ -125,12 +125,12 @@ export function WishlistView({
       </div>
 
       {token ? (
-        <div className="rounded-xl border border-accent/30 bg-accent-subtle p-4">
+        <div className="bg-accent-subtle rounded-xl border border-accent/30 p-4">
           <p className="text-body-sm font-medium text-foreground">Your share link</p>
-          <p className="mt-1 break-all font-mono text-body-xs text-foreground-muted">
+          <p className="text-body-xs mt-1 font-mono break-all text-foreground-muted">
             {siteUrl}/wishlist/{token}
           </p>
-          <p className="mt-2 text-body-xs text-foreground-subtle">
+          <p className="text-body-xs mt-2 text-foreground-subtle">
             Anyone with this link can see what you saved. It shows no name or contact details, and
             turning sharing off makes the link stop working immediately.
           </p>
@@ -142,55 +142,55 @@ export function WishlistView({
           const href = entry.product.href;
 
           return (
-          <li key={entry.id} className="flex gap-4 p-4 sm:p-5">
-            <Link href={href} className="shrink-0">
-              <MediaPlaceholder
-                seed={entry.product.imageSeed}
-                ratio="square"
-                className="size-20 rounded-lg sm:size-24"
-              />
-            </Link>
+            <li key={entry.id} className="flex gap-4 p-4 sm:p-5">
+              <Link href={href} className="shrink-0">
+                <MediaPlaceholder
+                  seed={entry.product.imageSeed}
+                  ratio="square"
+                  className="size-20 rounded-lg sm:size-24"
+                />
+              </Link>
 
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div>
-                <Link
-                  href={href}
-                  className="line-clamp-2 text-body-sm font-medium text-foreground hover:text-accent-text"
-                >
-                  {entry.product.name}
-                </Link>
-                <p className="mt-0.5 text-body-xs text-foreground-subtle">
-                  Saved{' '}
-                  {entry.addedAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-                </p>
-              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div>
+                  <Link
+                    href={href}
+                    className="line-clamp-2 text-body-sm font-medium text-foreground hover:text-accent-text"
+                  >
+                    {entry.product.name}
+                  </Link>
+                  <p className="text-body-xs mt-0.5 text-foreground-subtle">
+                    Saved{' '}
+                    {entry.addedAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                  </p>
+                </div>
 
-              <Price
-                cents={entry.product.priceCents}
-                compareAtCents={entry.product.compareAtPriceCents}
-                size="sm"
-              />
-
-              <div className="mt-1 flex flex-wrap gap-1">
-                <Button size="sm" disabled={pending} onClick={() => moveToBag(entry)}>
-                  <ShoppingBag aria-hidden="true" className="size-4" />
-                  Move to bag
-                </Button>
-
-                <Button
-                  variant="ghost"
+                <Price
+                  cents={entry.product.priceCents}
+                  compareAtCents={entry.product.compareAtPriceCents}
                   size="sm"
-                  disabled={pending}
-                  onClick={() => remove(entry.product.id)}
-                  className="text-foreground-muted hover:text-danger-700"
-                >
-                  <Trash2 aria-hidden="true" className="size-4" />
-                  Remove
-                  <span className="sr-only"> {entry.product.name}</span>
-                </Button>
+                />
+
+                <div className="mt-1 flex flex-wrap gap-1">
+                  <Button size="sm" disabled={pending} onClick={() => moveToBag(entry)}>
+                    <ShoppingBag aria-hidden="true" className="size-4" />
+                    Move to bag
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => remove(entry.product.id)}
+                    className="text-foreground-muted hover:text-danger-700"
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" />
+                    Remove
+                    <span className="sr-only"> {entry.product.name}</span>
+                  </Button>
+                </div>
               </div>
-            </div>
-          </li>
+            </li>
           );
         })}
       </ul>

@@ -40,8 +40,7 @@ export function offerSchema(input: {
   priceValidUntil?: Date;
   sellerName?: string;
 }): JsonLdObject {
-  const validUntil =
-    input.priceValidUntil ?? new Date(Date.now() + 365 * 86_400_000);
+  const validUntil = input.priceValidUntil ?? new Date(Date.now() + 365 * 86_400_000);
 
   return {
     '@type': 'Offer',

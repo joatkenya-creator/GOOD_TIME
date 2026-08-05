@@ -17,6 +17,7 @@ export type ErrorCode =
   | 'PAYMENT_REQUIRED'
   | 'INTEGRATION_UNAVAILABLE'
   | 'NOT_IMPLEMENTED'
+  | 'BAD_GATEWAY'
   | 'INTERNAL_ERROR';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
@@ -30,6 +31,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   PAYMENT_REQUIRED: 402,
   INTEGRATION_UNAVAILABLE: 503,
   NOT_IMPLEMENTED: 501,
+  BAD_GATEWAY: 502,
   INTERNAL_ERROR: 500,
 };
 
@@ -63,6 +65,9 @@ export const errors = {
   /** Endpoint contract is defined but the implementation lands in a later phase. */
   notImplemented: (what = 'This endpoint') =>
     new AppError('NOT_IMPLEMENTED', `${what} is not available yet.`),
+  /** An upstream we depend on failed or timed out. Distinct from our own 500. */
+  badGateway: (message = 'An upstream service is unavailable.') =>
+    new AppError('BAD_GATEWAY', message),
   internal: (message = 'Something went wrong.') => new AppError('INTERNAL_ERROR', message),
 } as const;
 

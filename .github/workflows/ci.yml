@@ -10,14 +10,21 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege by default. Jobs that need more ask for it explicitly.
+permissions:
+  contents: read
+
 env:
   # Validation is skipped: CI needs no real secrets to type-check and lint.
   SKIP_ENV_VALIDATION: 'true'
   NEXT_TELEMETRY_DISABLED: '1'
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Fast feedback. Everything here fails in a few minutes or not at all.
+  # ---------------------------------------------------------------------------
   verify:
-    name: Lint, types and tests
+    name: Lint, types and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -33,37 +40,25 @@ jobs:
 
       # Generated types must exist before tsc runs.
       - run: npx prisma generate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
 
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
+      - name: Formatting
+        run: npm run format:check
 
-  build:
-    name: Production build
-    runs-on: ubuntu-latest
-    needs: verify
-    timeout-minutes: 20
+      - name: Lint
+        run: npm run lint
 
-    steps:
-      - uses: actions/checkout@v4
+      # Both tsconfigs: the app, and the Worker entrypoint, which is checked
+      # against the Cloudflare runtime types rather than against the DOM.
+      - name: Types
+        run: npm run typecheck
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
+      - name: Unit tests
+        run: npm run test
 
-      - run: npm ci
-
-      - name: Build
-        run: npm run build
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
-          AUTH_SECRET: ci-placeholder-secret-at-least-32-characters
-          NEXT_PUBLIC_SITE_URL: https://example.com
-
+  # ---------------------------------------------------------------------------
+  # Migrations. Proves the committed SQL applies to an empty database and that
+  # nobody edited the schema without generating a migration for it.
+  # ---------------------------------------------------------------------------
   migrations:
     name: Migration check
     runs-on: ubuntu-latest
@@ -83,6 +78,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/migrations_check
+
     steps:
       - uses: actions/checkout@v4
 
@@ -93,13 +91,269 @@ jobs:
 
       - run: npm ci
 
-      # Proves the committed migrations apply cleanly to an empty database and
-      # that no one has edited the schema without generating a migration.
+      - name: Schema is valid
+        run: npx prisma validate
+
+      - name: Migrations apply to an empty database
+        run: npx prisma migrate deploy
+
+      # Catches the common mistake: editing `schema.prisma` and forgetting
+      # `prisma migrate dev`. Without this, the drift is discovered by a
+      # production deploy.
+      - name: No drift between schema and migrations
+        run: |
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url postgresql://postgres:postgres@localhost:5432/migrations_check \
+            --exit-code
+
+      # A migration that cannot be applied twice cannot be retried after a
+      # partial failure — which is exactly when it will be.
+      - name: Migrations are re-runnable
+        run: npx prisma migrate deploy
+
+  # ---------------------------------------------------------------------------
+  # Build. Separate from `verify` so a type error reports in seconds rather than
+  # after a five-minute bundle.
+  # ---------------------------------------------------------------------------
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    needs: verify
+    timeout-minutes: 20
+
+    # `generateStaticParams` on the catalogue route queries the database at
+    # build time — that is the point of it. A build with an unreachable
+    # database fails at "collecting page data", so this job needs a real one
+    # rather than a plausible-looking connection string.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # An empty schema is enough: the build only needs the queries to succeed,
+      # not to return anything. Seeding here would make build time depend on
+      # catalogue size for no extra confidence.
       - run: npx prisma migrate deploy
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/migrations_check
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
 
-      - run: npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url postgresql://postgres:postgres@localhost:5432/migrations_check --exit-code
+      - name: Build for Cloudflare Workers
+        # `cf:build` runs `next build` and then the OpenNext transform. Building
+        # with `next build` alone would pass here and fail at deploy, because
+        # the adapter is where an unsupported runtime API surfaces.
+        run: npm run cf:build
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/migrations_check
-        continue-on-error: false
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
+          AUTH_SECRET: ci-placeholder-secret-at-least-32-characters
+          NEXT_PUBLIC_SITE_URL: https://example.com
+
+      # A bundle that grows 40% in one pull request deserves a conversation
+      # before it merges, not after a Lighthouse regression a month later.
+      - name: Report bundle size
+        run: |
+          echo "### Worker bundle" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          du -sh .open-next/ >> "$GITHUB_STEP_SUMMARY"
+          find .open-next -name '*.js' -size +500k -exec ls -lh {} \; >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: open-next-build
+          path: .open-next/
+          retention-days: 3
+
+  # ---------------------------------------------------------------------------
+  # End to end, against a real build and a real database.
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    needs: verify
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: e2e
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e
+      AUTH_SECRET: ci-placeholder-secret-at-least-32-characters
+      AUTH_TRUST_HOST: 'true'
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      # Klarna, Resend, Cloudinary and Upstash are deliberately unset. Each has
+      # a documented degraded path, and running the suite without them is what
+      # proves those paths work rather than merely existing.
+      SKIP_ENV_VALIDATION: 'false'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma migrate deploy
+      - run: npx prisma generate
+
+      - name: Seed
+        run: |
+          npm run db:seed
+          npm run db:seed:catalog
+          npm run db:seed:checkout
+          npm run db:seed:customers
+          npm run db:seed:admin
+
+      - run: npm run build
+
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            .playwright/
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Quality gates that need a running site.
+  #
+  # Advisory on a pull request, blocking on main: Lighthouse on shared CI
+  # hardware is noisy enough that failing every PR on it teaches people to
+  # ignore it, and an ignored gate is worse than no gate.
+  # ---------------------------------------------------------------------------
+  quality:
+    name: Links, SEO and performance budgets
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 30
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: quality
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/quality
+      AUTH_SECRET: ci-placeholder-secret-at-least-32-characters
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      - run: npx prisma generate
+      - run: npm run db:seed && npm run db:seed:catalog && npm run db:seed:customers
+
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+
+      - name: Start the app
+        run: npx next start -p 3000 &
+
+      - name: Wait for it
+        run: npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Broken links, missing images, duplicate metadata
+        run: npm run verify:links
+
+      - name: Accessibility and responsiveness
+        run: npm run verify:a11y
+
+      - name: Lighthouse budgets
+        run: npm run lighthouse
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse
+          path: .lighthouse.json
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Dependency and credential hygiene.
+  # ---------------------------------------------------------------------------
+  security:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Enough history for the credential scan below to be worth running.
+          fetch-depth: 50
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # High and critical only. Failing on `moderate` means failing on a
+      # transitive dev-dependency advisory every other week, and a check that is
+      # permanently red is a check nobody reads.
+      - name: Audit
+        run: npm audit --audit-level=high
+
+      - name: No credentials in recent history
+        run: |
+          if git log --format=%H -n 50 | xargs -I{} git show {} \
+             | grep -nE '(sk_live_|whsec_|re_[A-Za-z0-9]{20,}|-----BEGIN (RSA |EC )?PRIVATE KEY)'; then
+            echo "::error::A credential pattern appears in recent history. Rotate it before merging."
+            exit 1
+          fi

@@ -15,12 +15,12 @@ Eighteen pages at three viewports, signed in, with axe-core run against the real
 DOM on every one — 172 checks, roughly twelve minutes. It exists because the
 three defect classes it catches are invisible to everything else in the toolchain:
 
-| Check | Why a unit test cannot do it |
-|---|---|
-| **Responsive** — `scrollWidth` vs `clientWidth` at 375 / 768 / 1440 | A layout that works at 1440px says nothing about 375px. The failure reports the widest offending element, so the report is actionable rather than "something overflows". |
+| Check                                                                    | Why a unit test cannot do it                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Responsive** — `scrollWidth` vs `clientWidth` at 375 / 768 / 1440      | A layout that works at 1440px says nothing about 375px. The failure reports the widest offending element, so the report is actionable rather than "something overflows".                                                                               |
 | **Accessibility** — axe-core, WCAG 2.1 AA, `serious` and `critical` only | Contrast, ARIA misuse and duplicate ids are properties of rendered pixels and computed styles. `minor` is excluded deliberately: it is full of advisory rules a design system trips constantly, and a check that always fails is a check nobody reads. |
-| **Navigation** — every internal link followed, every sitemap URL fetched | Nothing in the app fails when a link rots. Nobody on the team clicks a sitemap. |
-| **Network** — every response and console message, for the whole run | A 500 from a fetch nobody awaited still fails the run. |
+| **Navigation** — every internal link followed, every sitemap URL fetched | Nothing in the app fails when a link rots. Nobody on the team clicks a sitemap.                                                                                                                                                                        |
+| **Network** — every response and console message, for the whole run      | A 500 from a fetch nobody awaited still fails the run.                                                                                                                                                                                                 |
 
 The account area is swept signed in. Skipping it would skip the half of the site
 that handles personal data.
@@ -38,11 +38,11 @@ Six defects, all shipped, none caught by TypeScript, ESLint or 154 unit tests.
 
 ### Contrast: three tokens below AA
 
-| Token | Was | Ratio | Now | Ratio |
-|---|---|---|---|---|
-| `foreground-subtle` | `#999999` | 2.84:1 | `#707070` | 4.95:1 on white, 4.54:1 on `#F5F5F5` |
-| `warning-700` | `#e65100` | 3.78:1 | `#c2410c` | 5.18:1 |
-| `accent` (white text on it) | `#e91e63` | 4.34:1 | `#d81b60` | 4.95:1 |
+| Token                       | Was       | Ratio  | Now       | Ratio                                |
+| --------------------------- | --------- | ------ | --------- | ------------------------------------ |
+| `foreground-subtle`         | `#999999` | 2.84:1 | `#707070` | 4.95:1 on white, 4.54:1 on `#F5F5F5` |
+| `warning-700`               | `#e65100` | 3.78:1 | `#c2410c` | 5.18:1                               |
+| `accent` (white text on it) | `#e91e63` | 4.34:1 | `#d81b60` | 4.95:1                               |
 
 57 violations across every page. `foreground-subtle` alone accounted for 46 on
 the shop page — it was carrying timestamps, table headers, helper text and card
@@ -93,7 +93,7 @@ The header dropdown linked to `/account/settings`. Phase 5 built `profile`,
 
 ### The entire admin was unreachable
 
-`authConfig` — the edge-safe config `proxy.ts` builds its own Auth.js instance
+`authConfig` — the edge-safe config `middleware.ts` builds its own Auth.js instance
 from — had no `session` callback. `request.auth.user.roles` was therefore always
 `undefined`, the edge role check failed closed, and every `/admin/*` request
 rewrote to a 404 for everyone, including a super administrator holding 41
@@ -119,7 +119,7 @@ nothing beyond being staff.
 
 ### Dark-mode contrast overrides that did nothing
 
-`@theme inline` bakes the *value expression* into each utility, so
+`@theme inline` bakes the _value expression_ into each utility, so
 `text-accent-text` compiles to `color: var(--color-brand-700)` — overriding the
 semantic alias `--color-accent-text` in the dark scope changed nothing, because
 nothing reads it. Only raw tokens resolve at runtime. Pink links sat at 3.13:1
@@ -147,11 +147,11 @@ that fails on every run stops being read, and because counting them as passes
 would let the twenty-ninth dead link ship unnoticed. A new dead link outside
 these prefixes still fails the sweep.
 
-| Prefix | Count | Linked from |
-|---|---|---|
-| `/pages/*` | 12 | Footer, homepage |
-| `/collections`, `/collections/*` | 10 | Homepage collections section |
-| `/guides`, `/guides/*` | 4 | Homepage journal section |
+| Prefix                           | Count | Linked from                  |
+| -------------------------------- | ----- | ---------------------------- |
+| `/pages/*`                       | 12    | Footer, homepage             |
+| `/collections`, `/collections/*` | 10    | Homepage collections section |
+| `/guides`, `/guides/*`           | 4     | Homepage journal section     |
 
 Full inventory:
 
@@ -190,14 +190,14 @@ state-privacy and card-network obligations that vary by state and change.
 What makes them worth reviewing rather than replacing is that they describe what
 the system actually does, checked against the code:
 
-| Claim | Where it is true |
-|---|---|
-| "Your card number never reaches our servers" | `payment.service.ts` — Stripe Payment Intents, token references only |
-| "Every device signed in, and you can sign any of them out" | `security.service.ts`, `/account/security` |
-| "Failed sign-ins are recorded" | `LoginEvent`, shown on the security page |
-| "Delete your account yourself" | `profile.service.ts` — `deleteAccount()` |
-| "Addresses stored as a snapshot per order" | `Order.shippingAddressSnapshot` |
-| "We cannot tell you your password" | Argon2 hashes, `server/auth/password.ts` |
+| Claim                                                      | Where it is true                                                                     |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| "Your card number never reaches our servers"               | `payment.service.ts` — Klarna holds the instrument; we store an order reference only |
+| "Every device signed in, and you can sign any of them out" | `security.service.ts`, `/account/security`                                           |
+| "Failed sign-ins are recorded"                             | `LoginEvent`, shown on the security page                                             |
+| "Delete your account yourself"                             | `profile.service.ts` — `deleteAccount()`                                             |
+| "Addresses stored as a snapshot per order"                 | `Order.shippingAddressSnapshot`                                                      |
+| "We cannot tell you your password"                         | Argon2 hashes, `server/auth/password.ts`                                             |
 
 Where a policy sentence depends on implementation, the code that makes it true
 is named in a comment beside it. A privacy policy that has drifted from the data

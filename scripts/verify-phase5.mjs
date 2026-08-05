@@ -79,7 +79,10 @@ async function signIn(page, credentials) {
 
   await page.fill('input[type="email"]', credentials.email);
   await page.fill('input[type="password"]', credentials.password);
-  await page.getByRole('button', { name: /sign in/i }).first().click();
+  await page
+    .getByRole('button', { name: /sign in/i })
+    .first()
+    .click();
 
   return page
     .waitForFunction(() => !window.location.pathname.startsWith('/sign-in'), { timeout: 30_000 })
@@ -117,7 +120,8 @@ async function main() {
     for (const path of GUARDED) {
       await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded' });
       if (new URL(page.url()).pathname === '/sign-in') redirected += 1;
-      else console.log(`        ${path} did NOT redirect — landed on ${new URL(page.url()).pathname}`);
+      else
+        console.log(`        ${path} did NOT redirect — landed on ${new URL(page.url()).pathname}`);
     }
     check(
       `all ${GUARDED.length} account routes redirect a signed-out visitor`,
@@ -127,7 +131,11 @@ async function main() {
 
     // The API must refuse too, not just the pages.
     const apiGuard = await context.request.get(`${BASE}/api/orders`);
-    check('the orders API refuses an unauthenticated read', apiGuard.status() === 401, `HTTP ${apiGuard.status()}`);
+    check(
+      'the orders API refuses an unauthenticated read',
+      apiGuard.status() === 401,
+      `HTTP ${apiGuard.status()}`,
+    );
 
     check('signing in works', await signIn(page, ADA));
 
@@ -146,7 +154,11 @@ async function main() {
       if (/noindex/.test(robots ?? '')) noindexed += 1;
       else console.log(`        ${path} robots="${robots}"`);
     }
-    check(`all ${GUARDED.length} account pages send noindex`, noindexed === GUARDED.length, `${noindexed}/${GUARDED.length}`);
+    check(
+      `all ${GUARDED.length} account pages send noindex`,
+      noindexed === GUARDED.length,
+      `${noindexed}/${GUARDED.length}`,
+    );
 
     const robotsTxt = await (await context.request.get(`${BASE}/robots.txt`)).text();
     check('robots.txt disallows /account', /Disallow:\s*\/account/i.test(robotsTxt));
@@ -207,7 +219,10 @@ async function main() {
 
     const before = await page.locator('main address').count();
 
-    await page.getByRole('button', { name: /add an address/i }).first().click();
+    await page
+      .getByRole('button', { name: /add an address/i })
+      .first()
+      .click();
     await page.waitForTimeout(400);
 
     await page.fill('#addr-firstName', 'Verify');
@@ -251,7 +266,10 @@ async function main() {
     );
 
     // Exactly one default per type — enforced by a partial unique index.
-    const defaultBadges = await page.locator('main li').getByText('Default', { exact: true }).count();
+    const defaultBadges = await page
+      .locator('main li')
+      .getByText('Default', { exact: true })
+      .count();
     check('only one address is the default', defaultBadges === 1, `${defaultBadges} marked`);
 
     // Deleting.
@@ -273,7 +291,10 @@ async function main() {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await hydrated(page);
     const remaining = await page.locator('main address').count();
-    const stillDefault = await page.locator('main li').getByText('Default', { exact: true }).count();
+    const stillDefault = await page
+      .locator('main li')
+      .getByText('Default', { exact: true })
+      .count();
     check(
       'deleting the default promotes a replacement',
       remaining === 0 || stillDefault === 1,
@@ -315,7 +336,9 @@ async function main() {
 
     // Detail accuracy, compared against the database rather than eyeballed.
     const target1 = orders[0];
-    await page.goto(`${BASE}/account/orders/${target1.orderNumber}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${BASE}/account/orders/${target1.orderNumber}`, {
+      waitUntil: 'domcontentloaded',
+    });
     await hydrated(page);
 
     const detail = ((await page.locator('main').textContent()) ?? '').replace(/\s+/g, ' ');
@@ -336,7 +359,10 @@ async function main() {
       target1.items.every((item) => detail.includes(`Qty ${item.quantity}`)),
     );
     check('the detail shows tax', detail.includes(money(target1.taxCents)));
-    check('the detail shows the shipping method', detail.includes(target1.shippingMethod ?? 'Shipping'));
+    check(
+      'the detail shows the shipping method',
+      detail.includes(target1.shippingMethod ?? 'Shipping'),
+    );
     check('the detail shows a timeline', /order history/i.test(detail));
 
     // ============================================ 6. WISHLIST SYNC
@@ -352,7 +378,10 @@ async function main() {
     await guestPage.goto(`${BASE}${guestProduct.href}`, { waitUntil: 'domcontentloaded' });
     await hydrated(guestPage);
 
-    await guestPage.getByRole('button', { name: /^save$|save to wishlist/i }).first().click();
+    await guestPage
+      .getByRole('button', { name: /^save$|save to wishlist/i })
+      .first()
+      .click();
     await guestPage.waitForTimeout(1500);
 
     const localSaved = await guestPage.evaluate(() => {
@@ -362,7 +391,11 @@ async function main() {
         return [];
       }
     });
-    check('a guest wishlist is kept on the device', localSaved.length > 0, `${localSaved.length} saved`);
+    check(
+      'a guest wishlist is kept on the device',
+      localSaved.length > 0,
+      `${localSaved.length} saved`,
+    );
 
     const accountBefore = await (await context.request.get(`${BASE}/api/cart`)).status();
     void accountBefore;
@@ -375,7 +408,7 @@ async function main() {
     await guestPage.reload({ waitUntil: 'domcontentloaded' });
     await hydrated(guestPage);
 
-    const merged = ((await guestPage.locator('main').textContent()) ?? '');
+    const merged = (await guestPage.locator('main').textContent()) ?? '';
     check(
       'the guest list merges into the account on sign-in',
       merged.includes(guestProduct.name),
@@ -448,7 +481,10 @@ async function main() {
     await hydrated(page);
     const historyBefore = await page.locator('main ul li').count();
 
-    await page.getByRole('button', { name: /remove .* from your history/i }).first().click();
+    await page
+      .getByRole('button', { name: /remove .* from your history/i })
+      .first()
+      .click();
     await page.waitForTimeout(2500);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await hydrated(page);
@@ -470,7 +506,10 @@ async function main() {
     await page.goto(`${BASE}/account/security`, { waitUntil: 'domcontentloaded' });
     await hydrated(page);
 
-    const sessionRows = await page.locator('main li').filter({ hasText: /on (Windows|macOS|Linux|iOS|Android|Unknown)/ }).count();
+    const sessionRows = await page
+      .locator('main li')
+      .filter({ hasText: /on (Windows|macOS|Linux|iOS|Android|Unknown)/ })
+      .count();
     check('more than one session is listed', sessionRows >= 2, `${sessionRows} listed`);
     check(
       'the current device is marked',
@@ -511,8 +550,15 @@ async function main() {
 
       await page.reload({ waitUntil: 'domcontentloaded' });
       await hydrated(page);
-      const afterRevoke = await page.locator('main li').filter({ hasText: /on (Windows|macOS|Linux|iOS|Android|Unknown)/ }).count();
-      check('the revoked session leaves the list', afterRevoke < sessionRows, `${sessionRows} -> ${afterRevoke}`);
+      const afterRevoke = await page
+        .locator('main li')
+        .filter({ hasText: /on (Windows|macOS|Linux|iOS|Android|Unknown)/ })
+        .count();
+      check(
+        'the revoked session leaves the list',
+        afterRevoke < sessionRows,
+        `${sessionRows} -> ${afterRevoke}`,
+      );
     }
 
     await secondContext.close();
@@ -564,10 +610,7 @@ async function main() {
       !(await signIn(stalePage, SAM)),
       'the old password still signed in',
     );
-    check(
-      'the new password works',
-      await signIn(stalePage, { email: SAM.email, password: TEMP }),
-    );
+    check('the new password works', await signIn(stalePage, { email: SAM.email, password: TEMP }));
 
     // Restore, so the script can run again.
     await stalePage.goto(`${BASE}/account/security`, { waitUntil: 'domcontentloaded' });
@@ -576,7 +619,10 @@ async function main() {
     await stalePage.fill('#newPassword', SAM.password);
     await stalePage.fill('#confirmPassword', SAM.password);
     await stalePage.getByRole('button', { name: /change password/i }).click();
-    check('the password is restored for the next run', await waitForText(stalePage, /password changed/i));
+    check(
+      'the password is restored for the next run',
+      await waitForText(stalePage, /password changed/i),
+    );
 
     await staleContext.close();
     await pwContext.close();

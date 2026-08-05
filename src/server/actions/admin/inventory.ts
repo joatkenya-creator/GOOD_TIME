@@ -9,7 +9,10 @@ import { adjustStock, setLowStockThreshold } from '@/services/admin/inventory-ad
 
 const adjustSchema = z.object({
   variantId: z.string().min(1),
-  delta: z.coerce.number().int().refine((value) => value !== 0, 'Enter a change other than zero'),
+  delta: z.coerce
+    .number()
+    .int()
+    .refine((value) => value !== 0, 'Enter a change other than zero'),
   reason: z.enum([
     'RECEIVED',
     'SOLD',

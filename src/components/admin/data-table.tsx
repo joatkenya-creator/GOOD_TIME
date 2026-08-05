@@ -80,7 +80,7 @@ export function DataTable<T>({
                 scope="col"
                 style={column.width ? { width: column.width } : undefined}
                 className={cn(
-                  'px-4 py-3 text-body-xs font-semibold tracking-wide text-foreground-subtle uppercase',
+                  'text-body-xs px-4 py-3 font-semibold tracking-wide text-foreground-subtle uppercase',
                   column.align === 'right' && 'text-right',
                   column.align === 'center' && 'text-center',
                   column.secondary && 'hidden sm:table-cell',
@@ -158,7 +158,10 @@ export function DataTable<T>({
                       that all go to the same place.
                     */}
                     {index === 0 && href ? (
-                      <Link href={href} className="font-medium text-foreground hover:text-accent-text">
+                      <Link
+                        href={href}
+                        className="font-medium text-foreground hover:text-accent-text"
+                      >
                         {column.cell(row)}
                       </Link>
                     ) : (
@@ -195,7 +198,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-body-xs font-medium whitespace-nowrap',
+        'text-body-xs inline-flex items-center rounded-full px-2 py-0.5 font-medium whitespace-nowrap',
         tones[tone],
       )}
     >
@@ -223,7 +226,7 @@ export function TablePagination({
 }) {
   if (totalPages <= 1) {
     return (
-      <p className="border-t border-border px-5 py-3 text-body-xs text-foreground-subtle">
+      <p className="text-body-xs border-t border-border px-5 py-3 text-foreground-subtle">
         {total} {total === 1 ? 'result' : 'results'}
       </p>
     );
@@ -243,7 +246,7 @@ export function TablePagination({
           <Link
             href={buildHref(page - 1)}
             rel="prev"
-            className="rounded-lg border border-border px-3 py-1.5 text-body-xs font-medium hover:bg-surface-muted"
+            className="text-body-xs rounded-lg border border-border px-3 py-1.5 font-medium hover:bg-surface-muted"
           >
             Previous
           </Link>
@@ -258,7 +261,7 @@ export function TablePagination({
           */
           <span
             aria-disabled="true"
-            className="rounded-lg border border-border px-3 py-1.5 text-body-xs text-foreground-subtle"
+            className="text-body-xs rounded-lg border border-border px-3 py-1.5 text-foreground-subtle"
           >
             Previous
           </span>
@@ -268,14 +271,14 @@ export function TablePagination({
           <Link
             href={buildHref(page + 1)}
             rel="next"
-            className="rounded-lg border border-border px-3 py-1.5 text-body-xs font-medium hover:bg-surface-muted"
+            className="text-body-xs rounded-lg border border-border px-3 py-1.5 font-medium hover:bg-surface-muted"
           >
             Next
           </Link>
         ) : (
           <span
             aria-disabled="true"
-            className="rounded-lg border border-border px-3 py-1.5 text-body-xs text-foreground-subtle"
+            className="text-body-xs rounded-lg border border-border px-3 py-1.5 text-foreground-subtle"
           >
             Next
           </span>

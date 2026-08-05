@@ -91,18 +91,18 @@ export default async function AdminImportsPage() {
                       >
                         {job.sourceName}
                         {job.isDryRun ? (
-                          <span className="ml-2 text-body-xs font-normal text-foreground-subtle">
+                          <span className="text-body-xs ml-2 font-normal text-foreground-subtle">
                             dry run
                           </span>
                         ) : null}
                       </Link>
-                      <p className="truncate text-body-xs text-foreground-subtle">
+                      <p className="text-body-xs truncate text-foreground-subtle">
                         {job.template?.name ?? 'No template'} · {humaniseEnum(job.sourceType)} ·{' '}
                         {formatRelative(job.createdAt)}
                       </p>
 
                       {job.totalRows > 0 ? (
-                        <p className="mt-1 text-body-xs">
+                        <p className="text-body-xs mt-1">
                           <span className="text-success-700">{job.processedRows} processed</span>
                           {job.failedRows > 0 ? (
                             <span className="text-danger-700"> · {job.failedRows} failed</span>
@@ -126,7 +126,7 @@ export default async function AdminImportsPage() {
                           <input type="hidden" name="jobId" value={job.id} />
                           <button
                             type="submit"
-                            className="rounded-lg border border-border px-2 py-1 text-body-xs text-foreground-muted hover:bg-warning-50 hover:text-warning-700"
+                            className="text-body-xs rounded-lg border border-border px-2 py-1 text-foreground-muted hover:bg-warning-50 hover:text-warning-700"
                           >
                             Roll back
                           </button>
@@ -193,9 +193,9 @@ export default async function AdminImportsPage() {
                     name="url"
                     type="url"
                     placeholder="https://supplier.example/feed.csv"
-                    className="h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono text-body-xs"
+                    className="text-body-xs h-10 w-full rounded-lg border border-border bg-surface px-3 font-mono"
                   />
-                  <p className="mt-1 text-body-xs text-foreground-subtle">
+                  <p className="text-body-xs mt-1 text-foreground-subtle">
                     Leave blank to use the template&rsquo;s own URL. HTTPS only; private and
                     loopback addresses are refused.
                   </p>
@@ -214,7 +214,7 @@ export default async function AdminImportsPage() {
                     <option value="overwrite">Let the feed win</option>
                     <option value="flag">Change nothing, flag it for review</option>
                   </select>
-                  <p className="mt-1 text-body-xs text-foreground-subtle">
+                  <p className="text-body-xs mt-1 text-foreground-subtle">
                     A supplier feed is not automatically more correct than a merchandiser&rsquo;s
                     copy.
                   </p>
@@ -229,7 +229,7 @@ export default async function AdminImportsPage() {
                   />
                   <span>
                     Dry run
-                    <span className="block text-body-xs text-foreground-subtle">
+                    <span className="text-body-xs block text-foreground-subtle">
                       Reports what would happen and writes nothing. Worth doing once per new feed.
                     </span>
                   </span>

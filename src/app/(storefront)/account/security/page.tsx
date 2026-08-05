@@ -20,14 +20,16 @@ import {
 
 export const metadata: Metadata = { title: 'Security' };
 
-const OUTCOME_COPY: Record<LoginOutcome, { label: string; tone: 'success' | 'danger' | 'warning' }> =
-  {
-    SUCCESS: { label: 'Signed in', tone: 'success' },
-    BAD_PASSWORD: { label: 'Wrong password', tone: 'danger' },
-    UNKNOWN_EMAIL: { label: 'Unknown email', tone: 'danger' },
-    LOCKED: { label: 'Blocked — account not active', tone: 'warning' },
-    FAILED_2FA: { label: 'Failed second factor', tone: 'danger' },
-  };
+const OUTCOME_COPY: Record<
+  LoginOutcome,
+  { label: string; tone: 'success' | 'danger' | 'warning' }
+> = {
+  SUCCESS: { label: 'Signed in', tone: 'success' },
+  BAD_PASSWORD: { label: 'Wrong password', tone: 'danger' },
+  UNKNOWN_EMAIL: { label: 'Unknown email', tone: 'danger' },
+  LOCKED: { label: 'Blocked — account not active', tone: 'warning' },
+  FAILED_2FA: { label: 'Failed second factor', tone: 'danger' },
+};
 
 /**
  * The security centre.
@@ -123,10 +125,9 @@ export default async function SecurityPage() {
           Two-factor authentication
         </h2>
         <p className="mt-1 text-body-sm text-foreground-muted">{twoFactor.reason}</p>
-        <p className="mt-3 text-body-xs text-foreground-subtle">
+        <p className="text-body-xs mt-3 text-foreground-subtle">
           When it arrives it will use an authenticator app rather than SMS. Text messages can be
-          intercepted by taking over a phone number, which is not a theoretical risk for
-          everybody.
+          intercepted by taking over a phone number, which is not a theoretical risk for everybody.
         </p>
       </section>
 
@@ -144,9 +145,14 @@ export default async function SecurityPage() {
               const copy = OUTCOME_COPY[event.outcome];
 
               return (
-                <li key={event.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <li
+                  key={event.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
                   <div>
-                    <p className="text-body-sm text-foreground">{describeDevice(event.userAgent)}</p>
+                    <p className="text-body-sm text-foreground">
+                      {describeDevice(event.userAgent)}
+                    </p>
                     <p className="text-body-xs text-foreground-subtle">
                       {event.ipAddress ? `${event.ipAddress} · ` : ''}
                       {event.createdAt.toLocaleString('en-US', {

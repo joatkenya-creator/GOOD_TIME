@@ -45,7 +45,10 @@ export function generateGiftCardCode(): string {
  * dashes still gets their money.
  */
 function normalise(code: string): string {
-  return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return code
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
 }
 
 export function hashGiftCardCode(code: string): string {

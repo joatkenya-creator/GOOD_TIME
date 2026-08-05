@@ -4,6 +4,7 @@ import { ZodError, type ZodType } from 'zod';
 import { AppError, errors, isAppError } from '@/lib/api/errors';
 import { jsonError } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { captureException } from '@/lib/monitoring/sentry';
 import { isSameOrigin } from '@/lib/security/csrf';
 import { clientIdentifier, rateLimit, rateLimitHeaders } from '@/lib/security/rate-limit';
 
@@ -45,16 +46,23 @@ export function withRoute<Params extends Record<string, string> = Record<string,
   ): Promise<NextResponse> => {
     const startedAt = Date.now();
 
+    /*
+     * Declared outside the `try` so the catch can reach it.
+     *
+     * A validation failure still consumed a token, and a client that gets no
+     * budget back on a 4xx has no signal to pace itself — it retries at full
+     * speed until it trips the 429. Every response carries the budget.
+     */
+    let headers: Record<string, string> | undefined;
+
     try {
       if (options.csrf !== false && !isSameOrigin(request)) {
         throw errors.forbidden('Cross-origin request rejected.');
       }
 
-      let headers: Record<string, string> | undefined;
-
       if (options.rateLimit !== false) {
         const bucket = options.rateLimit?.bucket ?? new URL(request.url).pathname;
-        const result = rateLimit(`${bucket}:${clientIdentifier(request)}`, {
+        const result = await rateLimit(`${bucket}:${clientIdentifier(request)}`, {
           ...(options.rateLimit?.limit !== undefined ? { limit: options.rateLimit.limit } : {}),
           ...(options.rateLimit?.windowSeconds !== undefined
             ? { windowSeconds: options.rateLimit.windowSeconds }
@@ -79,7 +87,13 @@ export function withRoute<Params extends Record<string, string> = Record<string,
 
       return response;
     } catch (error) {
-      return toErrorResponse(error, request, Date.now() - startedAt);
+      const response = toErrorResponse(error, request, Date.now() - startedAt);
+
+      if (headers) {
+        for (const [key, value] of Object.entries(headers)) response.headers.set(key, value);
+      }
+
+      return response;
     }
   };
 }
@@ -110,8 +124,31 @@ function toErrorResponse(error: unknown, request: NextRequest, durationMs: numbe
     durationMs,
   });
 
-  // Never leak an internal message or stack trace to the client.
-  return jsonError('INTERNAL_ERROR', 'Something went wrong.', { status: 500 });
+  /*
+   * Grouped by route, not by message.
+   *
+   * Without the fingerprint, "Order abc123 not found" and "Order def456 not
+   * found" become two issues, then two thousand, and the one alert that mattered
+   * is buried. The route is the thing an engineer actually fixes.
+   */
+  const eventId = captureException(error, {
+    transaction: `${request.method} ${request.nextUrl.pathname}`,
+    fingerprint: ['route', request.method, request.nextUrl.pathname],
+    tags: { route: request.nextUrl.pathname, method: request.method },
+    extra: { durationMs },
+    request: {
+      url: request.url,
+      method: request.method,
+      headers: Object.fromEntries(request.headers),
+    },
+  });
+
+  // Never leak an internal message or stack trace to the client. The event id
+  // is safe to hand over and is what turns a support ticket into a lookup.
+  return jsonError('INTERNAL_ERROR', 'Something went wrong.', {
+    status: 500,
+    ...(eventId ? { headers: { 'X-Error-Id': eventId } } : {}),
+  });
 }
 
 /** Parses and validates a JSON request body. Throws an `AppError` on failure. */

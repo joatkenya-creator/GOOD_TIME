@@ -69,7 +69,9 @@ export async function saveCollectionAction(formData: FormData): Promise<void> {
    */
   const rules = isAutomatic
     ? {
-        ...(formData.get('ruleCategoryId') ? { categoryId: String(formData.get('ruleCategoryId')) } : {}),
+        ...(formData.get('ruleCategoryId')
+          ? { categoryId: String(formData.get('ruleCategoryId')) }
+          : {}),
         ...(formData.get('ruleOnSale') === 'on' ? { isOnSale: true } : {}),
         ...(formData.get('ruleNewArrival') === 'on' ? { isNewArrival: true } : {}),
         ...(formData.get('ruleMaxPrice')

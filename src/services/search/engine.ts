@@ -328,11 +328,19 @@ class PostgresEngine implements SearchEngine {
         ]);
 
         const brandIds = brands.map((row) => row.brandId).filter(Boolean) as string[];
-        const categoryIds = categories.map((row) => row.primaryCategoryId).filter(Boolean) as string[];
+        const categoryIds = categories
+          .map((row) => row.primaryCategoryId)
+          .filter(Boolean) as string[];
 
         const [brandRows, categoryRows] = await Promise.all([
-          prisma.brand.findMany({ where: { id: { in: brandIds } }, select: { id: true, name: true } }),
-          prisma.category.findMany({ where: { id: { in: categoryIds } }, select: { id: true, name: true } }),
+          prisma.brand.findMany({
+            where: { id: { in: brandIds } },
+            select: { id: true, name: true },
+          }),
+          prisma.category.findMany({
+            where: { id: { in: categoryIds } },
+            select: { id: true, name: true },
+          }),
         ]);
 
         const brandName = new Map(brandRows.map((row) => [row.id, row.name]));

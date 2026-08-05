@@ -95,10 +95,9 @@ export default async function AdminJobsPage({
           role="status"
           className="mt-4 rounded-xl border border-warning-700/30 bg-warning-50 p-4 text-body-sm text-warning-700"
         >
-          The oldest queued job has been waiting{' '}
-          {Math.round((stats.oldestQueuedSeconds ?? 0) / 60)} minutes. Either no worker is running,
-          or one is stuck — check that the cron schedule is calling{' '}
-          <code className="rounded bg-surface px-1">/api/cron/jobs</code>, or that{' '}
+          The oldest queued job has been waiting {Math.round((stats.oldestQueuedSeconds ?? 0) / 60)}{' '}
+          minutes. Either no worker is running, or one is stuck — check that the cron schedule is
+          calling <code className="rounded bg-surface px-1">/api/cron/jobs</code>, or that{' '}
           <code className="rounded bg-surface px-1">npm run worker</code> is alive.
         </div>
       ) : null}
@@ -113,7 +112,7 @@ export default async function AdminJobsPage({
                   href={option ? `/admin/jobs?status=${option}` : '/admin/jobs'}
                   aria-current={status === option ? 'page' : undefined}
                   className={cn(
-                    'rounded-lg px-2.5 py-1 text-body-xs font-medium',
+                    'text-body-xs rounded-lg px-2.5 py-1 font-medium',
                     status === option
                       ? 'bg-accent-soft text-accent-text'
                       : 'border border-border hover:bg-surface-muted',
@@ -125,23 +124,23 @@ export default async function AdminJobsPage({
             </nav>
 
             {jobs.length === 0 ? (
-              <p className="py-8 text-center text-body-sm text-foreground-subtle">
-                Nothing here.
-              </p>
+              <p className="py-8 text-center text-body-sm text-foreground-subtle">Nothing here.</p>
             ) : (
               <ul className="divide-y divide-border">
                 {jobs.map((job) => (
                   <li key={job.id} className="py-2.5 first:pt-0 last:pb-0">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate font-mono text-body-xs font-medium">{job.kind}</p>
-                        <p className="truncate text-body-xs text-foreground-subtle">
+                        <p className="text-body-xs truncate font-mono font-medium">{job.kind}</p>
+                        <p className="text-body-xs truncate text-foreground-subtle">
                           {formatRelative(job.createdAt)}
-                          {job.attempts > 1 ? ` · attempt ${job.attempts} of ${job.maxAttempts}` : ''}
+                          {job.attempts > 1
+                            ? ` · attempt ${job.attempts} of ${job.maxAttempts}`
+                            : ''}
                           {job.schedule ? ` · ${job.schedule.name}` : ''}
                         </p>
                         {job.lastError ? (
-                          <p className="mt-1 truncate text-body-xs text-danger-700">
+                          <p className="text-body-xs mt-1 truncate text-danger-700">
                             {job.lastError}
                           </p>
                         ) : null}
@@ -158,7 +157,7 @@ export default async function AdminJobsPage({
                             <input type="hidden" name="jobId" value={job.id} />
                             <button
                               type="submit"
-                              className="rounded-lg border border-border px-2 py-1 text-body-xs hover:bg-surface-muted"
+                              className="text-body-xs rounded-lg border border-border px-2 py-1 hover:bg-surface-muted"
                             >
                               Retry
                             </button>
@@ -170,7 +169,7 @@ export default async function AdminJobsPage({
                             <input type="hidden" name="jobId" value={job.id} />
                             <button
                               type="submit"
-                              className="rounded-lg border border-border px-2 py-1 text-body-xs text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
+                              className="text-body-xs rounded-lg border border-border px-2 py-1 text-foreground-muted hover:bg-danger-50 hover:text-danger-700"
                             >
                               Cancel
                             </button>
@@ -193,17 +192,25 @@ export default async function AdminJobsPage({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[32rem] text-left text-body-sm">
                   <thead>
-                    <tr className="border-b border-border text-body-xs tracking-wide text-foreground-subtle uppercase">
-                      <th scope="col" className="py-2 pr-3">Kind</th>
-                      <th scope="col" className="py-2 pr-3 text-right">Queued</th>
-                      <th scope="col" className="py-2 pr-3 text-right">Succeeded</th>
-                      <th scope="col" className="py-2 text-right">Dead</th>
+                    <tr className="text-body-xs border-b border-border tracking-wide text-foreground-subtle uppercase">
+                      <th scope="col" className="py-2 pr-3">
+                        Kind
+                      </th>
+                      <th scope="col" className="py-2 pr-3 text-right">
+                        Queued
+                      </th>
+                      <th scope="col" className="py-2 pr-3 text-right">
+                        Succeeded
+                      </th>
+                      <th scope="col" className="py-2 text-right">
+                        Dead
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {kinds.map((kind) => (
                       <tr key={kind.kind} className="border-b border-border last:border-0">
-                        <td className="py-2 pr-3 font-mono text-body-xs">{kind.kind}</td>
+                        <td className="text-body-xs py-2 pr-3 font-mono">{kind.kind}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{kind.queued}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{kind.succeeded}</td>
                         <td
@@ -226,7 +233,8 @@ export default async function AdminJobsPage({
         <AdminCard title="Schedules">
           {schedules.length === 0 ? (
             <p className="text-body-sm text-foreground-subtle">
-              None configured. Run <code className="rounded bg-surface-muted px-1">db:seed:phase7</code>.
+              None configured. Run{' '}
+              <code className="rounded bg-surface-muted px-1">db:seed:phase7</code>.
             </p>
           ) : (
             <ul className="divide-y divide-border">
@@ -234,7 +242,7 @@ export default async function AdminJobsPage({
                 <li key={schedule.id} className="py-3 first:pt-0 last:pb-0">
                   <p className="text-body-sm font-medium">{schedule.name}</p>
                   <p className="text-body-xs text-foreground-subtle">{schedule.description}</p>
-                  <p className="mt-0.5 text-body-xs">
+                  <p className="text-body-xs mt-0.5">
                     <span className="font-mono">{schedule.cron}</span>
                     <span className="text-foreground-subtle"> — {describeCron(schedule.cron)}</span>
                   </p>
@@ -255,9 +263,9 @@ export default async function AdminJobsPage({
                           id={`cron-${schedule.id}`}
                           name="cron"
                           defaultValue={schedule.cron}
-                          className="h-8 w-28 rounded-lg border border-border bg-surface px-2 font-mono text-body-xs"
+                          className="text-body-xs h-8 w-28 rounded-lg border border-border bg-surface px-2 font-mono"
                         />
-                        <label className="flex items-center gap-1 text-body-xs">
+                        <label className="text-body-xs flex items-center gap-1">
                           <input
                             type="checkbox"
                             name="isActive"
@@ -268,7 +276,7 @@ export default async function AdminJobsPage({
                         </label>
                         <button
                           type="submit"
-                          className="h-8 rounded-lg border border-border px-2 text-body-xs hover:bg-surface-muted"
+                          className="text-body-xs h-8 rounded-lg border border-border px-2 hover:bg-surface-muted"
                         >
                           Save
                         </button>
@@ -278,7 +286,7 @@ export default async function AdminJobsPage({
                         <input type="hidden" name="kind" value={schedule.kind} />
                         <button
                           type="submit"
-                          className="h-8 rounded-lg bg-accent px-2.5 text-body-xs font-medium text-white hover:bg-accent-hover"
+                          className="text-body-xs h-8 rounded-lg bg-accent px-2.5 font-medium text-white hover:bg-accent-hover"
                         >
                           Run now
                         </button>

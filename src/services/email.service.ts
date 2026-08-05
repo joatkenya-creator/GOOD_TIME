@@ -246,7 +246,6 @@ export async function renderOrderConfirmation(
 }
 
 function orderConfirmationBody(order: EmailOrder): string {
-
   const delivery = order.estimatedDeliveryAt
     ? order.estimatedDeliveryAt.toLocaleDateString('en-US', {
         weekday: 'long',
@@ -505,10 +504,7 @@ ${paragraph('If you did not ask for this, ignore it — your password has not ch
 }
 
 /** Sent whenever profile fields change, so a silent takeover is not silent. */
-export async function sendProfileUpdatedEmail(
-  userId: string,
-  changed: string[],
-): Promise<boolean> {
+export async function sendProfileUpdatedEmail(userId: string, changed: string[]): Promise<boolean> {
   return sendToCustomer(userId, (customer) => ({
     subject: 'Your account details were updated',
     preheader: 'A change was made to your profile.',

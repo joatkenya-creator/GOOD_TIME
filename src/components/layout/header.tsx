@@ -25,10 +25,17 @@ import { cn } from '@/utils/cn';
  * first paint — a count that pops in after hydration reads as a bug and moves the
  * layout.
  */
-export function Header({ cartCount = 0 }: { cartCount?: number }) {
+export function Header({
+  cartCount = 0,
+  availablePages = [],
+}: {
+  cartCount?: number;
+  /** Resolvable `/pages/*` slugs, for the announcement bar's "See details" link. */
+  availablePages?: readonly string[];
+}) {
   return (
     <header className="sticky top-0 z-(--z-header) bg-surface/85 backdrop-blur-md">
-      <AnnouncementBar />
+      <AnnouncementBar availablePages={availablePages} />
 
       <div className="border-b border-border">
         <Container className="flex h-16 items-center gap-3 sm:h-18 sm:gap-5">

@@ -32,7 +32,9 @@ function escapeXml(value: string): string {
 }
 
 function absolute(path: string): string {
-  return path.startsWith('http') ? path : `${siteConfig.url}${path.startsWith('/') ? '' : '/'}${path}`;
+  return path.startsWith('http')
+    ? path
+    : `${siteConfig.url}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -258,7 +260,11 @@ export async function merchantFeed(): Promise<string> {
           isAdultOnly: true,
           brand: { select: { name: true } },
           primaryCategory: { select: { name: true, path: true } },
-          media: { take: 1, orderBy: { position: 'asc' }, select: { media: { select: { url: true } } } },
+          media: {
+            take: 1,
+            orderBy: { position: 'asc' },
+            select: { media: { select: { url: true } } },
+          },
           variants: {
             take: 1,
             where: { isActive: true, deletedAt: null },

@@ -116,7 +116,10 @@ async function signIn(page) {
   await page.goto(`${BASE}/sign-in`, { waitUntil: 'domcontentloaded' });
   await page.fill('input[type="email"]', ADA.email);
   await page.fill('input[type="password"]', ADA.password);
-  await page.getByRole('button', { name: /sign in/i }).first().click();
+  await page
+    .getByRole('button', { name: /sign in/i })
+    .first()
+    .click();
   return page
     .waitForFunction(() => !window.location.pathname.startsWith('/sign-in'), { timeout: 30_000 })
     .then(() => true)
@@ -226,7 +229,11 @@ async function main() {
 
       // A 404 page is expected to say 404; everything else must not.
       const expected = target.expectStatus ?? 200;
-      check(`${label} returns ${expected}`, response?.status() === expected, `got ${response?.status()}`);
+      check(
+        `${label} returns ${expected}`,
+        response?.status() === expected,
+        `got ${response?.status()}`,
+      );
 
       // Let client components settle before measuring or auditing.
       await page.waitForTimeout(600);
@@ -235,7 +242,9 @@ async function main() {
       check(
         `${label} has no horizontal overflow`,
         spill === null,
-        spill ? `${spill.overhang}px past the viewport, widest: <${spill.worst?.tag} class="${spill.worst?.cls}">` : undefined,
+        spill
+          ? `${spill.overhang}px past the viewport, widest: <${spill.worst?.tag} class="${spill.worst?.cls}">`
+          : undefined,
       );
 
       const violations = await audit(page);
@@ -349,7 +358,11 @@ async function main() {
   // Unauthenticated reads of personal data must be refused, not merely empty.
   const anon = await newContext(browser, VIEWPORTS[2]);
   const anonMe = await anon.request.get(`${BASE}/api/users/me`);
-  check('profile API refuses an unauthenticated read', anonMe.status() === 401, `got ${anonMe.status()}`);
+  check(
+    'profile API refuses an unauthenticated read',
+    anonMe.status() === 401,
+    `got ${anonMe.status()}`,
+  );
   await anon.close();
 
   await context.close();
@@ -360,7 +373,10 @@ async function main() {
   check(
     'no unexpected 4xx/5xx responses',
     badResponses.length === 0,
-    badResponses.slice(0, 8).map((r) => `${r.status} ${r.url} [${r.context}]`).join('; '),
+    badResponses
+      .slice(0, 8)
+      .map((r) => `${r.status} ${r.url} [${r.context}]`)
+      .join('; '),
   );
   check('no uncaught page errors', pageErrors.length === 0, pageErrors.slice(0, 5).join('; '));
   check('no console errors', consoleErrors.length === 0, consoleErrors.slice(0, 5).join('; '));

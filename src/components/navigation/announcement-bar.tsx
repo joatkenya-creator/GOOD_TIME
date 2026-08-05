@@ -54,7 +54,20 @@ function dismissBar(): void {
  * would make a screen reader unusable. Every message stays reachable because
  * each one is a real link.
  */
-export function AnnouncementBar() {
+export interface AnnouncementBarProps {
+  /**
+   * Slugs under `/pages/` that resolve. Supplied by the storefront layout, for
+   * the same reason as the footer's: a "See details" link to a policy page that
+   * was never written is a dead end in the most prominent strip on the site.
+   *
+   * The *message* still shows — "Free discreet shipping over $75" is true and
+   * useful on its own. Only the link is dropped, and it returns by itself when
+   * the page is published.
+   */
+  availablePages?: readonly string[];
+}
+
+export function AnnouncementBar({ availablePages = [] }: AnnouncementBarProps) {
   const dismissed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
@@ -72,6 +85,14 @@ export function AnnouncementBar() {
   if (dismissed) return null;
 
   const current = announcements[index] ?? announcements[0];
+
+  // A `/pages/*` target that does not exist loses its link, not its message.
+  const href =
+    current?.href && current.href.startsWith('/pages/')
+      ? availablePages.includes(current.href.slice('/pages/'.length))
+        ? current.href
+        : undefined
+      : current?.href;
   if (!current) return null;
 
   return (
@@ -87,11 +108,11 @@ export function AnnouncementBar() {
             className="text-center text-xs font-medium tracking-wide sm:text-body-sm"
           >
             {current.text}
-            {current.href ? (
+            {href ? (
               <>
                 {' '}
                 <Link
-                  href={current.href}
+                  href={href}
                   className="underline decoration-white/40 underline-offset-4 transition-colors hover:decoration-white"
                 >
                   {current.linkLabel ?? 'Learn more'}

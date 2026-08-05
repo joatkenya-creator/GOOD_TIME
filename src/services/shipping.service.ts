@@ -49,10 +49,7 @@ export function priceFor(rate: ShippingRate, context: ShippingContext): number {
     price += Math.ceil(billableGrams / 1000) * rate.perKgCents;
   }
 
-  if (
-    rate.freeAboveSubtotalCents != null &&
-    context.subtotalCents >= rate.freeAboveSubtotalCents
-  ) {
+  if (rate.freeAboveSubtotalCents != null && context.subtotalCents >= rate.freeAboveSubtotalCents) {
     return 0;
   }
 

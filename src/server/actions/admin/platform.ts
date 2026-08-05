@@ -286,7 +286,9 @@ export async function reindexAction(): Promise<void> {
 }
 
 export async function saveSynonymAction(formData: FormData): Promise<void> {
-  const term = String(formData.get('term') ?? '').trim().toLowerCase();
+  const term = String(formData.get('term') ?? '')
+    .trim()
+    .toLowerCase();
   const synonyms = String(formData.get('synonyms') ?? '')
     .split(',')
     .map((entry) => entry.trim().toLowerCase())

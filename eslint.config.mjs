@@ -4,7 +4,27 @@ import nextTypescript from 'eslint-config-next/typescript';
 /** @type {import('eslint').Linter.Config[]} */
 const config = [
   {
-    ignores: ['.next/**', 'node_modules/**', 'src/generated/**', 'coverage/**', 'next-env.d.ts'],
+    /**
+     * Build artefacts and generated code.
+     *
+     * `.open-next/` matters more than it looks: it contains a traced copy of
+     * `node_modules`, so leaving it unignored makes `npm run lint` walk tens of
+     * thousands of third-party files and report hundreds of errors in code
+     * nobody here wrote. It only exists after `cf:build`, which is why the
+     * problem appears the first time somebody builds for Cloudflare.
+     */
+    ignores: [
+      '.next/**',
+      '.open-next/**',
+      '.wrangler/**',
+      'node_modules/**',
+      'src/generated/**',
+      'coverage/**',
+      '.playwright/**',
+      'playwright-report/**',
+      'test-results/**',
+      'next-env.d.ts',
+    ],
   },
 
   ...coreWebVitals,

@@ -3,18 +3,34 @@ import Link from 'next/link';
 
 import { Container } from '@/components/layout/container';
 import { Reveal } from '@/components/motion/reveal';
-import { BlogCard } from '@/components/product/blog-card';
+import { BlogCard, type BlogCardData } from '@/components/product/blog-card';
 import { ROUTES } from '@/constants/routes';
-import { journalPosts } from '@/features/home/content';
 
 /**
  * Journal preview.
  *
  * Editorial content is how this category earns organic search traffic that
- * product pages cannot — the questions people type are informational long before
- * they are transactional.
+ * product pages cannot — the questions people type are informational long
+ * before they are transactional.
+ *
+ * ## Why this reads the database
+ *
+ * It used to render three hardcoded articles whose slugs pointed at
+ * `/guides/choosing-your-first-vibrator` and two siblings. No such posts
+ * existed, so the homepage advertised three guides and every one of them 404'd
+ * — on the most-visited page on the site, to every visitor and every crawler.
+ *
+ * Publishing a guide in the admin is now the only way it appears here, which
+ * makes the link and the article the same fact. With nothing published the
+ * section renders nothing at all: a heading promising "clear answers" above an
+ * empty grid is worse than silence.
+ *
+ * The posts arrive as a prop because `components/` is barred from importing
+ * `services/` — the page fetches, the component renders.
  */
-export function JournalSection() {
+export function JournalSection({ posts }: { posts: BlogCardData[] }) {
+  if (posts.length === 0) return null;
+
   return (
     <section aria-labelledby="journal-title" className="py-(--spacing-section)">
       <Container>
@@ -39,7 +55,7 @@ export function JournalSection() {
         </div>
 
         <ul className="grid gap-x-6 gap-y-12 md:grid-cols-3">
-          {journalPosts.map((post, index) => (
+          {posts.map((post, index) => (
             <li key={post.slug}>
               <Reveal delay={Math.min(index * 0.08, 0.24)}>
                 <BlogCard post={post} />

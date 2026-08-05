@@ -44,7 +44,7 @@ export async function signInAction(
 
   // Ten attempts per five minutes per IP: enough for a forgetful customer,
   // nowhere near enough for credential stuffing.
-  const limit = rateLimit(`auth:signin:${await actionIdentity()}`, {
+  const limit = await rateLimit(`auth:signin:${await actionIdentity()}`, {
     limit: 10,
     windowSeconds: 300,
   });
@@ -81,7 +81,7 @@ export async function registerAction(
 
   if (!parsed.success) return fail('Check the fields below.', flattenZodError(parsed.error));
 
-  const limit = rateLimit(`auth:register:${await actionIdentity()}`, {
+  const limit = await rateLimit(`auth:register:${await actionIdentity()}`, {
     limit: 5,
     windowSeconds: 3600,
   });
@@ -104,7 +104,7 @@ export async function forgotPasswordAction(
   const parsed = forgotPasswordSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return fail('Enter a valid email address.', flattenZodError(parsed.error));
 
-  const limit = rateLimit(`auth:forgot:${await actionIdentity()}`, {
+  const limit = await rateLimit(`auth:forgot:${await actionIdentity()}`, {
     limit: 5,
     windowSeconds: 3600,
   });

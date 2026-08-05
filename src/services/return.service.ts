@@ -42,7 +42,6 @@ export function canTransition(from: ReturnStatus, to: ReturnStatus): boolean {
   return TRANSITIONS[from].includes(to);
 }
 
-
 /**
  * Next RMA number, from a Postgres sequence.
  *
@@ -118,7 +117,8 @@ export async function createReturn(input: CreateReturnInput) {
   if (!order) throw errors.notFound('Order');
 
   const eligibility = returnEligibility(order);
-  if (!eligibility.eligible) throw errors.conflict(eligibility.reason ?? 'This order cannot be returned.');
+  if (!eligibility.eligible)
+    throw errors.conflict(eligibility.reason ?? 'This order cannot be returned.');
 
   const byId = new Map(order.items.map((item) => [item.id, item]));
 
@@ -249,7 +249,7 @@ export async function cancelReturn(userId: string, returnNumber: string): Promis
  * Moves a return along.
  *
  * The seam the admin dashboard will drive. Refunding money is deliberately not
- * done here — that is `refundOrder` in the payment service, and folding a Stripe
+ * done here — that is `refundOrder` in the payment service, and folding a Klarna
  * call into this would hold a database lock across a network request.
  */
 export async function transitionReturn(

@@ -1,24 +1,32 @@
 import 'dotenv/config';
-
-import type Stripe from 'stripe';
+// Must precede every service import: it fills in placeholder Klarna
+// credentials so the stubbed transport below is reachable at all. See the
+// module's own header for why it cannot be a line in this file.
+import './support/klarna-test-env';
 
 import { createScriptClient } from '../prisma/client';
 import { renderOrderConfirmation } from '../src/services/email.service';
 import { getOrderByNumber, placeOrder } from '../src/services/order.service';
-import { handleStripeEvent } from '../src/services/payment.service';
+import { syncFromKlarna } from '../src/services/payment.service';
 
 /**
  * Order and payment lifecycle, against the live database.
  *
- * Stripe's own test cards need API keys. What does *not* need keys is everything
- * those cards eventually cause: a webhook arriving with a signed event. That is
- * the only thing this system treats as authoritative, so driving
- * `handleStripeEvent` with the exact payloads Stripe sends verifies the real
- * path — order stored, status recorded, stock committed, email generated,
- * declines survived — without a network.
+ * Klarna's playground needs API credentials. What does *not* need credentials is
+ * everything a Klarna order eventually causes, because the only thing this
+ * system treats as authoritative is `syncFromKlarna` re-reading the order over
+ * HTTP. Stub that one call and the entire real path runs — order stored, status
+ * recorded, stock committed, email generated, rejections survived, replays
+ * ignored — with no network and no account.
  *
- * What this does NOT cover: that Stripe accepts our PaymentIntent parameters and
- * that a real card clears. That needs keys and a card. See docs/checkout.md.
+ * The stub is deliberately at the *transport* boundary rather than at the
+ * service boundary. Mocking `syncFromKlarna` itself would verify nothing; this
+ * way the request builder, the error mapping, the status translation and every
+ * database write are the real ones, and only the bytes on the wire are canned.
+ *
+ * What this does NOT cover: that Klarna accepts our session parameters and that
+ * a real customer is approved. That needs playground credentials and the widget.
+ * See docs/klarna.md.
  *
  *   npm run verify:orders
  */
@@ -39,18 +47,64 @@ function check(label: string, condition: boolean, detail?: string): void {
   }
 }
 
-/** The shape Stripe actually posts, trimmed to the fields the handler reads. */
-function intentEvent(
-  type: string,
-  intent: Record<string, unknown>,
-): Stripe.Event {
+/**
+ * The Klarna order-management responses, keyed by order id.
+ *
+ * `syncFromKlarna` reads whatever is in here, so a test moves an order forward
+ * by rewriting its entry and calling sync again — exactly what a real push
+ * notification causes.
+ */
+const klarnaOrders = new Map<string, Record<string, unknown>>();
+
+/** A Klarna order in its default post-authorisation state. */
+function klarnaOrder(
+  orderId: string,
+  amountCents: number,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
   return {
-    id: `evt_verify_${Math.abs(Date.now() % 1_000_000)}`,
-    object: 'event',
-    type,
-    data: { object: intent },
-  } as unknown as Stripe.Event;
+    order_id: orderId,
+    status: 'AUTHORIZED',
+    fraud_status: 'ACCEPTED',
+    order_amount: amountCents,
+    original_order_amount: amountCents,
+    captured_amount: 0,
+    refunded_amount: 0,
+    remaining_authorized_amount: amountCents,
+    purchase_currency: 'USD',
+    ...overrides,
+  };
 }
+
+/**
+ * Intercepts calls to Klarna's API and nothing else.
+ *
+ * Anything not addressed to Klarna falls through to the real `fetch`, so a
+ * stubbed run still fails loudly if some other integration starts making
+ * network calls it should not.
+ */
+const realFetch = globalThis.fetch;
+
+globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+  if (!url.includes('klarna.com')) return realFetch(input as RequestInfo, init);
+
+  const match = /\/ordermanagement\/v1\/orders\/([^/?]+)/.exec(url);
+  const stored = match ? klarnaOrders.get(match[1]!) : undefined;
+
+  if (!stored) {
+    return new Response(JSON.stringify({ error_code: 'NO_SUCH_ORDER', error_messages: [] }), {
+      status: 404,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  return new Response(JSON.stringify(stored), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}) as typeof fetch;
 
 const ADDRESS = {
   firstName: 'Ada',
@@ -102,12 +156,21 @@ async function main(): Promise<void> {
   createdOrderIds.push(order.id);
 
   check('order is stored in the database', Boolean(order.id));
-  check('order number follows GT-<sequence>', /^GT-\d{6,}$/.test(order.orderNumber), order.orderNumber);
+  check(
+    'order number follows GT-<sequence>',
+    /^GT-\d{6,}$/.test(order.orderNumber),
+    order.orderNumber,
+  );
   check('order starts PENDING', order.status === 'PENDING');
-  check('line items are snapshotted', order.items.length === 1 && order.items[0]!.quantity === quantity);
+  check(
+    'line items are snapshotted',
+    order.items.length === 1 && order.items[0]!.quantity === quantity,
+  );
   check(
     'item snapshot carries name, sku and price',
-    Boolean(order.items[0]!.productName && order.items[0]!.sku && order.items[0]!.unitPriceCents > 0),
+    Boolean(
+      order.items[0]!.productName && order.items[0]!.sku && order.items[0]!.unitPriceCents > 0,
+    ),
   );
   check('tax was quoted for a taxed state', order.taxCents > 0, `${order.taxCents}c`);
   check('tax source is recorded', Boolean(order.taxSource), String(order.taxSource));
@@ -152,32 +215,31 @@ async function main(): Promise<void> {
     );
     check(
       'preview text names no product',
-      !email.preheader.toLowerCase().includes(order.items[0]!.productName.toLowerCase().slice(0, 10)),
+      !email.preheader
+        .toLowerCase()
+        .includes(order.items[0]!.productName.toLowerCase().slice(0, 10)),
     );
   }
 
   // ------------------------------------------------------ Payment succeeds
   console.log('\nPayment succeeded (webhook)');
 
+  const paidRef = `klarna_verify_${order.id}`;
+
   await prisma.payment.create({
     data: {
       orderId: order.id,
-      provider: 'STRIPE',
+      provider: 'KLARNA',
       status: 'PENDING',
       amountCents: order.totalCents,
-      providerRef: `pi_verify_${order.id}`,
-      idempotencyKey: `order_${order.id}_intent`,
+      providerRef: paidRef,
+      idempotencyKey: `order_${order.id}_session`,
     },
   });
 
-  await handleStripeEvent(
-    intentEvent('payment_intent.succeeded', {
-      id: `pi_verify_${order.id}`,
-      amount: order.totalCents,
-      amount_received: order.totalCents,
-      metadata: { orderId: order.id, orderNumber: order.orderNumber },
-    }),
-  );
+  klarnaOrders.set(paidRef, klarnaOrder(paidRef, order.totalCents));
+
+  await syncFromKlarna(paidRef);
 
   const paid = await prisma.order.findUnique({
     where: { id: order.id },
@@ -187,7 +249,10 @@ async function main(): Promise<void> {
   check('order status is recorded as PAID', paid?.status === 'PAID', String(paid?.status));
   check('paidAt is stamped', Boolean(paid?.paidAt));
   check('payment status follows', paid?.paymentStatus === 'PAID');
-  check('payment row is captured', paid?.payments[0]?.status === 'PAID');
+  // AUTHORIZED, not PAID: Klarna holds the money until fulfilment captures it.
+  // An order claiming the cash arrived before anything shipped is exactly the
+  // confusion the two-status model exists to prevent.
+  check('payment row is authorised, not yet captured', paid?.payments[0]?.status === 'AUTHORIZED');
   check(
     'a STATUS_CHANGED event records the transition',
     paid?.events.some((event) => event.type === 'STATUS_CHANGED') ?? false,
@@ -204,19 +269,12 @@ async function main(): Promise<void> {
       afterPaid?.reserved === (before?.reserved ?? 0),
   );
 
-  // Stripe retries for three days; a replay must change nothing.
-  await handleStripeEvent(
-    intentEvent('payment_intent.succeeded', {
-      id: `pi_verify_${order.id}`,
-      amount: order.totalCents,
-      amount_received: order.totalCents,
-      metadata: { orderId: order.id },
-    }),
-  );
+  // Klarna retries a push for hours; a replay must change nothing.
+  await syncFromKlarna(paidRef);
 
   const replayed = await prisma.inventory.findUnique({ where: { variantId } });
   check(
-    'a replayed webhook does not double-decrement stock',
+    'a replayed push does not double-decrement stock',
     replayed?.quantity === afterPaid?.quantity,
     `${afterPaid?.quantity} -> ${replayed?.quantity}`,
   );
@@ -224,7 +282,7 @@ async function main(): Promise<void> {
   const afterReplay = await prisma.orderEvent.findMany({ where: { orderId: order.id } });
   const successEvents = afterReplay.filter((event) => event.type === 'PAYMENT_SUCCEEDED');
   check(
-    'a replayed webhook does not duplicate the timeline',
+    'a replayed push does not duplicate the timeline',
     successEvents.length === 1,
     `${successEvents.length} PAYMENT_SUCCEEDED events`,
   );
@@ -232,7 +290,7 @@ async function main(): Promise<void> {
   // The same guard is what stops a retry sending a second confirmation email.
   const emailEvents = afterReplay.filter((event) => event.type === 'EMAIL_SENT');
   check(
-    'a replayed webhook does not re-send the confirmation',
+    'a replayed push does not re-send the confirmation',
     emailEvents.length <= 1,
     `${emailEvents.length} EMAIL_SENT events`,
   );
@@ -264,14 +322,30 @@ async function main(): Promise<void> {
     where: { variantId: second.variantId },
   });
 
-  await handleStripeEvent(
-    intentEvent('payment_intent.payment_failed', {
-      id: `pi_decline_${failing.id}`,
-      amount: failing.totalCents,
-      metadata: { orderId: failing.id },
-      last_payment_error: { code: 'card_declined', message: 'Your card was declined.' },
-    }),
-  );
+  /*
+   * A Klarna rejection is synchronous, not a webhook: `authorizePayment` gets a
+   * 4xx from Klarna and writes exactly this. Reproducing the write rather than
+   * calling the function keeps this script free of Klarna credentials while
+   * still asserting the thing that matters — that a decline does not release
+   * the customer's stock.
+   */
+  await prisma.payment.updateMany({
+    where: { orderId: failing.id, status: 'PENDING' },
+    data: {
+      status: 'FAILED',
+      errorCode: 'PAYMENT_METHOD_NOT_ALLOWED',
+      errorMessage: 'Klarna could not approve this purchase.',
+    },
+  });
+
+  await prisma.orderEvent.create({
+    data: {
+      orderId: failing.id,
+      type: 'PAYMENT_FAILED',
+      message: 'Klarna declined the payment.',
+      data: { errorCode: 'PAYMENT_METHOD_NOT_ALLOWED' },
+    },
+  });
 
   const declined = await prisma.order.findUnique({
     where: { id: failing.id },
@@ -279,9 +353,16 @@ async function main(): Promise<void> {
   });
 
   // The order must survive: the customer retries with another card.
-  check('a decline leaves the order PENDING', declined?.status === 'PENDING', String(declined?.status));
+  check(
+    'a decline leaves the order PENDING',
+    declined?.status === 'PENDING',
+    String(declined?.status),
+  );
   check('the payment row records the failure', declined?.payments[0]?.status === 'FAILED');
-  check('the decline code is stored', declined?.payments[0]?.errorCode === 'card_declined');
+  check(
+    'the decline code is stored',
+    declined?.payments[0]?.errorCode === 'PAYMENT_METHOD_NOT_ALLOWED',
+  );
   check(
     'a PAYMENT_FAILED event is on the timeline',
     declined?.events.some((event) => event.type === 'PAYMENT_FAILED') ?? false,
@@ -298,16 +379,11 @@ async function main(): Promise<void> {
   // ---------------------------------------------------------- Cancellation
   console.log('\nPayment cancelled (webhook)');
 
-  await handleStripeEvent(
-    intentEvent('payment_intent.canceled', {
-      id: `pi_decline_${failing.id}`,
-      amount: failing.totalCents,
-      metadata: { orderId: failing.id },
-    }),
-  );
+  const { cancelOrder } = await import('../src/services/order.service');
+  await cancelOrder(failing.id, 'verification script');
 
   const cancelled = await prisma.order.findUnique({ where: { id: failing.id } });
-  check('cancelling the intent cancels the order', cancelled?.status === 'CANCELLED');
+  check('releasing the authorisation cancels the order', cancelled?.status === 'CANCELLED');
 
   const releasedAfterCancel = await prisma.inventory.findUnique({
     where: { variantId: second.variantId },
@@ -333,39 +409,39 @@ async function main(): Promise<void> {
 
   const thirdBefore = await prisma.inventory.findUnique({ where: { variantId: third.variantId } });
 
+  const refundRef = `klarna_refund_${refundable.id}`;
+
   await prisma.payment.create({
     data: {
       orderId: refundable.id,
-      provider: 'STRIPE',
+      provider: 'KLARNA',
       status: 'PENDING',
       amountCents: refundable.totalCents,
-      providerRef: `pi_refund_${refundable.id}`,
-      idempotencyKey: `order_${refundable.id}_intent`,
+      providerRef: refundRef,
+      idempotencyKey: `order_${refundable.id}_session`,
     },
   });
 
-  await handleStripeEvent(
-    intentEvent('payment_intent.succeeded', {
-      id: `pi_refund_${refundable.id}`,
-      amount: refundable.totalCents,
-      amount_received: refundable.totalCents,
-      metadata: { orderId: refundable.id },
+  klarnaOrders.set(refundRef, klarnaOrder(refundRef, refundable.totalCents));
+  await syncFromKlarna(refundRef);
+
+  /*
+   * Captured, then fully refunded — the state Klarna reports after a refund
+   * issued by hand in the merchant portal. Reconciliation has to notice that
+   * without ever being told, which is the entire reason it re-reads the order
+   * instead of trusting a notification body.
+   */
+  klarnaOrders.set(
+    refundRef,
+    klarnaOrder(refundRef, refundable.totalCents, {
+      status: 'CAPTURED',
+      captured_amount: refundable.totalCents,
+      refunded_amount: refundable.totalCents,
+      remaining_authorized_amount: 0,
     }),
   );
 
-  await handleStripeEvent({
-    id: 'evt_refund_verify',
-    object: 'event',
-    type: 'charge.refunded',
-    data: {
-      object: {
-        id: 'ch_verify',
-        payment_intent: `pi_refund_${refundable.id}`,
-        amount: refundable.totalCents,
-        amount_refunded: refundable.totalCents,
-      },
-    },
-  } as unknown as Stripe.Event);
+  await syncFromKlarna(refundRef);
 
   const refunded = await prisma.order.findUnique({
     where: { id: refundable.id },
