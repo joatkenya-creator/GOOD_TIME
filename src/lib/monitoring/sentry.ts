@@ -211,7 +211,7 @@ export function captureException(error: unknown, options: CaptureOptions = {}): 
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-sentry-envelope',
-      'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${target.publicKey}, sentry_client=good-time/1.0`,
+      'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${target.publicKey}, sentry_client=intimate-bunnie/1.0`,
     },
     body: envelope,
     // A slow Sentry must not hold a request open.

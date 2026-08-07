@@ -132,8 +132,16 @@ export const config = {
   /**
    * Skip static assets and image optimisation entirely — running this on every
    * `.woff2` request is pure latency.
+   *
+   * `/api/auth/*` is excluded for a different reason: this middleware *is* an
+   * Auth.js instance, built from the edge config, whose `providers` array is
+   * empty. Letting it run over Auth.js's own endpoints means that instance
+   * answers `/api/auth/session` instead of the route handler — and a provider-
+   * less instance 404s, so `SessionProvider` gets an HTML error page and
+   * reports `ClientFetchError: Unexpected token '<'`. The auth API gates
+   * itself; nothing here needs to see it.
    */
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|avif|ico|woff2?)$).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|avif|ico|woff2?)$).*)',
   ],
 };

@@ -5,8 +5,8 @@ import { publicEnv } from '@/lib/env.public';
  * hard-coded into a page title, an email footer or a JSON-LD block lives here.
  */
 export const siteConfig = {
-  name: 'GOOD TIME',
-  legalName: 'Good Time Commerce, Inc.',
+  name: 'INTIMATE BUNNIE',
+  legalName: 'Intimate Bunnie Commerce, Inc.',
   tagline: 'Body-safe toys, built to last.',
   description:
     'A premium sex toy shop for adults in the US. Body-safe silicone, glass and steel, rechargeable motors, honest specs and plain packaging — no jelly, no mystery materials, no euphemisms.',
@@ -17,7 +17,7 @@ export const siteConfig = {
   themeColor: '#E91E63',
 
   contact: {
-    email: 'support@goodtime.example',
+    email: 'support@intimatebunnie.example',
     phone: '+1-800-000-0000',
     hours: 'Mon–Fri, 9am–6pm ET',
   },

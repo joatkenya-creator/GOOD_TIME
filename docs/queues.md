@@ -48,10 +48,10 @@ Same handlers in all three. Only the loop differs.
 
 ## Two queues
 
-| Queue             | Binding       | Why separate                                                                |
-| ----------------- | ------------- | --------------------------------------------------------------------------- |
-| `good-time-jobs`  | `JOB_QUEUE`   | Everything else                                                             |
-| `good-time-email` | `EMAIL_QUEUE` | A ten-thousand-row import must not delay a password reset by twenty minutes |
+| Queue                   | Binding       | Why separate                                                                |
+| ----------------------- | ------------- | --------------------------------------------------------------------------- |
+| `intimate-bunnie-jobs`  | `JOB_QUEUE`   | Everything else                                                             |
+| `intimate-bunnie-email` | `EMAIL_QUEUE` | A ten-thousand-row import must not delay a password reset by twenty minutes |
 
 Routing is by kind prefix: anything starting `email.` goes to the email queue.
 
@@ -207,7 +207,7 @@ To exercise the real consumer, including batching and acking:
 
 ```bash
 npm run cf:preview
-npx wrangler queues consumer add good-time-jobs --local   # if not already bound
+npx wrangler queues consumer add intimate-bunnie-jobs --local   # if not already bound
 ```
 
 ---

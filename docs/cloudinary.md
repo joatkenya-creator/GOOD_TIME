@@ -37,7 +37,7 @@ every time the policy changed.
 
 1. Create a product environment at
    [console.cloudinary.com](https://console.cloudinary.com).
-2. **Settings → Upload → Upload presets**, create `good-time-products`:
+2. **Settings → Upload → Upload presets**, create `intimate-bunnie-products`:
 
    | Setting              | Value                  | Why                                                                           |
    | -------------------- | ---------------------- | ----------------------------------------------------------------------------- |

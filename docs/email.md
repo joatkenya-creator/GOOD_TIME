@@ -1,6 +1,12 @@
 # Email
 
-Transactional email through Resend. Production sender: **`yowens@yoassoc.com`**.
+Transactional email through Resend. Production sender:
+**`customercare@intimatebunnie.com`**.
+
+Customers only ever see `customercare@intimatebunnie.com`. Inbound mail to it is
+forwarded by Cloudflare Email Routing to the staffed mailbox
+`yowens@yoassoc.com`, and replies are sent back out _as_ `customercare` through
+Resend's SMTP relay. The staff address is never exposed.
 
 Email is the one output nobody can hotfix. Once it is in an inbox it is there —
 which is why the deliverability setup below matters more than the templates.
@@ -13,13 +19,19 @@ Nothing else matters if this is wrong. An unauthenticated domain sending
 transactional mail lands in spam, and a password reset in spam is a locked-out
 customer who blames the shop.
 
-Three DNS records on `yoassoc.com`:
+DNS records on `intimatebunnie.com`:
 
-| Type  | Name                | Value                                                  | Cloudflare proxy |
-| ----- | ------------------- | ------------------------------------------------------ | ---------------- |
-| TXT   | `yoassoc.com`       | `v=spf1 include:_spf.resend.com ~all`                  | —                |
-| CNAME | `resend._domainkey` | from the Resend dashboard                              | **DNS only**     |
-| TXT   | `_dmarc`            | `v=DMARC1; p=quarantine; rua=mailto:dmarc@yoassoc.com` | —                |
+| Type  | Name                 | Value                                                                | Cloudflare proxy |
+| ----- | -------------------- | -------------------------------------------------------------------- | ---------------- |
+| TXT   | `intimatebunnie.com` | `v=spf1 include:_spf.mx.cloudflare.net include:_spf.resend.com ~all` | —                |
+| CNAME | `resend._domainkey`  | from the Resend dashboard                                            | **DNS only**     |
+| TXT   | `_dmarc`             | `v=DMARC1; p=quarantine; rua=mailto:dmarc@intimatebunnie.com`        | —                |
+| MX    | `intimatebunnie.com` | `route1/2/3.mx.cloudflare.net` — added by Email Routing              | —                |
+
+**One SPF record, both includes.** Cloudflare Email Routing adds its own SPF
+when it is enabled; Resend asks for another. Two `v=spf1` TXT records on the
+same name is a permanent error and counts as no SPF at all — merge them into the
+single record above.
 
 **The DKIM CNAME must be DNS-only, not proxied.** Proxying hides the value behind
 Cloudflare's IPs, DKIM verification fails, and everything lands in spam. This is
@@ -47,9 +59,10 @@ clean, and `p=reject` a month after that.
 Verify before launch:
 
 ```bash
-dig TXT yoassoc.com +short
-dig CNAME resend._domainkey.yoassoc.com +short
-dig TXT _dmarc.yoassoc.com +short
+dig TXT intimatebunnie.com +short
+dig MX intimatebunnie.com +short
+dig CNAME resend._domainkey.intimatebunnie.com +short
+dig TXT _dmarc.intimatebunnie.com +short
 ```
 
 Then send one message to a Gmail address and check **Show original** for
@@ -61,14 +74,39 @@ Then send one message to a Gmail address and check **Show original** for
 
 ```bash
 RESEND_API_KEY=re_...
-EMAIL_FROM="GOOD TIME <yowens@yoassoc.com>"
-EMAIL_REPLY_TO=support@yoassoc.com
+EMAIL_FROM="INTIMATE BUNNIE <customercare@intimatebunnie.com>"
+EMAIL_REPLY_TO=customercare@intimatebunnie.com
 RESEND_WEBHOOK_SECRET=whsec_...
 ```
 
-`EMAIL_REPLY_TO` should never be the sending address. A customer who replies to
-a no-reply address and gets silence is a support failure that looks like being
-ignored.
+`EMAIL_REPLY_TO` may equal the sender here precisely because `customercare@` is
+a real, forwarded, monitored address rather than a no-reply. A customer who
+replies and gets silence is a support failure that looks like being ignored.
+`sendEmail` applies it to every send unless a caller overrides it.
+
+---
+
+## Inbound: receiving and replying
+
+Cloudflare Email Routing (zone `intimatebunnie.com` → **Email → Email Routing**) does
+the receiving; it cannot send. Sending as `customercare@` from the staff mailbox
+goes through Resend's SMTP relay instead.
+
+| Direction                                    | Path                                                                 |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| Customer → `customercare@intimatebunnie.com` | Cloudflare Email Routing → forwarded to `yowens@yoassoc.com`         |
+| Staff reply → customer                       | Gmail "Send mail as" → `smtp.resend.com:587` → From: `customercare@` |
+| App → customer                               | Resend API, `EMAIL_FROM`                                             |
+
+Gmail SMTP settings for the send-as identity: host `smtp.resend.com`, port
+`587`, username `resend`, password the `RESEND_API_KEY`, TLS. The destination
+address `yowens@yoassoc.com` must confirm Cloudflare's verification email before
+routing starts, and Gmail's own confirmation code arrives through that same
+forward — so set up routing first, send-as second.
+
+**Rotating `RESEND_API_KEY` breaks staff replies**, because the same key is the
+SMTP password. Update it in Gmail's send-as settings at the same time as
+`wrangler secret put`.
 
 ---
 

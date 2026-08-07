@@ -69,7 +69,7 @@ function layout(options: { title: string; preheader: string; body: string }): st
   <tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid ${BRAND.border};">
       <tr><td style="padding:24px;border-bottom:1px solid ${BRAND.border};">
-        <a href="${siteUrl()}" style="font-size:20px;font-weight:700;letter-spacing:0.02em;color:${BRAND.pink};text-decoration:none;">GOOD TIME</a>
+        <a href="${siteUrl()}" style="font-size:20px;font-weight:700;letter-spacing:0.02em;color:${BRAND.pink};text-decoration:none;">INTIMATE BUNNIE</a>
       </td></tr>
       <tr><td style="padding:28px 24px;">${options.body}</td></tr>
       <tr><td style="padding:20px 24px;background:${BRAND.lightGrey};border-top:1px solid ${BRAND.border};font-size:12px;line-height:1.6;color:${BRAND.mediumGrey};">
@@ -449,7 +449,7 @@ async function sendToCustomer(
 /** Sent once, after registration. The first impression the inbox gets. */
 export async function sendWelcomeEmail(userId: string): Promise<boolean> {
   return sendToCustomer(userId, (customer) => ({
-    subject: 'Welcome to GOOD TIME',
+    subject: 'Welcome to INTIMATE BUNNIE',
     preheader: 'Your account is ready.',
     body: `
 ${heading('Welcome')}
@@ -484,7 +484,7 @@ export async function sendPasswordChangedEmail(userId: string): Promise<boolean>
     preheader: 'If this was not you, act now.',
     body: `
 ${heading('Your password was changed')}
-${paragraph(`${greeting(customer)} the password on your GOOD TIME account was just changed, and every other signed-in device was signed out.`)}
+${paragraph(`${greeting(customer)} the password on your INTIMATE BUNNIE account was just changed, and every other signed-in device was signed out.`)}
 ${paragraph('<strong>If this was not you</strong>, reset your password immediately and reply to this email.')}
 ${button(`${siteUrl()}/forgot-password`, 'Reset your password')}
 ${paragraph(`You can review where you are signed in on your <a href="${siteUrl()}/account/security" style="color:${BRAND.pink};">security page</a>.`)}`,

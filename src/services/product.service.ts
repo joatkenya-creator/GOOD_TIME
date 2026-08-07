@@ -116,9 +116,11 @@ function toCardView(row: CardRow): ProductCardView {
   // the most commercially useful signal wins.
   const badge: ProductCardData['badge'] =
     price.discountPercent > 0
-      ? { label: `Save ${price.discountPercent}%`, variant: 'danger' }
+      ? // Hot pink for the saving, peach for the arrival. Red read as an error
+        // state on a product card — a discount is good news and should look it.
+        { label: `Save ${price.discountPercent}%`, variant: 'hot' }
       : row.isNewArrival
-        ? { label: 'New', variant: 'accent' }
+        ? { label: 'New', variant: 'warm' }
         : row.isFeatured
           ? { label: 'Best seller', variant: 'solid' }
           : null;

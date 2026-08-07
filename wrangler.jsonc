@@ -23,7 +23,7 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "good-time",
+  "name": "intimate-bunnie",
   "main": "cloudflare/worker.ts",
 
   /**
@@ -90,7 +90,24 @@
   },
 
   /**
-   * Queues.
+   * Queues — DISABLED, because Cloudflare Queues requires the Workers Paid plan.
+   *
+   * Commented rather than deleted: this is the configuration to restore, in
+   * both this block and the two environments below, the day the plan is
+   * upgraded. Create the dead-letter queues first or the others are rejected.
+   *
+   * ## What running without them actually costs
+   *
+   * Latency, not work. `src/lib/jobs/cf-queue.ts` resolves the binding at call
+   * time and returns `null` when it is absent; `publish()` then returns `false`
+   * without throwing, and the every-minute cron trigger above drains the
+   * `background_jobs` table instead. Postgres was always the ledger — the queue
+   * only ever owned the "in the next second rather than the next minute" part.
+   *
+   * So: a password-reset email arrives within about a minute rather than
+   * immediately, and a bulk import starts on the next sweep. `/api/health`
+   * reports push delivery as unavailable, which is how you tell this state from
+   * a broken one.
    *
    * `max_batch_timeout` is short because these carry job *ids*, not payloads —
    * waiting to fill a batch would add latency to a password reset for no
@@ -101,30 +118,30 @@
    * could not reach the database at all, and three attempts is enough to ride
    * out a blip without turning a real outage into a retry storm.
    */
-  "queues": {
-    "producers": [
-      { "queue": "good-time-jobs", "binding": "JOB_QUEUE" },
-      { "queue": "good-time-email", "binding": "EMAIL_QUEUE" },
-    ],
-    "consumers": [
-      {
-        "queue": "good-time-jobs",
-        "max_batch_size": 10,
-        "max_batch_timeout": 5,
-        "max_retries": 3,
-        "max_concurrency": 10,
-        "dead_letter_queue": "good-time-jobs-dlq",
-      },
-      {
-        "queue": "good-time-email",
-        "max_batch_size": 20,
-        "max_batch_timeout": 2,
-        "max_retries": 3,
-        "max_concurrency": 5,
-        "dead_letter_queue": "good-time-email-dlq",
-      },
-    ],
-  },
+  // "queues": {
+  //   "producers": [
+  //     { "queue": "intimate-bunnie-jobs", "binding": "JOB_QUEUE" },
+  //     { "queue": "intimate-bunnie-email", "binding": "EMAIL_QUEUE" },
+  //   ],
+  //   "consumers": [
+  //     {
+  //       "queue": "intimate-bunnie-jobs",
+  //       "max_batch_size": 10,
+  //       "max_batch_timeout": 5,
+  //       "max_retries": 3,
+  //       "max_concurrency": 10,
+  //       "dead_letter_queue": "intimate-bunnie-jobs-dlq",
+  //     },
+  //     {
+  //       "queue": "intimate-bunnie-email",
+  //       "max_batch_size": 20,
+  //       "max_batch_timeout": 2,
+  //       "max_retries": 3,
+  //       "max_concurrency": 5,
+  //       "dead_letter_queue": "intimate-bunnie-email-dlq",
+  //     },
+  //   ],
+  // },
 
   /**
    * Incremental cache for Next's ISR and `unstable_cache`.
@@ -136,8 +153,8 @@
    * below is the *tag* index, where eventual consistency is fine because a tag
    * lookup that briefly misses only causes an extra revalidation.
    */
-  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "good-time-cache" }],
-  "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }],
+  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache" }],
+  "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "0d873984a99e4fc88c1debb954325725" }],
 
   /**
    * Deduplicates concurrent revalidations of the same page.
@@ -160,48 +177,70 @@
     },
   ],
 
+  /**
+   * ## Everything below is repeated per environment on purpose
+   *
+   * Wrangler does **not** inherit `vars`, `queues`, `r2_buckets`,
+   * `kv_namespaces` or `durable_objects` from the top level into a named
+   * environment. A binding declared only at the top level is simply absent from
+   * `--env production`, and the failure is silent until runtime: the cache
+   * writes nowhere, `env.JOB_QUEUE` is undefined, and every email job throws
+   * inside a queue producer nobody is watching.
+   *
+   * `wrangler deploy --env production --dry-run` warns about each omission.
+   * Run it after editing this block.
+   */
   "env": {
     "staging": {
-      "name": "good-time-staging",
+      "name": "intimate-bunnie-staging",
       "vars": {
         "NODE_ENV": "production",
+        "NEXT_TELEMETRY_DISABLED": "1",
         "SENTRY_ENVIRONMENT": "staging",
         "KLARNA_ENVIRONMENT": "playground",
         "NEXT_PUBLIC_KLARNA_ENVIRONMENT": "playground",
       },
-      "routes": [{ "pattern": "staging.example.com", "custom_domain": true }],
-      "queues": {
-        "producers": [
-          { "queue": "good-time-jobs-staging", "binding": "JOB_QUEUE" },
-          { "queue": "good-time-email-staging", "binding": "EMAIL_QUEUE" },
-        ],
-        "consumers": [
-          {
-            "queue": "good-time-jobs-staging",
-            "max_batch_size": 10,
-            "max_batch_timeout": 5,
-            "max_retries": 3,
-            "dead_letter_queue": "good-time-jobs-dlq",
-          },
-          {
-            "queue": "good-time-email-staging",
-            "max_batch_size": 20,
-            "max_batch_timeout": 2,
-            "max_retries": 3,
-            "dead_letter_queue": "good-time-email-dlq",
-          },
-        ],
-      },
+      "routes": [{ "pattern": "staging.intimatebunnie.com", "custom_domain": true }],
+      // Disabled with the top-level block — restore both together.
+      // "queues": {
+      //   "producers": [
+      //     { "queue": "intimate-bunnie-jobs-staging", "binding": "JOB_QUEUE" },
+      //     { "queue": "intimate-bunnie-email-staging", "binding": "EMAIL_QUEUE" },
+      //   ],
+      //   "consumers": [
+      //     {
+      //       "queue": "intimate-bunnie-jobs-staging",
+      //       "max_batch_size": 10,
+      //       "max_batch_timeout": 5,
+      //       "max_retries": 3,
+      //       "dead_letter_queue": "intimate-bunnie-jobs-dlq",
+      //     },
+      //     {
+      //       "queue": "intimate-bunnie-email-staging",
+      //       "max_batch_size": 20,
+      //       "max_batch_timeout": 2,
+      //       "max_retries": 3,
+      //       "dead_letter_queue": "intimate-bunnie-email-dlq",
+      //     },
+      //   ],
+      // },
       "r2_buckets": [
-        { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "good-time-cache-staging" },
+        { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache-staging" },
       ],
       "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "REPLACE_WITH_STAGING_KV_ID" }],
+      "durable_objects": {
+        "bindings": [
+          { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
+          { "name": "NEXT_CACHE_DO_SHARDED_TAG", "class_name": "DOShardedTagCache" },
+        ],
+      },
     },
 
     "production": {
-      "name": "good-time-production",
+      "name": "intimate-bunnie-production",
       "vars": {
         "NODE_ENV": "production",
+        "NEXT_TELEMETRY_DISABLED": "1",
         "SENTRY_ENVIRONMENT": "production",
         "KLARNA_ENVIRONMENT": "production",
         "NEXT_PUBLIC_KLARNA_ENVIRONMENT": "production",
@@ -212,9 +251,42 @@
        * a redirect served from the edge never wakes the Worker.
        */
       "routes": [
-        { "pattern": "example.com", "custom_domain": true },
-        { "pattern": "www.example.com", "custom_domain": true },
+        { "pattern": "intimatebunnie.com", "custom_domain": true },
+        { "pattern": "www.intimatebunnie.com", "custom_domain": true },
       ],
+      // Disabled with the top-level block — restore all three together.
+      // "queues": {
+      //   "producers": [
+      //     { "queue": "intimate-bunnie-jobs", "binding": "JOB_QUEUE" },
+      //     { "queue": "intimate-bunnie-email", "binding": "EMAIL_QUEUE" },
+      //   ],
+      //   "consumers": [
+      //     {
+      //       "queue": "intimate-bunnie-jobs",
+      //       "max_batch_size": 10,
+      //       "max_batch_timeout": 5,
+      //       "max_retries": 3,
+      //       "max_concurrency": 10,
+      //       "dead_letter_queue": "intimate-bunnie-jobs-dlq",
+      //     },
+      //     {
+      //       "queue": "intimate-bunnie-email",
+      //       "max_batch_size": 20,
+      //       "max_batch_timeout": 2,
+      //       "max_retries": 3,
+      //       "max_concurrency": 5,
+      //       "dead_letter_queue": "intimate-bunnie-email-dlq",
+      //     },
+      //   ],
+      // },
+      "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache" }],
+      "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "0d873984a99e4fc88c1debb954325725" }],
+      "durable_objects": {
+        "bindings": [
+          { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
+          { "name": "NEXT_CACHE_DO_SHARDED_TAG", "class_name": "DOShardedTagCache" },
+        ],
+      },
     },
   },
 }

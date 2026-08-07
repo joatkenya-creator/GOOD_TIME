@@ -15,7 +15,7 @@ for every deploy afterwards.
                     └────────────┬─────────────────────┘
                                  │ cache miss
                     ┌────────────▼─────────────────────┐
-                    │  Worker: good-time-production    │
+                    │  Worker: intimate-bunnie-production    │
                     │  cloudflare/worker.ts            │
                     │    fetch     → OpenNext / Next   │
                     │    queue     → background jobs   │
@@ -58,8 +58,8 @@ environments — staging must be incapable of writing to production storage.
 
 ```bash
 # Incremental cache (ISR / unstable_cache page output)
-wrangler r2 bucket create good-time-cache
-wrangler r2 bucket create good-time-cache-staging
+wrangler r2 bucket create intimate-bunnie-cache
+wrangler r2 bucket create intimate-bunnie-cache-staging
 
 # Tag index for revalidateTag / revalidatePath
 wrangler kv namespace create NEXT_TAG_CACHE_KV
@@ -77,13 +77,13 @@ Dead-letter queues must exist **before** the queues that reference them, or the
 create fails with a message that does not say so.
 
 ```bash
-wrangler queues create good-time-jobs-dlq
-wrangler queues create good-time-email-dlq
+wrangler queues create intimate-bunnie-jobs-dlq
+wrangler queues create intimate-bunnie-email-dlq
 
-wrangler queues create good-time-jobs
-wrangler queues create good-time-email
-wrangler queues create good-time-jobs-staging
-wrangler queues create good-time-email-staging
+wrangler queues create intimate-bunnie-jobs
+wrangler queues create intimate-bunnie-email
+wrangler queues create intimate-bunnie-jobs-staging
+wrangler queues create intimate-bunnie-email-staging
 ```
 
 ### 4. Set the secrets

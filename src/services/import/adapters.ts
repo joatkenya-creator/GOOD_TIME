@@ -420,7 +420,7 @@ export async function fetchFeed(
     headers: {
       // Identifying the client is basic courtesy to a supplier reading their
       // logs, and it is what lets them allow-list us.
-      'User-Agent': 'GoodTimeImporter/1.0 (+https://goodtime.example/import)',
+      'User-Agent': 'IntimateBunnieImporter/1.0 (+https://intimatebunnie.example/import)',
       Accept: 'text/csv, application/json, application/xml, text/xml, */*',
       ...options.headers,
     },

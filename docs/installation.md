@@ -27,7 +27,7 @@ Any of these works. Pick one.
 **Local Postgres (Docker)**
 
 ```bash
-docker run --name goodtime-db -e POSTGRES_PASSWORD=postgres \
+docker run --name intimatebunnie-db -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=good_time -p 5432:5432 -d postgres:17
 ```
 

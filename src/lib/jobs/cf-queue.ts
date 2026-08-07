@@ -31,7 +31,7 @@ import { logger } from '@/lib/logger';
  *
  * Two exist, and they mean different things.
  *
- *   - Cloudflare's DLQ (`good-time-jobs-dlq`) catches messages whose *delivery*
+ *   - Cloudflare's DLQ (`intimate-bunnie-jobs-dlq`) catches messages whose *delivery*
  *     failed repeatedly — the consumer crashed, the isolate OOMed. Those are
  *     infrastructure failures and the job row is usually still `QUEUED`.
  *   - Our `JobStatus.DEAD` catches jobs whose *work* failed repeatedly. Those

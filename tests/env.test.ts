@@ -70,8 +70,8 @@ describe('server env', () => {
   });
 
   it('accepts EMAIL_FROM with a display name', async () => {
-    const env = await loadEnv({ EMAIL_FROM: 'GOOD TIME <no-reply@example.com>' });
-    expect(env.EMAIL_FROM).toBe('GOOD TIME <no-reply@example.com>');
+    const env = await loadEnv({ EMAIL_FROM: 'INTIMATE BUNNIE <no-reply@example.com>' });
+    expect(env.EMAIL_FROM).toBe('INTIMATE BUNNIE <no-reply@example.com>');
   });
 
   it('accepts EMAIL_FROM as a bare address', async () => {
@@ -80,7 +80,7 @@ describe('server env', () => {
   });
 
   it('rejects an EMAIL_FROM that holds no address', async () => {
-    await expect(loadEnv({ EMAIL_FROM: 'GOOD TIME <not-an-address>' })).rejects.toThrow(
+    await expect(loadEnv({ EMAIL_FROM: 'INTIMATE BUNNIE <not-an-address>' })).rejects.toThrow(
       /Invalid environment variables/,
     );
   });

@@ -44,15 +44,22 @@ export function MediaPlaceholder({
     brand: [
       ['var(--color-brand-100)', 'var(--color-brand-200)'],
       ['var(--color-brand-50)', 'var(--color-brand-300)'],
+      ['var(--color-hotpink-100)', 'var(--color-peach-200)'],
     ],
     neutral: [
       ['var(--color-ink-100)', 'var(--color-ink-200)'],
       ['var(--color-ink-50)', 'var(--color-ink-300)'],
     ],
+    // Peach earns its place here rather than only in `brand`: this tone fills
+    // most of the grid, and pink against grey alone goes cold across a full page
+    // of cards. The warm pairs break that up without leaving the palette.
     mixed: [
       ['var(--color-brand-50)', 'var(--color-ink-200)'],
       ['var(--color-brand-100)', 'var(--color-ink-100)'],
       ['var(--color-ink-50)', 'var(--color-brand-200)'],
+      ['var(--color-peach-100)', 'var(--color-brand-200)'],
+      ['var(--color-hotpink-100)', 'var(--color-peach-200)'],
+      ['var(--color-peach-50)', 'var(--color-brand-100)'],
     ],
   } as const;
 

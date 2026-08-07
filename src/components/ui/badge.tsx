@@ -15,6 +15,10 @@ const badgeVariants = cva(
         neutral: 'bg-surface-muted text-foreground-muted',
         accent: 'bg-accent-soft text-brand-700',
         solid: 'bg-accent text-white',
+        // Hot pink and peach: pale fill, dark text. The 500s are the loud part
+        // of each ramp and do not clear AA behind words — see tokens.css.
+        hot: 'bg-surface-blush text-accent-hot-text',
+        warm: 'bg-surface-warm text-accent-warm-text',
         outline: 'border border-border-strong text-foreground-muted',
         success: 'bg-success-50 text-success-700',
         warning: 'bg-warning-50 text-warning-700',

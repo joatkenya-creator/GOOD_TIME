@@ -252,7 +252,7 @@ async function seedSettings(): Promise<void> {
     { key: 'store.freeShippingThresholdCents', value: '7500', group: 'store' },
     { key: 'store.lowStockThreshold', value: '5', group: 'store' },
     { key: 'store.orderPrefix', value: 'GT', group: 'store' },
-    { key: 'store.supportEmail', value: 'support@goodtime.example', group: 'store' },
+    { key: 'store.supportEmail', value: 'support@intimatebunnie.example', group: 'store' },
     { key: 'store.supportHours', value: 'Mon–Fri, 9am–6pm ET', group: 'store' },
     { key: 'checkout.taxProvider', value: 'estimated', group: 'checkout' },
     { key: 'checkout.reservationMinutes', value: '30', group: 'checkout' },

@@ -84,7 +84,8 @@ export const POST = withRoute(
      * absorb a burst from a real visitor scrolling a long listing, and the
      * per-IP limit that would stop abuse would also stop them.
      */
-    const salt = process.env.ANALYTICS_SALT ?? process.env.AUTH_SECRET ?? 'good-time-analytics';
+    const salt =
+      process.env.ANALYTICS_SALT ?? process.env.AUTH_SECRET ?? 'intimate-bunnie-analytics';
     const sessionId = sessionIdFrom(body.visitor, salt);
 
     const userAgent = request.headers.get('user-agent') ?? undefined;

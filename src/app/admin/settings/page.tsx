@@ -78,8 +78,8 @@ export default async function AdminSettingsPage() {
   const integrations = [
     {
       label: 'Payments (Klarna)',
-      env: 'STRIPE_SECRET_KEY',
-      set: Boolean(process.env.STRIPE_SECRET_KEY),
+      env: 'KLARNA_USERNAME',
+      set: Boolean(process.env.KLARNA_USERNAME),
     },
     { label: 'Email (Resend)', env: 'RESEND_API_KEY', set: Boolean(process.env.RESEND_API_KEY) },
     { label: 'Tax (TaxJar)', env: 'TAXJAR_API_KEY', set: Boolean(process.env.TAXJAR_API_KEY) },

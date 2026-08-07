@@ -39,7 +39,7 @@ jobs:
     timeout-minutes: 25
     environment:
       name: staging
-      url: https://staging.example.com
+      url: https://staging.intimatebunnie.com
 
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
         run: npm run cf:build
         env:
           SKIP_ENV_VALIDATION: 'true'
-          NEXT_PUBLIC_SITE_URL: https://staging.example.com
+          NEXT_PUBLIC_SITE_URL: https://staging.intimatebunnie.com
           NEXT_PUBLIC_KLARNA_ENVIRONMENT: playground
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_PUBLIC_DSN }}
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.STAGING_TURNSTILE_SITE_KEY }}
@@ -84,7 +84,7 @@ jobs:
       - name: Smoke test
         run: |
           for attempt in 1 2 3 4 5; do
-            status=$(curl -s -o /dev/null -w '%{http_code}' https://staging.example.com/api/health) && break
+            status=$(curl -s -o /dev/null -w '%{http_code}' https://staging.intimatebunnie.com/api/health) && break
             sleep 5
           done
           test "$status" = "200" || { echo "::error::Health check returned $status"; exit 1; }
@@ -104,7 +104,7 @@ jobs:
     timeout-minutes: 30
     environment:
       name: production
-      url: https://example.com
+      url: https://intimatebunnie.com
 
     steps:
       - uses: actions/checkout@v4
@@ -167,7 +167,7 @@ jobs:
         run: npm run cf:build
         env:
           SKIP_ENV_VALIDATION: 'true'
-          NEXT_PUBLIC_SITE_URL: https://example.com
+          NEXT_PUBLIC_SITE_URL: https://intimatebunnie.com
           NEXT_PUBLIC_KLARNA_ENVIRONMENT: production
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_PUBLIC_DSN }}
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
@@ -200,14 +200,14 @@ jobs:
       - name: Smoke test
         run: |
           set -e
-          curl -sf https://example.com/api/health > /dev/null
-          curl -sf https://example.com/ -o /dev/null
-          curl -sf https://example.com/robots.txt -o /dev/null
-          curl -sf https://example.com/sitemap-index.xml -o /dev/null
+          curl -sf https://intimatebunnie.com/api/health > /dev/null
+          curl -sf https://intimatebunnie.com/ -o /dev/null
+          curl -sf https://intimatebunnie.com/robots.txt -o /dev/null
+          curl -sf https://intimatebunnie.com/sitemap-index.xml -o /dev/null
 
           # Security headers are easy to lose to a config change and hard to
           # notice, because nothing looks different.
-          headers=$(curl -sI https://example.com/)
+          headers=$(curl -sI https://intimatebunnie.com/)
           echo "$headers" | grep -qi 'strict-transport-security' \
             || { echo '::error::HSTS is missing'; exit 1; }
           echo "$headers" | grep -qi 'content-security-policy' \

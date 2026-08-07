@@ -37,13 +37,17 @@ export async function sendEmail(input: SendEmailInput): Promise<{ ok: boolean; i
     return { ok: false };
   }
 
+  // Falls back to EMAIL_REPLY_TO so every send lands somewhere a human reads,
+  // without each caller having to remember it.
+  const replyTo = input.replyTo ?? env.EMAIL_REPLY_TO;
+
   const { data, error } = await resend().emails.send({
     from: env.EMAIL_FROM,
     to: input.to,
     subject: input.subject,
     html: input.html,
     ...(input.text ? { text: input.text } : {}),
-    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
+    ...(replyTo ? { replyTo } : {}),
   });
 
   if (error) {

@@ -4,6 +4,7 @@ import {
   Bell,
   Clock,
   CreditCard,
+  Gauge,
   Gift,
   Heart,
   LayoutDashboard,
@@ -17,6 +18,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
 import { ROUTES } from '@/constants/routes';
 import { cn } from '@/utils/cn';
@@ -70,14 +72,27 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
   },
 ];
 
-const FLAT = SECTIONS.flatMap((section) => section.items);
+/**
+ * Staff get one more entry, because nothing else in the storefront links to the
+ * admin area — without this an administrator has to know to type `/admin`.
+ *
+ * A link, not a gate: `/admin` re-checks the session on every request. Hiding it
+ * from customers is tidiness, not security.
+ */
+const ADMIN_SECTION: (typeof SECTIONS)[number] = {
+  heading: 'Staff',
+  items: [{ href: ROUTES.admin.root, label: 'Admin dashboard', icon: Gauge }],
+};
 
-export function AccountNav() {
+export function AccountNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+
+  const sections = isAdmin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS;
+  const flat = sections.flatMap((section) => section.items);
 
   // Longest match wins, so `/account/orders/GT-1` highlights Orders rather than
   // Dashboard — every path starts with `/account`.
-  const active = FLAT.reduce<string | null>((best, item) => {
+  const active = flat.reduce<string | null>((best, item) => {
     if (pathname !== item.href && !pathname.startsWith(`${item.href}/`)) return best;
     return best === null || item.href.length > best.length ? item.href : best;
   }, null);
@@ -87,7 +102,7 @@ export function AccountNav() {
       {/* Mobile: a scroller, so eleven destinations do not become a wall. */}
       <nav aria-label="Account sections" className="-mx-4 border-b border-border px-4 lg:hidden">
         <ul className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-3 [&::-webkit-scrollbar]:hidden">
-          {FLAT.map((item) => (
+          {flat.map((item) => (
             <li key={item.href} className="shrink-0">
               <Link
                 href={item.href}
@@ -108,7 +123,7 @@ export function AccountNav() {
       </nav>
 
       <nav aria-label="Account sections" className="hidden lg:block">
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.heading} className="mb-6">
             <h2 className="text-body-xs mb-2 px-3 font-medium tracking-wide text-foreground-subtle uppercase">
               {section.heading}
@@ -137,15 +152,22 @@ export function AccountNav() {
           </div>
         ))}
 
-        <form action="/api/auth/signout" method="post" className="border-t border-border pt-4">
+        {/*
+          `signOut()` rather than a bare `<form method="post">` to
+          `/api/auth/signout`: Auth.js rejects that POST because it carries no
+          `csrfToken` field, so the click did nothing at all. The helper fetches
+          the token first, which is the whole reason it exists.
+        */}
+        <div className="border-t border-border pt-4">
           <button
-            type="submit"
+            type="button"
+            onClick={() => void signOut({ redirectTo: ROUTES.home })}
             className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-body-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
           >
             <LogOut aria-hidden="true" className="size-4 shrink-0" />
             Sign out
           </button>
-        </form>
+        </div>
       </nav>
     </>
   );

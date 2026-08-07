@@ -275,7 +275,7 @@ function Sidebar({
             </span>
             {!collapsed ? (
               <span className="truncate text-body-sm font-semibold tracking-tight">
-                GOOD TIME
+                INTIMATE BUNNIE
                 <span className="block text-[11px] font-normal text-foreground-subtle">Admin</span>
               </span>
             ) : null}

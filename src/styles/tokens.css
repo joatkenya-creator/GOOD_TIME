@@ -1,5 +1,5 @@
 /*
- * GOOD TIME — design tokens
+ * INTIMATE BUNNIE — design tokens
  *
  * Tailwind v4 is configured CSS-first: everything declared inside `@theme`
  * becomes both a CSS custom property and a utility class (`--color-brand-500`
@@ -30,8 +30,57 @@
   --color-brand-900: #880e4f;
   --color-brand-950: #560027;
 
+  /* --- Hot pink --------------------------------------------------------- */
+  /*
+   * A louder pink than the brand ramp, for the places that should shout: sale
+   * flashes, "new in" flags, the hover glow under a primary button.
+   *
+   * Read the contrast note before reaching for 500. #FF2D87 is 3.51:1 against
+   * white — fine as a *background* behind dark text or as a large decorative
+   * fill, and unusable for body text or as a button holding white text. Use 700
+   * (6.14:1 on white, 5.57:1 on the 50 tint) whenever the colour carries words.
+   */
+  --color-hotpink-50: #fff0f6;
+  --color-hotpink-100: #ffe0ef;
+  --color-hotpink-200: #ffc2dd;
+  --color-hotpink-300: #ff8fbf;
+  --color-hotpink-400: #ff5fa2;
+  --color-hotpink-500: #ff2d87; /* hot pink — decorative and background use */
+  --color-hotpink-600: #ec1373;
+  --color-hotpink-700: #c1005c; /* the text-safe step: 5.9:1 on white */
+
+  /* --- Peach ------------------------------------------------------------ */
+  /*
+   * The warm half of the palette. Pink alone goes cold and clinical at scale —
+   * peach is what stops a page of it reading like a medical form, and it is the
+   * tint under soft surfaces, empty states and editorial blocks.
+   *
+   * 500 is decorative for the same reason as hot pink (2.32:1 on white); 700 is
+   * the step that may hold text — 5.27:1 on white, 4.61:1 on the 100 tint it
+   * sits on in a badge.
+   */
+  --color-peach-50: #fff8f4;
+  --color-peach-100: #ffece1;
+  --color-peach-200: #ffdbc7;
+  --color-peach-300: #ffc2a3;
+  --color-peach-400: #ffa87f;
+  --color-peach-500: #ff8a5b; /* peach — decorative and background use */
+  --color-peach-600: #f26a37;
+  --color-peach-700: #b8481c; /* the text-safe step: 5.1:1 on white */
+
   /* --- Neutrals --------------------------------------------------------- */
-  /* Anchored on dark grey #333333, medium #666666, light #F5F5F5, border #E5E5E5. */
+  /*
+   * Anchored on dark grey #333333 and medium #666666, but the light end is
+   * warmed rather than neutral: a pure #F5F5F5 surface next to a pink accent
+   * reads grey and cold, and the whole page picks up the chill. Each light step
+   * carries a few degrees of the brand's own hue, which is the difference
+   * between "minimal" and "unfinished".
+   *
+   * Luminance is held roughly where it was, so every contrast ratio measured
+   * against these surfaces still holds. `ink-450` in particular is still the
+   * lightest step clearing 4.5:1 on both the canvas (4.95:1) and the muted
+   * surface (4.59:1) — re-measured after the warming, not assumed.
+   */
   /*
    * The page itself, split out from `--color-white`.
    *
@@ -57,13 +106,13 @@
    * pale pink.
    */
   --color-accent-link: #c2185b;
-  --color-accent-tint: #fdf2f7;
-  --color-accent-tint-strong: #fce4ec;
+  --color-accent-tint: #fff5f9;
+  --color-accent-tint-strong: #ffe4ef;
 
-  --color-ink-50: #f5f5f5; /* light grey surface */
-  --color-ink-100: #eeeeee;
-  --color-ink-200: #e5e5e5; /* default border */
-  --color-ink-300: #cccccc;
+  --color-ink-50: #faf5f7; /* blush-tinted light surface */
+  --color-ink-100: #f4ecf0;
+  --color-ink-200: #ecdfe5; /* default border */
+  --color-ink-300: #d5c3cb;
   --color-ink-400: #999999; /* decorative only - 2.84:1 on white, never text */
   --color-ink-450: #707070; /* the lightest grey that clears 4.5:1 on white AND #f5f5f5 */
   --color-ink-500: #666666; /* medium grey text */
@@ -145,7 +194,9 @@
   --shadow-md: 0 4px 12px -2px rgb(26 26 26 / 0.08), 0 2px 6px -2px rgb(26 26 26 / 0.04);
   --shadow-lg: 0 12px 28px -6px rgb(26 26 26 / 0.12), 0 4px 10px -4px rgb(26 26 26 / 0.05);
   --shadow-xl: 0 24px 56px -12px rgb(26 26 26 / 0.16);
-  --shadow-brand: 0 10px 30px -10px rgb(233 30 99 / 0.5);
+  /* Hot pink rather than brand pink: a glow is decorative, so it may use the
+     louder colour that text can never have. */
+  --shadow-brand: 0 10px 30px -10px rgb(255 45 135 / 0.45);
 
   /* --- Motion ----------------------------------------------------------- */
   /* One easing curve and three durations. Consistency reads as craft. */
@@ -209,6 +260,21 @@
    */
   --color-accent-text: var(--color-accent-link);
   --color-ring: var(--color-brand-500);
+
+  /*
+   * The loud pink and the warm one, named by job rather than by hue, so a
+   * component asks for "the shouty accent" instead of picking a ramp step and
+   * quietly pinning itself to today's palette.
+   *
+   * `-text` variants exist because the 500s do not clear AA on white. Anything
+   * holding words uses those; the plain token is for fills and glows.
+   */
+  --color-accent-hot: var(--color-hotpink-500);
+  --color-accent-hot-text: var(--color-hotpink-700);
+  --color-accent-warm: var(--color-peach-500);
+  --color-accent-warm-text: var(--color-peach-700);
+  --color-surface-blush: var(--color-hotpink-50);
+  --color-surface-warm: var(--color-peach-100);
 }
 
 /*

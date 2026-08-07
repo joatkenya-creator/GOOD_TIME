@@ -60,7 +60,7 @@ const serverSchema = z.object({
       (value) => z.email().safeParse(value.match(/<(.+)>/)?.[1] ?? value).success,
       'Must be an email address, optionally with a display name: "Name <a@b.com>"',
     )
-    .default('GOOD TIME <no-reply@example.com>'),
+    .default('INTIMATE BUNNIE <no-reply@example.com>'),
   /** Where customer replies land. Never the no-reply sender. */
   EMAIL_REPLY_TO: z.email().optional(),
 

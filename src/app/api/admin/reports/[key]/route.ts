@@ -43,7 +43,7 @@ export const GET = withRoute(async ({ request, params }) => {
     changes: { format: { from: null, to: format }, rows: { from: null, to: report.rows.length } },
   });
 
-  const filename = `goodtime-${key}-${days}d`;
+  const filename = `intimatebunnie-${key}-${days}d`;
 
   if (format === 'csv') {
     return new NextResponse(toCsv(report), {
@@ -104,7 +104,7 @@ function renderTable(report: Awaited<ReturnType<typeof buildReport>>, print: boo
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<title>${escapeHtml(report.title)} — GOOD TIME</title>
+<title>${escapeHtml(report.title)} — INTIMATE BUNNIE</title>
 <style>
   body { font-family: system-ui, sans-serif; margin: 2rem; color: #333; }
   h1 { font-size: 1.25rem; margin: 0 0 .25rem; }
@@ -116,7 +116,7 @@ function renderTable(report: Awaited<ReturnType<typeof buildReport>>, print: boo
 </style></head>
 <body>
   <h1>${escapeHtml(report.title)}</h1>
-  <p class="meta">${escapeHtml(report.description)} · Exported ${new Date().toISOString().slice(0, 10)} · GOOD TIME</p>
+  <p class="meta">${escapeHtml(report.description)} · Exported ${new Date().toISOString().slice(0, 10)} · INTIMATE BUNNIE</p>
   <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
   ${print ? '<script>window.addEventListener("load", () => window.print());</script>' : ''}
 </body></html>`;

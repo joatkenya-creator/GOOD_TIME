@@ -2,7 +2,23 @@ import { siteConfig } from '@/config/site';
 import { type EmailTemplate, renderEmail } from '@/emails/layout';
 import { escapeHtml } from '@/lib/security/sanitize';
 
-/** Templates for the account lifecycle. */
+/**
+ * Templates for the account lifecycle.
+ *
+ * ## Why no brand name in a subject line
+ *
+ * These used to read "Confirm your <brand> email address". Under the old name
+ * that was merely redundant; under this one it fails the discretion rule in
+ * `tests/email-templates.test.ts`, because the word "intimate" is exactly what
+ * that rule exists to keep off a lock screen.
+ *
+ * Fixing it by widening the regex would be fixing the wrong end. A subject is
+ * the one part of an email a stranger reads over your shoulder, and the brand
+ * adds nothing there that the sender address does not already say. It stays in
+ * the body, the footer and the `From:` — all places the recipient has chosen to
+ * look. The sibling templates in `email.service.ts` were already written this
+ * way; these three were the outliers.
+ */
 
 /**
  * The greeting, in two forms, because they land in two different contexts.
@@ -27,7 +43,7 @@ export function verifyEmailTemplate(url: string, firstName?: string | null): Ema
   const hello = greeting(firstName);
 
   return {
-    subject: `Confirm your ${siteConfig.name} email address`,
+    subject: 'Confirm your email address',
     html: renderEmail({
       heading: 'Confirm your email',
       bodyHtml: `<p style="margin:0 0 12px;">${hello.html}</p>
@@ -43,7 +59,7 @@ export function passwordResetTemplate(url: string, firstName?: string | null): E
   const hello = greeting(firstName);
 
   return {
-    subject: `Reset your ${siteConfig.name} password`,
+    subject: 'Reset your password',
     html: renderEmail({
       heading: 'Reset your password',
       bodyHtml: `<p style="margin:0 0 12px;">${hello.html}</p>
@@ -60,7 +76,7 @@ export function passwordChangedTemplate(firstName?: string | null): EmailTemplat
   const hello = greeting(firstName);
 
   return {
-    subject: `Your ${siteConfig.name} password was changed`,
+    subject: 'Your password was changed',
     html: renderEmail({
       heading: 'Your password was changed',
       bodyHtml: `<p style="margin:0 0 12px;">${hello.html}</p>

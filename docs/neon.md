@@ -157,7 +157,7 @@ backup. A weekly `pg_dump` to R2 or S3, encrypted, retained for 90 days:
 ```bash
 pg_dump "$DIRECT_DATABASE_URL" --format=custom --no-owner --no-acl \
   | gpg --encrypt --recipient ops@example.com \
-  | aws s3 cp - "s3://backups/good-time/$(date +%Y-%m-%d).dump.gpg"
+  | aws s3 cp - "s3://backups/intimate-bunnie/$(date +%Y-%m-%d).dump.gpg"
 ```
 
 Full procedure and the restore drill in

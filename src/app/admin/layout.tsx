@@ -20,7 +20,7 @@ import { countUnreadAlerts } from '@/services/admin/alert.service';
  * question.
  */
 export const metadata: Metadata = {
-  title: { default: 'Admin', template: '%s · Admin · GOOD TIME' },
+  title: { default: 'Admin', template: '%s · Admin · INTIMATE BUNNIE' },
   // Nothing here is ever indexed, and `nocache` keeps it out of caches that
   // ignore the first directive.
   robots: { index: false, follow: false, nocache: true, noimageindex: true },

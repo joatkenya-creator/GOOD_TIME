@@ -27,7 +27,7 @@ this is everything outside it.
 └────────────────────────────────────┬───────────────────────────────────┘
                                      │ cache miss only
 ┌────────────────────────────────────▼───────────────────────────────────┐
-│ WORKER  good-time-production          cloudflare/worker.ts             │
+│ WORKER  intimate-bunnie-production          cloudflare/worker.ts             │
 │                                                                        │
 │   fetch()      → OpenNext → Next.js 16 (RSC, streaming, ISR)           │
 │   queue()      → runOne()  — background jobs, push-delivered           │

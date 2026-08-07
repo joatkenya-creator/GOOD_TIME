@@ -86,6 +86,12 @@ const CATEGORIES: CategorySpec[] = [
         name: 'Remote & app',
         description: 'Wearable and insertable toys controlled by remote or phone.',
       },
+      {
+        slug: 'rose',
+        name: 'Rose vibrators',
+        description:
+          'Petal-shaped suction toys. Air pulses rather than contact, with the suction strength listed in steps.',
+      },
     ],
   },
   {
@@ -201,6 +207,132 @@ const CATEGORIES: CategorySpec[] = [
       { slug: 'toy-cleaner', name: 'Toy cleaner', description: 'Fragrance-free, alcohol-free.' },
     ],
   },
+  {
+    slug: 'condoms',
+    name: 'Condoms',
+    description:
+      'Textured, ultra-thin and flavoured condoms with the width, length and material stated on every box.',
+    heroHeadline: 'Nominal width printed, not guessed',
+    heroBody:
+      'Fit is the whole story with a condom, so every box here lists its nominal width and length in millimetres. Latex-free options are marked, and nothing is oil-lubricated.',
+    children: [
+      {
+        slug: 'ultra-thin',
+        name: 'Ultra thin',
+        description: 'Thinner walls, same burst-pressure testing.',
+      },
+      {
+        slug: 'textured',
+        name: 'Textured',
+        description: 'Ribbed and dotted profiles, with the pattern described rather than implied.',
+      },
+      {
+        slug: 'flavoured',
+        name: 'Flavoured',
+        description: 'Sugar-free flavour coatings for oral use.',
+      },
+    ],
+  },
+  {
+    slug: 'enlargement',
+    name: 'Enlargement & performance',
+    description:
+      'Pumps, girth sleeves and endurance aids, with honest measurements and no claims about permanent change.',
+    heroHeadline: 'What it does, and what it does not',
+    heroBody:
+      'Pumps and sleeves give a temporary effect while worn or used. Nothing here permanently changes anatomy, and we will not pretend otherwise — the measurements listed are the sleeve, not a promise.',
+    children: [
+      {
+        slug: 'pumps',
+        name: 'Pumps',
+        description: 'Manual and rechargeable pumps with a pressure gauge and a quick-release.',
+      },
+      {
+        slug: 'sleeves',
+        name: 'Girth sleeves',
+        description: 'Wearable silicone sleeves and extenders with added length and girth stated.',
+      },
+      {
+        slug: 'endurance',
+        name: 'Endurance',
+        description: 'Delay sprays and gels with the active ingredient and its strength listed.',
+      },
+    ],
+  },
+  {
+    slug: 'body-jewellery',
+    name: 'Body jewellery',
+    description:
+      'Implant-grade titanium and 14k gold body jewellery for belly, nose, tongue and nipple, with gauge and bar length stated.',
+    heroHeadline: 'Gauge and length on every listing',
+    heroBody:
+      'Nickel-free implant-grade titanium and solid 14k gold only. Every piece states its gauge, bar length and ball size, because a beautiful bar in the wrong length is unwearable.',
+    children: [
+      {
+        slug: 'belly',
+        name: 'Belly button',
+        description: 'Curved navel bars, 14g, in 6mm through 12mm lengths.',
+      },
+      { slug: 'nose', name: 'Nose', description: 'Studs, L-bends and hoops from 20g to 18g.' },
+      {
+        slug: 'tongue',
+        name: 'Tongue',
+        description: 'Straight barbells, 14g, with smooth-polished balls.',
+      },
+      {
+        slug: 'nipple',
+        name: 'Nipple',
+        description: 'Barbells, shields and non-piercing clip-on pieces.',
+      },
+    ],
+  },
+  {
+    slug: 'body-oils',
+    name: 'Body oils & shimmer',
+    description:
+      'Massage and shimmer oils with full ingredient lists, including the gold-shimmer oils, and stated condom compatibility.',
+    heroHeadline: 'Every ingredient, and what it is safe with',
+    heroBody:
+      'Oils degrade latex. We say so on every listing rather than in the small print, and mark which formulas are safe with condoms and which are strictly for massage.',
+    children: [
+      {
+        slug: 'shimmer',
+        name: 'Shimmer',
+        description: 'Gold and pearl shimmer oils with mineral-based reflective particles.',
+      },
+      {
+        slug: 'massage',
+        name: 'Massage',
+        description: 'Unscented and lightly scented carrier oils for massage.',
+      },
+    ],
+  },
+  {
+    slug: 'lingerie',
+    name: 'Lingerie',
+    description:
+      'Thongs, strappy sets and bodystockings in sizes XS to 4XL, with the actual stretch measurements published.',
+    heroHeadline: 'Sized by measurement, not by adjective',
+    heroBody:
+      'Every piece lists its unstretched and stretched measurements alongside the size label, so "one size" never has to be taken on faith. XS to 4XL across the range.',
+    children: [
+      {
+        slug: 'thongs',
+        name: 'Thongs',
+        description: 'Lace, mesh and microfibre thongs sold singly and in threes.',
+      },
+      {
+        slug: 'sets',
+        name: 'Sets',
+        description: 'Matched bra and brief sets, strappy and harness-style.',
+      },
+      {
+        slug: 'bodystockings',
+        name: 'Bodystockings',
+        description: 'Sheer full-body pieces, open and closed gusset.',
+      },
+    ],
+  },
 ];
 
 const BRANDS = [
@@ -217,8 +349,8 @@ const BRANDS = [
       'Materials specialists working exclusively in platinum-cure silicone, borosilicate glass and surgical steel. Nothing in the range is porous.',
   },
   {
-    slug: 'good-time-studio',
-    name: 'Good Time Studio',
+    slug: 'intimate-bunnie-studio',
+    name: 'Intimate Bunnie Studio',
     description:
       'Our own line. Designed in-house, made in the US, refillable where the format allows, priced without the brand premium.',
   },
@@ -273,6 +405,12 @@ const ATTRIBUTES = [
       'ABS plastic',
       'Vegan leather',
       'Water-based formula',
+      'Implant-grade titanium',
+      '14k solid gold',
+      'Natural rubber latex',
+      'Polyisoprene (latex-free)',
+      'Stretch lace and mesh',
+      'Cosmetic oil blend',
     ],
   },
   {
@@ -352,6 +490,10 @@ const TAGS = [
   { slug: 'travel-lock', name: 'Travel lock', isFilterable: true },
   { slug: 'fragrance-free', name: 'Fragrance free', isFilterable: true },
   { slug: 'made-in-usa', name: 'Made in the USA', isFilterable: true },
+  { slug: 'latex-free', name: 'Latex free', isFilterable: true },
+  { slug: 'hypoallergenic', name: 'Hypoallergenic', isFilterable: true },
+  { slug: 'suction', name: 'Air-pulse suction', isFilterable: true },
+  { slug: 'vegan', name: 'Vegan', isFilterable: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -424,7 +566,7 @@ const PRODUCTS: ProductSpec[] = [
     name: 'Pebble Bullet Vibrator',
     category: 'vibrators',
     subcategory: 'bullets',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Palm-sized single-motor bullet at 38 dB. Three speeds, one button, ninety minutes of runtime.',
     description:
@@ -453,7 +595,7 @@ const PRODUCTS: ProductSpec[] = [
     name: 'Ember Dual-Stimulation Vibrator',
     category: 'vibrators',
     subcategory: 'dual-stimulation',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Two independently controlled motors, 44 dB, with an internal arm shaped for a shallower angle.',
     description:
@@ -594,7 +736,7 @@ const PRODUCTS: ProductSpec[] = [
     name: 'Graduated Silicone Plug Trio',
     category: 'anal',
     subcategory: 'plugs',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Three plugs at 26 mm, 32 mm and 38 mm, each with a flared base and its own measurements.',
     description:
@@ -700,7 +842,7 @@ const PRODUCTS: ProductSpec[] = [
     name: 'Linen-Lined Cuff Set',
     category: 'bondage-kink',
     subcategory: 'restraints',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Vegan leather cuffs with linen lining and quick-release clips. Adjustable 140–230 mm.',
     description:
@@ -726,7 +868,7 @@ const PRODUCTS: ProductSpec[] = [
     name: 'Blackout Padded Blindfold',
     category: 'bondage-kink',
     subcategory: 'blindfolds',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Contoured, fully light-blocking blindfold with an adjustable strap and no nose gap.',
     description:
@@ -749,7 +891,7 @@ const PRODUCTS: ProductSpec[] = [
     name: 'Tide Water-Based Lubricant',
     category: 'lubricants-care',
     subcategory: 'water-based',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Fragrance-free, glycerin-free water-based lubricant. Safe with every toy material and with latex.',
     description:
@@ -775,7 +917,7 @@ const PRODUCTS: ProductSpec[] = [
     name: 'Reset Toy Cleaner',
     category: 'lubricants-care',
     subcategory: 'toy-cleaner',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Alcohol-free, fragrance-free spray cleaner. Safe on silicone, glass, steel and ABS.',
     description:
@@ -796,7 +938,7 @@ const PRODUCTS: ProductSpec[] = [
     slug: 'harbour-lockable-storage-case',
     name: 'Harbour Lockable Storage Case',
     category: 'lubricants-care',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Lined, lockable case with dividers so silicone pieces never touch. Fits five average toys.',
     description:
@@ -819,7 +961,7 @@ const PRODUCTS: ProductSpec[] = [
     slug: 'evening-set-gift-box',
     name: 'Evening Set Gift Box',
     category: 'lubricants-care',
-    brand: 'good-time-studio',
+    brand: 'intimate-bunnie-studio',
     shortDescription:
       'Bullet vibrator, water-based lubricant and toy cleaner in a plain gift box with a blank card.',
     description:
@@ -838,6 +980,565 @@ const PRODUCTS: ProductSpec[] = [
     waterproof: true,
     tags: ['beginner', 'made-in-usa'],
     collections: ['gift-edit', 'first-toy'],
+  },
+
+  // -------------------------------------------------------------------------
+  // Range extension: rings, rose vibrators, sleeves, enlargement, condoms,
+  // body jewellery, body oils and lingerie.
+  // -------------------------------------------------------------------------
+
+  {
+    slug: 'loop-silicone-ring-set',
+    name: 'Loop Silicone Ring Set',
+    category: 'couples',
+    subcategory: 'rings',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      'Three stretch silicone rings in 32 mm, 38 mm and 44 mm relaxed diameter. No motor, no battery.',
+    description:
+      'Three rings rather than one, because the right size is the one that fits and nobody knows that in advance. Relaxed internal diameters are 32 mm, 38 mm and 44 mm, and each stretches to roughly double without losing its shape.\n\nPlatinum-cure silicone throughout, moulded in one piece with no seam. Boilable, and the set comes in a small tin rather than a blister pack.',
+    features: [
+      'Three sizes: 32 mm, 38 mm and 44 mm relaxed diameter',
+      'Stretches to roughly double, returns to shape',
+      'One-piece moulding, no seam',
+      'Boilable platinum-cure silicone',
+      'Storage tin included',
+    ],
+    priceCents: 2400,
+    material: 'Platinum-cure silicone',
+    power: 'Manual — no power',
+    waterproof: true,
+    colors: ['Blush', 'Charcoal'],
+    tags: ['beginner', 'made-in-usa', 'vegan'],
+    collections: ['better-together', 'first-toy'],
+    newArrival: true,
+  },
+  {
+    slug: 'pulse-vibrating-ring',
+    name: 'Pulse Rechargeable Ring',
+    category: 'couples',
+    subcategory: 'rings',
+    brand: 'lumen',
+    shortDescription:
+      'Rechargeable ring with a removable bullet, 38 mm stretch fit and 46 dB at maximum.',
+    description:
+      'A stretch silicone ring with a bullet that lifts out of its cradle, so the motor can be used on its own and the ring can be boiled. Six intensities and three patterns, cycled from a single button that is reachable without looking.\n\nRuns for about eighty minutes at medium and charges over magnetic pins in an hour. Rated IPX7, so it can be rinsed under a tap rather than wiped.',
+    features: [
+      'Removable bullet — ring is boilable on its own',
+      '38 mm relaxed diameter, stretch fit',
+      'Six intensities and three patterns',
+      '46 dB at maximum',
+      'IPX7 rated, magnetic charging',
+    ],
+    priceCents: 5900,
+    salePriceCents: 4900,
+    compareAtPriceCents: 5900,
+    material: 'Platinum-cure silicone',
+    power: 'Magnetic charging',
+    waterproof: true,
+    noiseDb: 46,
+    runtimeMinutes: 80,
+    chargeMinutes: 60,
+    colors: ['Hot pink', 'Slate'],
+    tags: ['waterproof', 'rechargeable', 'beginner'],
+    collections: ['better-together'],
+  },
+
+  {
+    slug: 'rosette-suction-vibrator',
+    name: 'Rosette Suction Vibrator',
+    category: 'vibrators',
+    subcategory: 'rose',
+    brand: 'lumen',
+    shortDescription:
+      'Petal-shaped air-pulse toy with ten suction steps and a 38 dB maximum. USB-C rechargeable.',
+    description:
+      'The rose shape exists because it hides in plain sight on a bedside table, but the reason to buy it is the air-pulse chamber inside. Ten suction steps, none of which touch the skin — the pulses do the work, which is a different sensation from vibration and much quieter.\n\nThe silicone petals are a single moulded piece with no glued seam, and the whole unit is submersible for cleaning. A full charge takes about seventy minutes and gives roughly two hours at medium.',
+    features: [
+      'Ten air-pulse suction steps',
+      '38 dB at maximum — the quietest thing we sell',
+      'Seamless moulded silicone petals',
+      'Fully submersible, IPX7',
+      'USB-C rechargeable, ~120 minutes at medium',
+    ],
+    priceCents: 7900,
+    salePriceCents: 6400,
+    compareAtPriceCents: 7900,
+    material: 'Platinum-cure silicone',
+    power: 'USB-C rechargeable',
+    waterproof: true,
+    noiseDb: 38,
+    runtimeMinutes: 120,
+    chargeMinutes: 70,
+    colors: ['Hot pink', 'Peach', 'Deep rose'],
+    tags: ['waterproof', 'rechargeable', 'quiet', 'suction', 'beginner'],
+    collections: ['quiet-hours', 'first-toy', 'gift-edit'],
+    featured: true,
+    newArrival: true,
+  },
+  {
+    slug: 'rosette-mini',
+    name: 'Rosette Mini',
+    category: 'vibrators',
+    subcategory: 'rose',
+    brand: 'lumen',
+    shortDescription:
+      'Palm-sized rose with seven suction steps and a travel lock. 62 mm across, 41 dB.',
+    description:
+      'The same air-pulse chamber as the full-size Rosette in a body 62 mm across, which is small enough to disappear into a wash bag. Seven steps rather than ten, and a three-second travel lock so it cannot start up in a suitcase.\n\nRuns for about ninety minutes at medium. Charges over USB-C from either end of the cable.',
+    features: [
+      'Seven air-pulse steps',
+      '62 mm across — fits in a closed hand',
+      'Three-second travel lock',
+      '41 dB at maximum',
+      'USB-C rechargeable',
+    ],
+    priceCents: 4900,
+    material: 'Platinum-cure silicone',
+    power: 'USB-C rechargeable',
+    waterproof: true,
+    noiseDb: 41,
+    runtimeMinutes: 90,
+    chargeMinutes: 55,
+    colors: ['Peach', 'Blush'],
+    tags: ['waterproof', 'rechargeable', 'quiet', 'suction', 'travel-lock'],
+    collections: ['quiet-hours', 'first-toy'],
+    newArrival: true,
+  },
+
+  {
+    slug: 'pocket-solo-sleeve',
+    name: 'Pocket Solo Sleeve',
+    category: 'strokers',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      'Open-ended solo sleeve, 130 mm long, in a hard case that passes for a travel speaker.',
+    description:
+      'A pocket-sized sleeve with an open end, which matters for two reasons: it makes cleaning genuinely quick, and it means the sleeve suits any size rather than a stated range. The internal texture is a repeating wave rather than a novelty pattern.\n\nThe case is rigid, matte and unmarked, with a vent so the sleeve dries inside it. Comes with a 30 ml sachet of water-based lubricant, which is the only kind that will not degrade the sleeve.',
+    features: [
+      'Open-ended, 130 mm sleeve length',
+      'Repeating wave texture, no novelty moulding',
+      'Rigid vented case, unmarked',
+      'Stretches to fit rather than sized',
+      '30 ml water-based lubricant included',
+    ],
+    priceCents: 3900,
+    material: 'Platinum-cure silicone',
+    power: 'Manual — no power',
+    waterproof: true,
+    insertableLengthMm: 130,
+    diameterMm: 45,
+    tags: ['travel-lock', 'beginner', 'made-in-usa'],
+    collections: ['first-toy'],
+    newArrival: true,
+  },
+  {
+    slug: 'commute-compact-stroker',
+    name: 'Commute Compact Stroker',
+    category: 'strokers',
+    brand: 'intimate-bunnie-studio',
+    shortDescription: 'Closed-end sleeve with a suction valve, 95 mm long, in a lockable tube.',
+    description:
+      'A shorter, closed-end sleeve with a valve at the base that adjusts suction from none to firm. Closed-end holds more heat than an open one, which is the trade against being slower to clean.\n\nThe tube locks with a quarter turn and has no external markings. Stands upright to dry.',
+    features: [
+      'Closed end with an adjustable suction valve',
+      '95 mm sleeve length',
+      'Quarter-turn locking tube, unmarked',
+      'Stands upright to dry',
+      'Boil-safe sleeve',
+    ],
+    priceCents: 3400,
+    salePriceCents: 2900,
+    compareAtPriceCents: 3400,
+    material: 'Platinum-cure silicone',
+    power: 'Manual — no power',
+    waterproof: true,
+    insertableLengthMm: 95,
+    diameterMm: 40,
+    tags: ['travel-lock', 'made-in-usa'],
+  },
+
+  {
+    slug: 'ascend-pressure-pump',
+    name: 'Ascend Pressure Pump',
+    category: 'enlargement',
+    subcategory: 'pumps',
+    brand: 'lumen',
+    shortDescription:
+      'Manual pump with a printed gauge to 15 inHg, a quick-release valve and a 60 mm bore.',
+    description:
+      'A pump with an actual gauge on it, marked to 15 inHg with a red band above 10 — because the difference between a comfortable session and a bruise is a number you can only see if it is printed. The quick-release dumps pressure in under a second with one thumb.\n\nThe cylinder is 60 mm internal bore and 230 mm long, moulded in clear polycarbonate with a soft silicone base sleeve. The effect is temporary and lasts while pressure is maintained; nothing about this permanently changes anatomy and we do not claim it does.',
+    features: [
+      'Printed gauge to 15 inHg with a marked safe band',
+      'One-thumb quick-release valve',
+      '60 mm internal bore, 230 mm cylinder',
+      'Soft silicone base sleeve',
+      'Temporary effect only — no permanent-change claims',
+    ],
+    priceCents: 6900,
+    material: 'ABS plastic',
+    power: 'Manual — no power',
+    waterproof: false,
+    diameterMm: 60,
+    tags: ['beginner'],
+    newArrival: true,
+  },
+  {
+    slug: 'extend-girth-sleeve',
+    name: 'Extend Girth Sleeve',
+    category: 'enlargement',
+    subcategory: 'sleeves',
+    brand: 'aster-and-ives',
+    shortDescription:
+      'Wearable silicone sleeve adding 25 mm length and 8 mm girth. Open tip, 45 mm bore.',
+    description:
+      'A wearable sleeve that adds 25 mm of length and about 8 mm of girth while worn. Those are the sleeve dimensions, measured on a bench — they are what the sleeve is, not a promise about anything else.\n\nThe tip is open so sensation is not lost entirely, and the internal bore is 45 mm with a ribbed grip that holds without a strap. Platinum-cure silicone, boilable, and it does not tear if you take it off the way the leaflet says.',
+    features: [
+      '+25 mm length, +8 mm girth while worn',
+      'Open tip retains sensation',
+      '45 mm internal bore with ribbed grip',
+      'No strap needed',
+      'Boilable platinum-cure silicone',
+    ],
+    priceCents: 4400,
+    material: 'Platinum-cure silicone',
+    power: 'Manual — no power',
+    waterproof: true,
+    insertableLengthMm: 155,
+    diameterMm: 45,
+    colors: ['Blush', 'Caramel', 'Deep'],
+    tags: ['vegan', 'made-in-usa'],
+  },
+  {
+    slug: 'steady-delay-gel',
+    name: 'Steady Delay Gel',
+    category: 'enlargement',
+    subcategory: 'endurance',
+    brand: 'intimate-bunnie-studio',
+    shortDescription: '30 ml water-based gel, 4% lidocaine, absorbs in five minutes. Condom safe.',
+    description:
+      'A 4% lidocaine gel in a water-based carrier, which is the part most delay products are vague about — oil-based ones destroy condoms. This one does not, and the full ingredient list is on the box and on this page.\n\nGive it five minutes to absorb and wipe off any residue before contact, or the numbness transfers to your partner. Thirty millilitres is roughly forty applications.',
+    features: [
+      '4% lidocaine in a water-based carrier',
+      'Condom and toy safe',
+      'Absorbs in about five minutes',
+      '30 ml — roughly 40 applications',
+      'Full ingredient list printed on the box',
+    ],
+    priceCents: 2200,
+    material: 'Water-based formula',
+    power: 'Manual — no power',
+    waterproof: false,
+    tags: ['fragrance-free', 'latex-free'],
+  },
+
+  {
+    slug: 'contour-ultra-thin-condoms',
+    name: 'Contour Ultra Thin Condoms',
+    category: 'condoms',
+    subcategory: 'ultra-thin',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      '0.045 mm natural latex, 53 mm nominal width, 190 mm length. Twelve or twenty-four.',
+    description:
+      'Natural latex at 0.045 mm — thin, and burst-tested to the same standard as anything thicker. Nominal width is 53 mm and length 190 mm, both printed on the box, because fit is the only thing that determines whether a condom works.\n\nSilicone lubricated, reservoir tipped, and dated with at least two years of shelf life at dispatch. Foil is plain and unmarked.',
+    features: [
+      '0.045 mm natural latex',
+      '53 mm nominal width, 190 mm length',
+      'Reservoir tip, silicone lubricated',
+      'Minimum two years shelf life at dispatch',
+      'Plain unmarked foils',
+    ],
+    priceCents: 1400,
+    material: 'Natural rubber latex',
+    power: 'Manual — no power',
+    waterproof: false,
+    sizes: ['12 pack', '24 pack'],
+    tags: ['beginner'],
+    newArrival: true,
+  },
+  {
+    slug: 'ripple-textured-condoms',
+    name: 'Ripple Textured Condoms',
+    category: 'condoms',
+    subcategory: 'textured',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      'Ribbed and dotted latex, 54 mm nominal width. The pattern is described, not implied.',
+    description:
+      'Raised rings around the shaft and a dotted band at the tip. That is the whole texture — described plainly rather than sold with adjectives, so you can decide whether it is what you want.\n\nNatural latex at 0.06 mm, 54 mm nominal width, 185 mm long, silicone lubricated with a reservoir tip.',
+    features: [
+      'Ribbed shaft with a dotted tip band',
+      '0.06 mm natural latex',
+      '54 mm nominal width, 185 mm length',
+      'Reservoir tip, silicone lubricated',
+      'Plain unmarked foils',
+    ],
+    priceCents: 1600,
+    material: 'Natural rubber latex',
+    power: 'Manual — no power',
+    waterproof: false,
+    sizes: ['12 pack', '24 pack'],
+    tags: [],
+  },
+  {
+    slug: 'orchard-flavoured-condoms',
+    name: 'Orchard Flavoured Condoms',
+    category: 'condoms',
+    subcategory: 'flavoured',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      'Sugar-free flavour coating in four fruits. Polyisoprene, so latex allergies are not an issue.',
+    description:
+      'Polyisoprene rather than latex, which means a latex allergy is not a reason to skip these — and it carries flavour better. The coating is sugar-free, which matters if you would rather not invite thrush to the evening.\n\nFour flavours in a twelve pack: peach, cherry, strawberry and pear. 53 mm nominal width, 180 mm long.',
+    features: [
+      'Polyisoprene — latex free',
+      'Sugar-free flavour coating',
+      'Four flavours: peach, cherry, strawberry, pear',
+      '53 mm nominal width, 180 mm length',
+      'Plain unmarked foils',
+    ],
+    priceCents: 1800,
+    salePriceCents: 1500,
+    compareAtPriceCents: 1800,
+    material: 'Polyisoprene (latex-free)',
+    power: 'Manual — no power',
+    waterproof: false,
+    sizes: ['12 pack', '24 pack'],
+    tags: ['latex-free', 'hypoallergenic', 'vegan'],
+    collections: ['gift-edit'],
+  },
+
+  {
+    slug: 'aurelia-titanium-belly-bar',
+    name: 'Aurelia Titanium Belly Bar',
+    category: 'body-jewellery',
+    subcategory: 'belly',
+    brand: 'aster-and-ives',
+    shortDescription:
+      'Implant-grade titanium curved navel bar, 14g, in 6 mm to 12 mm lengths. Nickel free.',
+    description:
+      'ASTM F-136 implant-grade titanium, which is the grade a piercer will actually put through a fresh piercing — nickel free, and it does not react the way plated brass does after a fortnight.\n\nStandard 14g gauge with a curved bar. Four lengths, because a bar that is too long snags and one that is too short presses. The 5 mm top ball is threaded internally, so nothing scrapes the channel on the way in.',
+    features: [
+      'ASTM F-136 implant-grade titanium',
+      '14g gauge, curved bar',
+      'Lengths: 6, 8, 10 and 12 mm',
+      'Internally threaded — no scraping on insertion',
+      'Nickel free',
+    ],
+    priceCents: 2900,
+    material: 'Implant-grade titanium',
+    power: 'Manual — no power',
+    waterproof: true,
+    sizes: ['6 mm', '8 mm', '10 mm', '12 mm'],
+    tags: ['hypoallergenic'],
+    collections: ['gift-edit'],
+    newArrival: true,
+  },
+  {
+    slug: 'fleur-nose-stud-trio',
+    name: 'Fleur Nose Stud Trio',
+    category: 'body-jewellery',
+    subcategory: 'nose',
+    brand: 'aster-and-ives',
+    shortDescription: 'Three 20g L-bend nose studs in solid 14k gold. 2 mm, 2.5 mm and 3 mm tops.',
+    description:
+      'Solid 14k gold rather than plated, in three top sizes so the same piercing can be dressed up or down. The L-bend holds without a screw thread and comes out without a fight.\n\n20g gauge, 6.5 mm post. Each stud arrives in its own sleeve inside one small box, which is the difference between a set and three things in a bag.',
+    features: [
+      'Solid 14k gold, not plated',
+      '20g gauge, 6.5 mm L-bend post',
+      'Three top sizes: 2, 2.5 and 3 mm',
+      'Individually sleeved in one box',
+      'Nickel free',
+    ],
+    priceCents: 8900,
+    material: '14k solid gold',
+    power: 'Manual — no power',
+    waterproof: true,
+    tags: ['hypoallergenic'],
+    collections: ['gift-edit'],
+  },
+  {
+    slug: 'ember-tongue-barbell-set',
+    name: 'Ember Tongue Barbell Set',
+    category: 'body-jewellery',
+    subcategory: 'tongue',
+    brand: 'aster-and-ives',
+    shortDescription: 'Two 14g titanium straight barbells, 16 mm, with mirror-polished 5 mm balls.',
+    description:
+      'Straight 14g barbells at 16 mm, the length most healed tongue piercings settle at. Implant-grade titanium, mirror polished, with internally threaded balls so there is no thread edge against the tongue.\n\nTwo in the set: one anodised deep rose, one natural. Both boil-safe for cleaning.',
+    features: [
+      'ASTM F-136 implant-grade titanium',
+      '14g gauge, 16 mm bar length',
+      'Mirror-polished 5 mm balls, internally threaded',
+      'Two colours: deep rose and natural',
+      'Boil-safe',
+    ],
+    priceCents: 3400,
+    material: 'Implant-grade titanium',
+    power: 'Manual — no power',
+    waterproof: true,
+    tags: ['hypoallergenic'],
+  },
+  {
+    slug: 'petal-nipple-jewellery',
+    name: 'Petal Nipple Jewellery',
+    category: 'body-jewellery',
+    subcategory: 'nipple',
+    brand: 'aster-and-ives',
+    shortDescription:
+      'Non-piercing clip-on pair with adjustable silicone-lined loops and 14k gold chain.',
+    description:
+      'No piercing required: the loops adjust with a small slide and are lined with silicone, so the grip is even and does not pinch to a point. Wearable for an evening rather than a photograph.\n\nThe chain between them is solid 14k gold, 90 mm, and unclips at both ends if you would rather wear the loops alone.',
+    features: [
+      'Non-piercing — adjustable clip loops',
+      'Silicone-lined for even pressure',
+      'Solid 14k gold 90 mm chain',
+      'Chain unclips at both ends',
+      'Nickel free',
+    ],
+    priceCents: 5400,
+    salePriceCents: 4400,
+    compareAtPriceCents: 5400,
+    material: '14k solid gold',
+    power: 'Manual — no power',
+    waterproof: false,
+    tags: ['hypoallergenic', 'beginner'],
+    collections: ['gift-edit', 'kink-curious'],
+    featured: true,
+  },
+
+  {
+    slug: 'gilded-shimmer-body-oil',
+    name: 'Gilded Shimmer Body Oil',
+    category: 'body-oils',
+    subcategory: 'shimmer',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      'Gold shimmer dry oil, 100 ml. Mineral-based mica, no glitter, washes off with soap.',
+    description:
+      'A dry-touch oil with a gold shimmer that comes from mineral mica rather than plastic glitter — it catches light on the shoulders and collarbone without leaving anything on the sheets that needs picking off individually.\n\nJojoba and grapeseed base, absorbs in about two minutes, lightly scented with vanilla and amber. One hundred millilitres in a pump bottle. Being an oil, it degrades latex: do not use it with latex condoms.',
+    features: [
+      'Mineral mica shimmer — no plastic glitter',
+      'Jojoba and grapeseed base, dry-touch finish',
+      'Absorbs in about two minutes',
+      '100 ml pump bottle',
+      'Not compatible with latex condoms',
+    ],
+    priceCents: 3200,
+    salePriceCents: 2600,
+    compareAtPriceCents: 3200,
+    material: 'Cosmetic oil blend',
+    power: 'Manual — no power',
+    waterproof: false,
+    tags: ['vegan', 'made-in-usa'],
+    collections: ['gift-edit'],
+    featured: true,
+    newArrival: true,
+  },
+  {
+    slug: 'amber-massage-oil',
+    name: 'Amber Massage Oil',
+    category: 'body-oils',
+    subcategory: 'massage',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      'Unscented 200 ml massage oil. Sweet almond and jojoba, seven ingredients total.',
+    description:
+      'Seven ingredients, all of them listed. Sweet almond and jojoba with a vitamin E stabiliser, no fragrance, no essential oils — because a massage oil that makes someone sneeze is a failed massage oil.\n\nStays slippery for about twenty minutes before it needs topping up, which is longer than most water-based alternatives. Not for use with latex.',
+    features: [
+      'Seven ingredients, fully listed',
+      'Sweet almond and jojoba base',
+      'Unscented — no essential oils',
+      'Around 20 minutes of glide per application',
+      '200 ml pump bottle',
+    ],
+    priceCents: 2400,
+    material: 'Cosmetic oil blend',
+    power: 'Manual — no power',
+    waterproof: false,
+    tags: ['fragrance-free', 'vegan', 'made-in-usa'],
+  },
+
+  {
+    slug: 'petal-lace-thong-trio',
+    name: 'Petal Lace Thong Trio',
+    category: 'lingerie',
+    subcategory: 'thongs',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      'Three stretch-lace thongs with a cotton gusset. XS to 4XL, measurements published.',
+    description:
+      'Three thongs in stretch floral lace with a proper cotton gusset, which is the detail that decides whether something is wearable all day or only for twenty minutes.\n\nSizes XS to 4XL, and each size lists its unstretched and stretched hip measurement on the size guide rather than leaving you to guess from a label. The lace recovers after washing if you use the bag included.',
+    features: [
+      'Three thongs per set',
+      'Stretch floral lace with a cotton gusset',
+      'XS to 4XL, measurements published per size',
+      'Recovery-tested lace, wash bag included',
+      'Flat seams — no visible line',
+    ],
+    priceCents: 3600,
+    salePriceCents: 2900,
+    compareAtPriceCents: 3600,
+    material: 'Stretch lace and mesh',
+    power: 'Manual — no power',
+    waterproof: false,
+    sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL'],
+    tags: ['vegan'],
+    collections: ['gift-edit'],
+    newArrival: true,
+    featured: true,
+  },
+  {
+    slug: 'midnight-strappy-lace-set',
+    name: 'Midnight Strappy Lace Set',
+    category: 'lingerie',
+    subcategory: 'sets',
+    brand: 'intimate-bunnie-studio',
+    shortDescription: 'Matched strappy bralette and brief. Adjustable at four points, XS to 4XL.',
+    description:
+      'A bralette and matching brief with straps that adjust at four points rather than two, so the harness lines actually sit where they are meant to on more than one body shape.\n\nStretch lace with satin-bound edges and gold-tone hardware that does not catch. Sizes XS to 4XL with published measurements. The bralette is unlined and unwired.',
+    features: [
+      'Matched bralette and brief',
+      'Four-point strap adjustment',
+      'Satin-bound edges, gold-tone hardware',
+      'Unlined, unwired',
+      'XS to 4XL, measurements published per size',
+    ],
+    priceCents: 6400,
+    material: 'Stretch lace and mesh',
+    power: 'Manual — no power',
+    waterproof: false,
+    sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL'],
+    tags: ['vegan'],
+    collections: ['gift-edit', 'kink-curious'],
+  },
+  {
+    slug: 'veil-sheer-bodystocking',
+    name: 'Veil Sheer Bodystocking',
+    category: 'lingerie',
+    subcategory: 'bodystockings',
+    brand: 'intimate-bunnie-studio',
+    shortDescription:
+      'Sheer full-body piece with an open gusset. Two size bands covering XS to 4XL.',
+    description:
+      'A sheer bodystocking in a fine knit that stretches four ways, with an open gusset and a reinforced toe seam that is the usual first thing to go.\n\nTwo size bands rather than one-size: XS to L and XL to 4XL, each with its stretched measurement range published. Hand wash, and it will survive more than one evening.',
+    features: [
+      'Four-way stretch sheer knit',
+      'Open gusset',
+      'Reinforced toe seam',
+      'Two size bands covering XS to 4XL',
+      'Stretched measurement range published',
+    ],
+    priceCents: 4200,
+    salePriceCents: 3400,
+    compareAtPriceCents: 4200,
+    material: 'Stretch lace and mesh',
+    power: 'Manual — no power',
+    waterproof: false,
+    sizes: ['XS–L', 'XL–4XL'],
+    tags: ['vegan'],
+    collections: ['kink-curious'],
   },
 ];
 
@@ -944,33 +1645,37 @@ async function seedTaxonomy() {
   const categoryIds = new Map<string, string>();
 
   for (const [index, spec] of CATEGORIES.entries()) {
-    const parent = await prisma.category.create({
-      data: {
-        slug: spec.slug,
-        name: spec.name,
-        description: spec.description,
-        heroHeadline: spec.heroHeadline,
-        heroBody: spec.heroBody,
-        path: `/${spec.slug}`,
-        depth: 0,
-        position: index,
-        isActive: true,
-      },
+    const parentData = {
+      name: spec.name,
+      description: spec.description,
+      heroHeadline: spec.heroHeadline,
+      heroBody: spec.heroBody,
+      path: `/${spec.slug}`,
+      depth: 0,
+      position: index,
+      isActive: true,
+    };
+    const parent = await prisma.category.upsert({
+      where: { slug: spec.slug },
+      update: parentData,
+      create: { slug: spec.slug, ...parentData },
     });
     categoryIds.set(spec.slug, parent.id);
 
     for (const [childIndex, child] of (spec.children ?? []).entries()) {
-      const created = await prisma.category.create({
-        data: {
-          parentId: parent.id,
-          slug: `${spec.slug}-${child.slug}`,
-          name: child.name,
-          description: child.description,
-          path: `/${spec.slug}/${child.slug}`,
-          depth: 1,
-          position: childIndex,
-          isActive: true,
-        },
+      const childData = {
+        parentId: parent.id,
+        name: child.name,
+        description: child.description,
+        path: `/${spec.slug}/${child.slug}`,
+        depth: 1,
+        position: childIndex,
+        isActive: true,
+      };
+      const created = await prisma.category.upsert({
+        where: { slug: `${spec.slug}-${child.slug}` },
+        update: childData,
+        create: { slug: `${spec.slug}-${child.slug}`, ...childData },
       });
       // Keyed by the bare child slug for lookup from the product specs.
       categoryIds.set(`${spec.slug}/${child.slug}`, created.id);
@@ -979,31 +1684,41 @@ async function seedTaxonomy() {
 
   const brandIds = new Map<string, string>();
   for (const brand of BRANDS) {
-    const created = await prisma.brand.create({ data: { ...brand, isActive: true } });
+    const created = await prisma.brand.upsert({
+      where: { slug: brand.slug },
+      update: { ...brand, isActive: true },
+      create: { ...brand, isActive: true },
+    });
     brandIds.set(brand.slug, created.id);
   }
 
   const collectionIds = new Map<string, string>();
   for (const [index, collection] of COLLECTIONS.entries()) {
-    const created = await prisma.collection.create({
-      data: { ...collection, position: index, isActive: true },
+    const created = await prisma.collection.upsert({
+      where: { slug: collection.slug },
+      update: { ...collection, position: index, isActive: true },
+      create: { ...collection, position: index, isActive: true },
     });
     collectionIds.set(collection.slug, created.id);
   }
 
   const attributeIds = new Map<string, string>();
   for (const attribute of ATTRIBUTES) {
-    const created = await prisma.attributeDefinition.create({
-      data: {
-        key: attribute.key,
-        label: attribute.label,
-        type: attribute.type,
-        unit: 'unit' in attribute ? (attribute.unit as string) : null,
-        options: attribute.options,
-        isFilterable: attribute.isFilterable,
-        position: attribute.position,
-        group: attribute.group,
-      },
+    const data = {
+      label: attribute.label,
+      type: attribute.type,
+      unit: 'unit' in attribute ? (attribute.unit as string) : null,
+      options: attribute.options,
+      isFilterable: attribute.isFilterable,
+      position: attribute.position,
+      group: attribute.group,
+    };
+    // Updated, not just created: a new material option has to reach a definition
+    // that already exists, or the products using it filter into nothing.
+    const created = await prisma.attributeDefinition.upsert({
+      where: { key: attribute.key },
+      update: data,
+      create: { key: attribute.key, ...data },
     });
     attributeIds.set(attribute.key, created.id);
   }
@@ -1334,15 +2049,20 @@ async function seedSearchDocuments(): Promise<void> {
       .filter(Boolean)
       .join(' \n ');
 
-    await prisma.productSearchDocument.create({
-      data: {
-        productId: product.id,
-        title: product.name,
-        brandName: product.brand?.name ?? null,
-        categoryPath: product.primaryCategory?.path ?? null,
-        keywords: [...new Set(keywords)],
-        content,
-      },
+    const document = {
+      title: product.name,
+      brandName: product.brand?.name ?? null,
+      categoryPath: product.primaryCategory?.path ?? null,
+      keywords: [...new Set(keywords)],
+      content,
+    };
+
+    // Upsert: an additive run rebuilds the document for products that already
+    // have one, which is what you want after editing a description.
+    await prisma.productSearchDocument.upsert({
+      where: { productId: product.id },
+      update: document,
+      create: { productId: product.id, ...document },
     });
   }
 }
@@ -1369,31 +2089,38 @@ async function seedRelations(): Promise<void> {
         topLevel(other.primaryCategory?.path) === topLevel(product.primaryCategory?.path),
     );
 
-    const related = siblings.slice(0, 4);
-    for (const [position, target] of related.entries()) {
-      await prisma.productRelation.create({
-        data: { productId: product.id, relatedId: target.id, type: 'RELATED', position },
-      });
-    }
-
-    // Lubricant and cleaner genuinely are bought with almost everything.
-    for (const [position, target] of care.entries()) {
-      if (target.id === product.id) continue;
-      await prisma.productRelation.create({
-        data: {
+    // `skipDuplicates` against the composite unique, so an additive run adds the
+    // relations the new products need without tripping over the existing ones.
+    await prisma.productRelation.createMany({
+      skipDuplicates: true,
+      data: [
+        ...siblings.slice(0, 4).map((target, position) => ({
           productId: product.id,
           relatedId: target.id,
-          type: 'FREQUENTLY_BOUGHT_TOGETHER',
+          type: 'RELATED' as const,
           position,
-          score: 0.6 + position * 0.1,
-        },
-      });
-    }
+        })),
+        // Lubricant and cleaner genuinely are bought with almost everything.
+        ...care
+          .filter((target) => target.id !== product.id)
+          .map((target, position) => ({
+            productId: product.id,
+            relatedId: target.id,
+            type: 'FREQUENTLY_BOUGHT_TOGETHER' as const,
+            position,
+            score: 0.6 + position * 0.1,
+          })),
+      ],
+    });
   }
 }
 
 /** Popular and trending suggestions read from this table. */
 async function seedSearchQueries(): Promise<void> {
+  // Telemetry, not catalogue: re-running would just inflate the popularity
+  // counts with fake traffic, so seed it once.
+  if ((await prisma.searchQuery.count()) > 0) return;
+
   const terms = [
     ['vibrator', 24],
     ['silicone dildo', 18],
@@ -1432,14 +2159,39 @@ async function main(): Promise<void> {
     );
   }
 
-  console.log('Clearing existing catalogue…');
-  await reset();
+  /*
+   * Additive by default, destructive only when asked.
+   *
+   * Re-running this to pick up a new range should not delete the catalogue that
+   * is already there — an admin-created product or a hand-edited price is real
+   * work, and `reset()` does not know the difference. Products are matched by
+   * slug and skipped if they exist; taxonomy is upserted, so renaming a category
+   * here still lands.
+   *
+   *   npm run db:seed:catalog            # add what is missing
+   *   npm run db:seed:catalog -- --reset # wipe and rebuild from scratch
+   */
+  const wipe = process.argv.includes('--reset');
+
+  if (wipe) {
+    console.log('Clearing existing catalogue…');
+    await reset();
+  }
 
   console.log('Seeding taxonomy…');
   const taxonomy = await seedTaxonomy();
 
-  console.log(`Seeding ${PRODUCTS.length} products…`);
-  for (const [index, spec] of PRODUCTS.entries()) {
+  const existingSlugs = new Set(
+    (await prisma.product.findMany({ select: { slug: true } })).map((p) => p.slug),
+  );
+  const pending = PRODUCTS.map((spec, index) => ({ spec, index })).filter(
+    ({ spec }) => !existingSlugs.has(spec.slug),
+  );
+
+  console.log(
+    `Seeding ${pending.length} products (${PRODUCTS.length - pending.length} already present)…`,
+  );
+  for (const { spec, index } of pending) {
     await seedProduct(spec, taxonomy, index);
     process.stdout.write('.');
   }

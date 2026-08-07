@@ -106,12 +106,12 @@ the production host authenticates and then 404s.
 
 ## Email
 
-| Variable                | Required in production | Secret | Notes                                                     |
-| ----------------------- | ---------------------- | ------ | --------------------------------------------------------- |
-| `RESEND_API_KEY`        | **yes**                | yes    | Unset means emails log instead of sending                 |
-| `EMAIL_FROM`            | yes                    | no     | `GOOD TIME <yowens@yoassoc.com>`. Domain must be verified |
-| `EMAIL_REPLY_TO`        | yes                    | no     | Never the sending address                                 |
-| `RESEND_WEBHOOK_SECRET` | yes                    | yes    | Svix-signed. Without it bounces are invisible             |
+| Variable                | Required in production | Secret | Notes                                                                        |
+| ----------------------- | ---------------------- | ------ | ---------------------------------------------------------------------------- |
+| `RESEND_API_KEY`        | **yes**                | yes    | Unset means emails log instead of sending                                    |
+| `EMAIL_FROM`            | yes                    | no     | `INTIMATE BUNNIE <customercare@intimatebunnie.com>`. Domain must be verified |
+| `EMAIL_REPLY_TO`        | yes                    | no     | A monitored, forwarded address — never a no-reply                            |
+| `RESEND_WEBHOOK_SECRET` | yes                    | yes    | Svix-signed. Without it bounces are invisible                                |
 
 ## Cache and rate limiting
 

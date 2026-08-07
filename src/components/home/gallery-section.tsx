@@ -25,7 +25,7 @@ export function GallerySection() {
         <div className="mb-8 text-center">
           <p className="text-eyebrow text-accent-text uppercase">In the wild</p>
           <h2 id="gallery-title" className="mt-3 text-display-md text-foreground">
-            Tag us with #GoodTimeShelf
+            Tag us with #IntimateBunnieShelf
           </h2>
           <a
             href={siteConfig.social.instagram}

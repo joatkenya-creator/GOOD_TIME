@@ -101,7 +101,7 @@ describe('securityHeaders', () => {
   describe('in production', () => {
     beforeEach(() => {
       vi.stubEnv('NODE_ENV', 'production');
-      vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://goodtime.example');
+      vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://intimatebunnie.example');
     });
 
     it('upgrades insecure requests', () => {

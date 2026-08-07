@@ -12,11 +12,11 @@ Items marked **BLOCKER** should not be waived.
 
 ```
 [ ] Cloudflare account, Workers plan sufficient for expected traffic
-[ ] R2 buckets created:   good-time-cache, good-time-cache-staging
+[ ] R2 buckets created:   intimate-bunnie-cache, intimate-bunnie-cache-staging
 [ ] KV namespaces created, and their ids pasted into wrangler.jsonc
 [ ] Queues created, DLQs first:
-    good-time-jobs-dlq, good-time-email-dlq,
-    good-time-jobs, good-time-email
+    intimate-bunnie-jobs-dlq, intimate-bunnie-email-dlq,
+    intimate-bunnie-jobs, intimate-bunnie-email
 [ ] Durable Object migration applied (wrangler deploy does this)
 [ ] Staging deployed and reachable
 [ ] Production deployed and reachable
@@ -100,7 +100,7 @@ one wrong region or a stale secret makes checkout fail for every customer.
 
 ```
 [ ] Domain verified in Resend, all three records passing
-[ ] EMAIL_FROM = "GOOD TIME <yowens@yoassoc.com>"
+[ ] EMAIL_FROM = "INTIMATE BUNNIE <yowens@yoassoc.com>"
 [ ] EMAIL_REPLY_TO set, and NOT the sending address
 [ ] Test send to Gmail: SPF PASS, DKIM PASS, DMARC PASS       ← BLOCKER
 [ ] Test send to Outlook and Apple Mail — layout intact

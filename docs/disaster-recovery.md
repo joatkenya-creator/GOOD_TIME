@@ -92,14 +92,14 @@ CREATE SERVER recovery FOREIGN DATA WRAPPER postgres_fdw
 ```bash
 pg_dump "$DIRECT_DATABASE_URL" --format=custom --no-owner --no-acl \
   | gpg --encrypt --recipient ops@example.com \
-  | aws s3 cp - "s3://backups/good-time/$(date +%Y-%m-%d).dump.gpg"
+  | aws s3 cp - "s3://backups/intimate-bunnie/$(date +%Y-%m-%d).dump.gpg"
 ```
 
 Encrypted, because it contains every customer's email address and order history.
 Restore:
 
 ```bash
-aws s3 cp "s3://backups/good-time/2026-08-04.dump.gpg" - \
+aws s3 cp "s3://backups/intimate-bunnie/2026-08-04.dump.gpg" - \
   | gpg --decrypt \
   | pg_restore --dbname "$TARGET_URL" --no-owner --clean --if-exists
 ```

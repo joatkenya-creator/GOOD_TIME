@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 import { AccountNav } from '@/components/account/account-nav';
 import { Container } from '@/components/layout/container';
-import { requireUser } from '@/server/auth/session';
+import { isAdmin, requireUser } from '@/server/auth/session';
 
 /**
  * Account shell.
@@ -16,7 +16,7 @@ import { requireUser } from '@/server/auth/session';
  * a link from an email lands where they meant to after signing in.
  */
 export const metadata: Metadata = {
-  title: { default: 'Your account', template: '%s · Your account · GOOD TIME' },
+  title: { default: 'Your account', template: '%s · Your account · INTIMATE BUNNIE' },
   // Every page here is personal. `nocache` and `noimageindex` are belt and braces
   // for crawlers that ignore the first directive.
   robots: { index: false, follow: false, nocache: true, noimageindex: true },
@@ -26,13 +26,18 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
-  await requireUser('/account');
+  const user = await requireUser('/account');
 
   return (
     <Container className="py-6 sm:py-10">
       <div className="lg:grid lg:grid-cols-[15rem_1fr] lg:gap-10">
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <AccountNav />
+          {/*
+            Decided here, not in the nav: `isAdmin` reads the session, and the
+            nav is a client component. Passing the boolean keeps the roles on
+            the server where they are already loaded.
+          */}
+          <AccountNav isAdmin={isAdmin(user)} />
         </aside>
 
         <div className="min-w-0 pt-6 lg:pt-0">{children}</div>

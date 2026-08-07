@@ -206,7 +206,7 @@ export function passwordStrength(password: string): {
   if (variety >= 3) score += 1;
 
   // Anything a cracking dictionary tries in its first thousand guesses.
-  const obvious = /^(password|qwerty|welcome|letmein|admin|goodtime)/i.test(password);
+  const obvious = /^(password|qwerty|welcome|letmein|admin|intimatebunnie)/i.test(password);
   const repeated = /^(.)\1+$/.test(password);
   if (obvious || repeated) score = 0;
 

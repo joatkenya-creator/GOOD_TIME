@@ -1,4 +1,4 @@
-# GOOD TIME
+# INTIMATE BUNNIE
 
 A production-grade ecommerce platform for a US adult-products retailer — sex toys
 with published material and performance specs — built on Next.js 16 and PostgreSQL.
