@@ -42,8 +42,20 @@ const SIGNATURES: Record<string, { bytes: number[]; label: string }[]> = {
   pdf: [{ bytes: [0x25, 0x50, 0x44, 0x46], label: 'pdf' }],
 };
 
-/** Extensions the import platform accepts at all. */
-export const ALLOWED_IMPORT_EXTENSIONS = ['csv', 'tsv', 'txt', 'xlsx', 'xml', 'json'] as const;
+/**
+ * Extensions the import platform accepts at all.
+ *
+ * `xlsx` was dropped when ExcelJS was removed from the bundle — a Worker
+ * inlines every dependency it might use, and 1.5 MB of spreadsheet parser is
+ * expensive for a format every tool can export as CSV instead. Rejecting it
+ * here rather than at parse time means the operator is told before the upload
+ * completes, not after.
+ *
+ * The `xlsx` signature stays in the table above on purpose: it is what catches
+ * someone renaming a spreadsheet to `.csv`, which is the single most common
+ * reason an import "fails for no reason".
+ */
+export const ALLOWED_IMPORT_EXTENSIONS = ['csv', 'tsv', 'txt', 'xml', 'json'] as const;
 
 export const MAX_UPLOAD_BYTES = 64 * 1024 * 1024;
 

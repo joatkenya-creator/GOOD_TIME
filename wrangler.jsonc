@@ -153,8 +153,15 @@
    * below is the *tag* index, where eventual consistency is fine because a tag
    * lookup that briefly misses only causes an extra revalidation.
    */
-  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache" }],
-  "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "0d873984a99e4fc88c1debb954325725" }],
+  // R2 is not enabled on the account, so the incremental cache is on KV for
+  // now — see the note in open-next.config.ts. To switch back: enable R2,
+  // create `intimate-bunnie-cache`, restore the line below, and change the
+  // import in open-next.config.ts.
+  // "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache" }],
+  "kv_namespaces": [
+    { "binding": "NEXT_TAG_CACHE_KV", "id": "0d873984a99e4fc88c1debb954325725" },
+    { "binding": "NEXT_INC_CACHE_KV", "id": "e6d70cde54f74dbb83b0cda5af2a9965" },
+  ],
 
   /**
    * Deduplicates concurrent revalidations of the same page.
@@ -224,10 +231,14 @@
       //     },
       //   ],
       // },
-      "r2_buckets": [
-        { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache-staging" },
+      // Disabled with the top-level R2 binding.
+      // "r2_buckets": [
+      //   { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache-staging" },
+      // ],
+      "kv_namespaces": [
+        { "binding": "NEXT_TAG_CACHE_KV", "id": "23b64617299144049bdacd1284abcadf" },
+        { "binding": "NEXT_INC_CACHE_KV", "id": "e48093418b694af5aa7fb6fff5d7dd51" },
       ],
-      "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "REPLACE_WITH_STAGING_KV_ID" }],
       "durable_objects": {
         "bindings": [
           { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
@@ -279,8 +290,12 @@
       //     },
       //   ],
       // },
-      "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache" }],
-      "kv_namespaces": [{ "binding": "NEXT_TAG_CACHE_KV", "id": "0d873984a99e4fc88c1debb954325725" }],
+      // Disabled with the top-level R2 binding.
+      // "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "intimate-bunnie-cache" }],
+      "kv_namespaces": [
+        { "binding": "NEXT_TAG_CACHE_KV", "id": "0d873984a99e4fc88c1debb954325725" },
+        { "binding": "NEXT_INC_CACHE_KV", "id": "e6d70cde54f74dbb83b0cda5af2a9965" },
+      ],
       "durable_objects": {
         "bindings": [
           { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },

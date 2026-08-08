@@ -79,7 +79,6 @@
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
-    "exceljs": "^4.4.0",
     "fast-xml-parser": "^5.10.1",
     "framer-motion": "^12.43.0",
     "lucide-react": "^1.27.0",

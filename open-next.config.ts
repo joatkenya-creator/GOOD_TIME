@@ -1,5 +1,5 @@
 import { defineCloudflareConfig } from '@opennextjs/cloudflare';
-import r2IncrementalCache from '@opennextjs/cloudflare/overrides/incremental-cache/r2-incremental-cache';
+import kvIncrementalCache from '@opennextjs/cloudflare/overrides/incremental-cache/kv-incremental-cache';
 import doQueue from '@opennextjs/cloudflare/overrides/queue/do-queue';
 import doShardedTagCache from '@opennextjs/cloudflare/overrides/tag-cache/do-sharded-tag-cache';
 
@@ -8,14 +8,25 @@ import doShardedTagCache from '@opennextjs/cloudflare/overrides/tag-cache/do-sha
  *
  * Three storage decisions, each with a failure mode worth naming.
  *
- * ## Incremental cache: R2, not KV
+ * ## Incremental cache: KV for now, R2 as soon as it is enabled
  *
- * KV is eventually consistent, with global write propagation measured in tens
- * of seconds. For a revalidated product page that means a price change is live
- * in London and stale in Sydney, and the customer who sees the stale one is
- * looking at a number we are not going to honour. R2 is strongly consistent
- * read-after-write, and the extra few milliseconds on a cache miss is a
- * straightforward trade for never serving two different prices at once.
+ * R2 is the right answer and this file used to say so: KV is eventually
+ * consistent, with global write propagation measured in tens of seconds, so a
+ * revalidated product page can be live in London and stale in Sydney — and the
+ * customer seeing the stale one is looking at a price we are not going to
+ * honour. R2 is strongly consistent read-after-write, and a few milliseconds on
+ * a cache miss is a straightforward trade for never serving two prices at once.
+ *
+ * KV is here because R2 is not enabled on the account yet and the deploy cannot
+ * bind a bucket that does not exist. This is a deliberate, temporary downgrade:
+ * the window is seconds, it only affects a page in the moment after it is
+ * revalidated, and it is strictly better than the alternative of no incremental
+ * cache at all — which would re-render every page on every request and spend
+ * CPU the free plan does not have.
+ *
+ * ponytail: KV incremental cache, revert to `r2IncrementalCache` the day R2 is
+ * enabled — swap this import back and restore the `r2_buckets` binding in
+ * wrangler.jsonc. Both are marked.
  *
  * ## Revalidation queue: a Durable Object
  *
@@ -42,7 +53,7 @@ import doShardedTagCache from '@opennextjs/cloudflare/overrides/tag-cache/do-sha
  *     is why it stays low.
  */
 export default defineCloudflareConfig({
-  incrementalCache: r2IncrementalCache,
+  incrementalCache: kvIncrementalCache,
 
   queue: doQueue,
 

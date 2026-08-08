@@ -12,6 +12,14 @@ generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 
+  // The app runs on workerd (Cloudflare Workers), which forbids
+  // `new WebAssembly.Module(bytes)` at runtime. The default runtime target
+  // loads Prisma's query compiler from a base64 blob and compiles it that way,
+  // so every query threw `CompileError: Wasm code generation disallowed by
+  // embedder` and every database-backed page 500'd. `workerd` emits a static
+  // wasm import instead, which Wrangler bundles as a real WebAssembly module.
+  runtime = "workerd"
+
   // `relationJoins` lets a query with includes be one LATERAL JOIN instead of
   // one statement per relation. On the product page that is eleven round trips
   // collapsing into one — see scripts/measure-product-page.ts for the numbers.

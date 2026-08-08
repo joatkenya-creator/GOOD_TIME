@@ -144,69 +144,32 @@ export function parseCsv(text: string, delimiter = ','): ParseResult {
 // ---------------------------------------------------------------------------
 
 /**
- * `.xlsx`, via ExcelJS.
+ * `.xlsx` — no longer supported, and this says so precisely.
  *
- * The one format worth a dependency: xlsx is a zip of XML parts with shared
- * string tables, styles and number formats, and dates are serial numbers that
- * need the 1900 leap-year bug applied. Hand-rolling that is a project.
+ * ExcelJS parsed it properly: xlsx is a zip of XML parts with shared string
+ * tables, styles and number formats, and dates are serial numbers needing the
+ * 1900 leap-year bug applied. Hand-rolling that is a project, which is why the
+ * dependency was justified.
  *
- * ExcelJS rather than SheetJS: the `xlsx` package on npm is the abandoned
- * build — upstream moved distribution to their own CDN and the npm copy still
- * carries unpatched advisories. A maintained package that is slightly larger
- * beats an unmaintained one that is slightly smaller.
+ * It was removed for size. A Cloudflare Worker has no filesystem and no runtime
+ * module loading, so every dependency is inlined into the uploaded script
+ * whether or not it ever runs — the `await import('exceljs')` that used to be
+ * here deferred nothing. 1.5 MB of the size budget was going on a format every
+ * spreadsheet tool exports as CSV in two clicks.
  *
- * `.xls` (the pre-2007 binary) is deliberately unsupported — anyone still
- * exporting it can "Save As" once, and a second binary format costs more than
- * it returns.
+ * The function stays so the failure is a sentence an operator can act on rather
+ * than a generic "no adapter for source type". Uploads are already rejected
+ * earlier by `ALLOWED_IMPORT_EXTENSIONS`; this covers a stored import job
+ * created before the change.
+ *
+ * ponytail: xlsx dropped for bundle size. To restore, reinstall `exceljs`,
+ * recover this function from git history, and put `xlsx` back in
+ * `ALLOWED_IMPORT_EXTENSIONS`.
  */
-export async function parseExcel(buffer: ArrayBuffer): Promise<ParseResult> {
-  const ExcelJS = await import('exceljs');
-
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
-
-  const sheet = workbook.worksheets[0];
-  if (!sheet) return { rows: [], columns: [], warnings: ['The workbook has no sheets.'] };
-
-  const warnings: string[] = [];
-  if (workbook.worksheets.length > 1) {
-    warnings.push(
-      `Only the first sheet ("${sheet.name}") was read; ${workbook.worksheets.length - 1} more were ignored.`,
-    );
-  }
-
-  const headerRow = sheet.getRow(1);
-  const columns: string[] = [];
-  headerRow.eachCell({ includeEmpty: true }, (cell, index) => {
-    columns[index - 1] = String(cell.value ?? '').trim() || `column_${index}`;
-  });
-
-  if (columns.length === 0) {
-    return { rows: [], columns: [], warnings: [`Sheet "${sheet.name}" is empty.`] };
-  }
-
-  const rows: RawRow[] = [];
-
-  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    if (rowNumber === 1 || rows.length >= MAX_ROWS) return;
-
-    const out: RawRow = {};
-    let hasValue = false;
-
-    columns.forEach((column, index) => {
-      const value = row.getCell(index + 1).value;
-      const text = cellToString(value);
-      out[column] = text;
-      if (text) hasValue = true;
-    });
-
-    // A row of empty cells is formatting, not data.
-    if (hasValue) rows.push(out);
-  });
-
-  if (sheet.rowCount - 1 > MAX_ROWS) warnings.push(`Stopped at ${MAX_ROWS} rows.`);
-
-  return { rows, columns, warnings };
+export function parseExcel(_buffer: ArrayBuffer): Promise<ParseResult> {
+  throw errors.badRequest(
+    'Excel files are not supported. Open the workbook and use File → Save As → CSV, then upload that.',
+  );
 }
 
 /**

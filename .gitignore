@@ -44,6 +44,7 @@ yarn-error.log*
 # full copy of node_modules' traced files and must never be committed.
 .open-next/
 .wrangler/
+bundled/
 
 # Playwright artefacts and the Lighthouse budget report.
 .playwright/
