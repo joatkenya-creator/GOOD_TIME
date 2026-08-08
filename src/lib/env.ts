@@ -148,7 +148,15 @@ function withoutEmptyValues(source: NodeJS.ProcessEnv): Record<string, string> {
 function loadServerEnv(): ServerEnv {
   // `next build` runs this file in contexts where secrets are intentionally absent
   // (Docker image builds, CI type-checks). Opt out explicitly rather than by accident.
-  if (process.env.SKIP_ENV_VALIDATION === 'true') {
+  //
+  // `NEXT_PHASE` is set by `next build` itself, so page-data collection on a build
+  // host with no secrets — Cloudflare Workers Builds, for one — skips the check
+  // without every build platform having to remember the flag. The runtime still
+  // validates on boot, which is where a missing secret actually matters.
+  if (
+    process.env.SKIP_ENV_VALIDATION === 'true' ||
+    process.env.NEXT_PHASE === 'phase-production-build'
+  ) {
     return process.env as unknown as ServerEnv;
   }
 
