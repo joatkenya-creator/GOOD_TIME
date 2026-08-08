@@ -7,6 +7,7 @@ import { ROUTES } from '@/constants/routes';
 import { productFilterSchema } from '@/features/catalog/schemas';
 import { breadcrumbs } from '@/lib/seo/breadcrumbs';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { prerenderParams } from '@/lib/static-params';
 import {
   getCollectionBySlug,
   listCollectionSlugs,
@@ -29,18 +30,18 @@ type PageProps = {
 };
 
 /**
- * Prerendered, and closed to unknown slugs.
+ * Prerendered where the build can reach the database.
  *
  * These are linked from the global navigation, so a crawler reaches them on its
- * first visit to any page. `dynamicParams = false` makes a mistyped slug a real
- * 404 rather than an empty listing that looks like a collection with nothing in
- * it — which is indistinguishable from a merchandising error.
+ * first visit to any page. `dynamicParams` stays at its default of `true`: a
+ * build with no database prerenders nothing, and closing the route would then
+ * 404 every collection on the site. A mistyped slug is still a real 404 —
+ * `notFound()` below enforces it per request rather than per route.
  */
-export const dynamicParams = false;
 export const revalidate = 3_600;
 
 export async function generateStaticParams() {
-  return (await listCollectionSlugs()).map(({ slug }) => ({ slug }));
+  return (await prerenderParams(listCollectionSlugs)).map(({ slug }) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

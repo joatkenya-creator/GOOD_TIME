@@ -8,6 +8,7 @@ import { siteConfig } from '@/config/site';
 import { productFilterSchema, reviewFilterSchema, isUnfiltered } from '@/features/catalog/schemas';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { breadcrumbs } from '@/lib/seo/breadcrumbs';
+import { prerenderParams } from '@/lib/static-params';
 import {
   getCategoryByPath,
   getCategoryTrail,
@@ -79,7 +80,10 @@ type PageProps = {
  * 100k build-time renders is not a trade worth making.
  */
 export async function generateStaticParams(): Promise<{ path: string[] }[]> {
-  const [categories, products] = await Promise.all([listCategoryPaths(), listProductSlugs(2000)]);
+  const [categories, products] = await Promise.all([
+    prerenderParams(listCategoryPaths),
+    prerenderParams(() => listProductSlugs(2000)),
+  ]);
 
   return [
     // The shop root itself.

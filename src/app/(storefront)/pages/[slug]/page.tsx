@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Container } from '@/components/layout/container';
 import { LEGAL_SLUGS, getLegalDocument } from '@/features/legal/documents';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { prerenderParams } from '@/lib/static-params';
 import { getPageBySlug, listPageSlugs } from '@/services/blog.service';
 
 /**
@@ -45,7 +46,7 @@ type PageProps = { params: Promise<{ slug: string }> };
 export const revalidate = 3_600;
 
 export async function generateStaticParams() {
-  const published = await listPageSlugs();
+  const published = await prerenderParams(listPageSlugs);
 
   return [...LEGAL_SLUGS.map((slug) => ({ slug })), ...published.map(({ slug }) => ({ slug }))];
 }

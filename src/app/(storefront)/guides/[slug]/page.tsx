@@ -9,6 +9,7 @@ import { ROUTES } from '@/constants/routes';
 import { breadcrumbs } from '@/lib/seo/breadcrumbs';
 import { articleSchema, breadcrumbSchema } from '@/lib/seo/json-ld';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { prerenderParams } from '@/lib/static-params';
 import { getPostBySlug, listOtherPosts, listPostSlugs } from '@/services/blog.service';
 
 /**
@@ -39,7 +40,7 @@ type PageProps = { params: Promise<{ slug: string }> };
 export const revalidate = 3_600;
 
 export async function generateStaticParams() {
-  return (await listPostSlugs()).map(({ slug }) => ({ slug }));
+  return (await prerenderParams(listPostSlugs)).map(({ slug }) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

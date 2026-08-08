@@ -7,6 +7,7 @@ import { ROUTES } from '@/constants/routes';
 import { productFilterSchema } from '@/features/catalog/schemas';
 import { breadcrumbs } from '@/lib/seo/breadcrumbs';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { prerenderParams } from '@/lib/static-params';
 import { getBrandBySlug, listBrandSlugs, listBrands } from '@/services/category.service';
 import { getFacetCounts, getPriceBounds, listProducts } from '@/services/product.service';
 
@@ -23,11 +24,15 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export const dynamicParams = false;
+/**
+ * `dynamicParams` stays at its default of `true`: a build with no database
+ * prerenders nothing, and closing the route would then 404 every brand on the
+ * site. `notFound()` below still makes a mistyped slug a real 404.
+ */
 export const revalidate = 3_600;
 
 export async function generateStaticParams() {
-  return (await listBrandSlugs()).map(({ slug }) => ({ slug }));
+  return (await prerenderParams(listBrandSlugs)).map(({ slug }) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
